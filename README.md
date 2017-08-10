@@ -22,12 +22,10 @@ or
 
 Build from source: 
 
-First, make sure that go is installed on your machine (see [install go](https://golang.org/doc/install) for details ). Then, clone the repository and run `go build` :
+First, make sure that go is installed on your machine (see [install go](https://golang.org/doc/install) for details ). Then, use `go get`:
 
 ```
-git clone https://github.com/feliixx/mgodatagen.git
-cd mgodatagen
-go build 
+go get -v "github.com/feliixx/mgodatagen"
 ```
 
 ## Options
