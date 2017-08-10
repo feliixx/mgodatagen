@@ -131,7 +131,7 @@ func createCollection(coll *Collection, session *mgo.Session, indexOnly bool) (*
 	// if the collection does not exists
 	c.DropCollection()
 	fmt.Printf("Creating collection %s...\n", coll.Name)
-	// if a compression level is specified, explicitely create the collection with the selected
+	// if a compression level is specified, explicitly create the collection with the selected
 	// compression level
 	if coll.CompressionLevel != "" {
 		strEng := bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}
@@ -213,7 +213,7 @@ func insertInDB(coll *Collection, c *mgo.Collection, shortNames bool) error {
 		go func() {
 			defer wg.Done()
 			for r := range record {
-				// if an error occurs in one of the goroutine, 'return' is called wich trigger
+				// if an error occurs in one of the goroutine, 'return' is called which trigger
 				// wg.Done() ==> the goroutine stops
 				select {
 				case <-ctx.Done():
@@ -248,7 +248,7 @@ func insertInDB(coll *Collection, c *mgo.Collection, shortNames bool) error {
 	// start []bson.M generation to feed the buffered channel
 	for count < coll.Count {
 		select {
-		case <-ctx.Done(): // if an error occured in one of the 'inserting' goroutines, close the channel
+		case <-ctx.Done(): // if an error occurred in one of the 'inserting' goroutines, close the channel
 			close(record)
 			bar.Finish()
 			return <-errs

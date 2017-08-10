@@ -301,7 +301,7 @@ func (g *FromArrayGenerator) Value(rnd *RandSource) interface{} {
 	return g.Array[g.Index]
 }
 
-// ObjectIDGenerator struct taht implements Generator. Used to
+// ObjectIDGenerator struct that implements Generator. Used to
 // generate bson.ObjectId
 type ObjectIDGenerator struct {
 	EmptyGenerator
