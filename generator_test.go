@@ -175,6 +175,7 @@ func BenchmarkJSONGeneration(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		docList = generator.Value(source).([]bson.M)
 	}
+	_ = docList[0]
 }
 
 func BenchmarkJSONGenerationShortNames(b *testing.B) {
@@ -192,6 +193,7 @@ func BenchmarkJSONGenerationShortNames(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		docList = generator.Value(source).([]bson.M)
 	}
+	_ = docList[0]
 }
 
 func TestKey(t *testing.T) {
