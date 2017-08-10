@@ -1,0 +1,17 @@
+version: "{build}"
+
+clone_folder: c:\gopath\src\github.com\feliixx\mgodatagen
+
+environment:
+  GOPATH: c:\gopath
+
+install:
+  - echo %PATH%
+  - echo %GOPATH%
+  - go version
+  - go env
+  - go get -v -t ./...
+
+build_script:
+  - go test -v ./...
+  - go test -bench=. -benchmem 

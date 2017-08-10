@@ -1,0 +1,22 @@
+language: go
+sudo: required
+go:
+  - 1.7.6
+  - 1.8.3
+  - tip
+os:
+  - linux
+  - osx
+matrix:
+  allow_failures:
+    - go: tip
+  fast_finish: true
+script:
+  - go test
+  - go test -bench=. -benchmem
+  
+notifications: 
+  email: false
+
+git:
+  depth: 3
