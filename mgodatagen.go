@@ -16,7 +16,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"gopkg.in/cheggaaa/pb.v1"
 
-	"github.com/mgodatagen/rg"
+	"github.com/feliixx/mgodatagen/rg"
 )
 
 const (

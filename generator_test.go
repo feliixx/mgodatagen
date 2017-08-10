@@ -9,7 +9,7 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 
-	"github.com/mgodatagen/rg"
+	"github.com/feliixx/mgodatagen/rg"
 )
 
 var (
