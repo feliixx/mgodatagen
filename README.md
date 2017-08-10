@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/feliixx/mgodatagen)](https://goreportcard.com/report/github.com/feliixx/mgodatagen)
+
 # mgodatagen 
 
 A small CLI tool to quickly generate millions of pseudo-random BSON documents and insert them into a Mongodb instance. Test how your application responds when your database grows
