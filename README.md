@@ -1,3 +1,5 @@
+[![Linux and macOS Build Status](https://travis-ci.org/feliixx/mgodatagen.svg?branch=master)](https://travis-ci.org/feliixx/mgodatagen)
+[![Windows Build Status](https://ci.appveyor.com/api/projects/status/ll70glgrjib8x8k5/branch/master?svg=true)](https://ci.appveyor.com/project/feliixx/mgodatagen)
 [![Go Report Card](https://goreportcard.com/badge/github.com/feliixx/mgodatagen)](https://goreportcard.com/report/github.com/feliixx/mgodatagen)
 
 # mgodatagen 
