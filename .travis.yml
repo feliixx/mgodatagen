@@ -1,7 +1,6 @@
 language: go
 sudo: required
 go:
-  - 1.7.6
   - 1.8.3
   - tip
 os:
@@ -11,9 +10,14 @@ matrix:
   allow_failures:
     - go: tip
   fast_finish: true
+services: 
+  - mongodb
+before_script: 
+  - go build 
 script:
   - go test
   - go test -bench=. -benchmem
+  - time ./mgodatagen -f samples/config.json
   
 notifications: 
   email: false
