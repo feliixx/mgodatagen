@@ -14,6 +14,10 @@ A small CLI tool to quickly generate millions of pseudo-random BSON documents an
 - Support for multi-database insertion
 - Cross-plateform. Tested on Unix / OSX / windows
 
+![Demo](demo.gif)
+
+
+
 ## installation
 
 Download the binary from [release page](https://github.com/feliixx/mgodatagen/releases)
