@@ -14,7 +14,7 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/jessevdk/go-flags"
-	"gopkg.in/cheggaaa/pb.v1"
+	"gopkg.in/cheggaaa/pb.v2"
 
 	"github.com/feliixx/mgodatagen/rg"
 )
@@ -207,7 +207,7 @@ func insertInDB(coll *Collection, c *mgo.Collection, shortNames bool) error {
 	var wg sync.WaitGroup
 	wg.Add(nbInsertingGoRoutines)
 	// start a new progressbar to display progress in terminal
-	bar := pb.StartNew(coll.Count)
+	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}`).Start(coll.Count)
 	// start numCPU goroutines to bulk insert documents in MongoDB
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
@@ -267,7 +267,7 @@ func insertInDB(coll *Collection, c *mgo.Collection, shortNames bool) error {
 		// push genrated []bson.M to the buffered channel
 		record <- generator.Value(source).([]bson.M)
 		count += batchSize
-		bar.Set(count)
+		bar.Add(1000)
 	}
 	close(record)
 	// wait for goroutines to end
