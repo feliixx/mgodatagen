@@ -1,3 +1,5 @@
+//A small CLI tool to quickly generate millions of pseudo-random BSON documents
+// and insert them into a Mongodb instance.
 package main
 
 import (

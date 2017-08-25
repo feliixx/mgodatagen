@@ -1,3 +1,30 @@
+// Package rg used to create object implementing Generator interface.
+// Each Generator generate a random value of a specific BSON type.
+// Relevant documentation:
+//
+//     http://bsonspec.org/#/specification
+//
+// Currently supported BSON types:
+//  - string
+//  - int
+//  - long
+//  - double
+//  - boolean
+//  - date
+//  - objectId
+//  - object
+//  - array
+//  - binary data
+//
+// Custom types :
+//  - GPS position
+//  - constant
+//  - autoincrement
+//  - reference
+//  - from array
+//
+// It was created as part of mgodatagen, but is standalone
+// and may be used on its own.
 package rg
 
 import (
@@ -10,7 +37,7 @@ import (
 
 const (
 	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
-	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxBits = 6                    // 6 bits to represent a letter index (2^6 => 0-63)
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
