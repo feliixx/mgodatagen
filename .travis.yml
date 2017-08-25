@@ -1,6 +1,10 @@
 language: go
 sudo: required
 
+cache:
+  directories:
+    - $HOME/Library/Caches/Homebrew
+
 go:
   - 1.8.3
   - 1.9
