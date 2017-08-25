@@ -1,23 +1,29 @@
 language: go
 sudo: required
+
 go:
   - 1.8.3
-  - tip
+  - 1.9
+
 os:
   - linux
   - osx
+
 matrix:
   allow_failures:
     - go: tip
   fast_finish: true
+
 services: 
   - mongodb
+
 before_script: 
   - go build 
+  - ./setup_osx.sh 
 script:
-  - go test
+  - go test -v ./...
   - go test -bench=. -benchmem
-  - time ./mgodatagen -f samples/config.json
+  - ./mgodatagen -f samples/config.json
   
 notifications: 
   email: false
