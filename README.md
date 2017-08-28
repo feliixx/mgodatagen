@@ -79,7 +79,8 @@ See **MongodB documentation** for details on parameters:
  - indexes: [**indexes**](https://docs.mongodb.com/manual/reference/method/db.collection.createIndex/)
  - collation: [**collation**](https://docs.mongodb.com/manual/reference/bson-type-comparison-order/#collation)
 
-```
+```JSON5
+
 [{  
    "database": "test",                // required 
    "name":"test",                     // required
@@ -133,16 +134,16 @@ See **MongodB documentation** for details on parameters:
          }
    ],
    "content": {                       // required   
-   	  "fieldName1": <generator>,      // required
-   	  "fieldName2": <generator>,      // required
-   	  ...
+     "fieldName1": <generator>,       // required
+     "fieldName2": <generator>,       // required
+   	 ...
    }
 }]
 ```
 
 Gnerators have a common structure: 
 
-```
+```JSON5
 "fieldName": {                 // required, field name in generated document
   "type": <string>,            // required, type of the field 
   "nullPercentage": <int>,     // optional, int between 0 and 100. Percentage of documents 
@@ -151,10 +152,23 @@ Gnerators have a common structure:
 }
 ```
 
-A set of sample config files can be found in the **samples** directory 
+### Example
+
+A set of sample config files can be found in the **samples** directory. To use it, 
+make sure that you have a mongodb instance running (on 127.0.0.1:27017 for example)
+and run 
+
+```
+./mgodatagen -f samples/config.json
+```
+
+This will insert 100000 random documents in collections `test` and `link` of database 
+`test` with the structure defined in the config file. 
+
+
 # Generator types  
 
-list main available <generator> types: 
+List of main <generator> types: 
 
 - [string](#string)
 - [int](#int)
@@ -167,7 +181,7 @@ list main available <generator> types:
 - [binary](#binary) 
 - [date](#date) 
 
-list og custom types: 
+List of custom <generator> types: 
 
 - [position](#position)
 - [constant](#constant)
@@ -180,7 +194,7 @@ list og custom types:
 Generate random string of a certain length. String is composed of char within this list: 
 `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_`
 
-```
+```JSON5
 "fieldName": {
     "type": "string",        // required
     "nullPercentage": <int>, // optional 
@@ -193,7 +207,7 @@ Generate random string of a certain length. String is composed of char within th
 
 Generate random int within bounds. 
 
-```
+```JSON5
 "fieldName": {
     "type": "int",           // required
     "nullPercentage": <int>, // optional 
@@ -206,7 +220,7 @@ Generate random int within bounds.
 
 Generate random long within bounds. 
 
-```
+```JSON5
 "fieldName": {
     "type": "long",          // required
     "nullPercentage": <int>, // optional 
@@ -219,7 +233,7 @@ Generate random long within bounds.
 
 Generate random double within bounds. 
 
-```
+```JSON5
 "fieldName": {
     "type": "double",        // required
     "nullPercentage": <int>, // optional 
@@ -232,7 +246,7 @@ Generate random double within bounds.
 
 Generate random boolean
 
-```
+```JSON5
 "fieldName": {
     "type": "boolean",       // required
     "nullPercentage": <int>, // optional 
@@ -243,7 +257,7 @@ Generate random boolean
 
 Generate random and unique objectId
 
-```
+```JSON5
 "fieldName": {
     "type": "objectId",      // required
     "nullPercentage": <int>, // optional 
@@ -254,7 +268,7 @@ Generate random and unique objectId
 
 Generate a random array of bson object 
 
-```
+```JSON5
 "fieldName": {
     "type": "array",             // required
     "nullPercentage": <int>,     // optional
@@ -268,7 +282,7 @@ Generate a random array of bson object
 
 Generate random nested object
 
-```
+```JSON5
 "fieldName": {
     "type": "object",                    // required
     "nullPercentage": <int>,             // optional
@@ -284,7 +298,7 @@ Generate random nested object
 
 Generate random binary data of length within bounds
 
-```
+```JSON5
 "fieldName": {
     "type": "binary",        // required
     "nullPercentage": <int>, // optional 
@@ -302,7 +316,7 @@ Generate a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/re
 **format**: "yyyy-MM-ddThh:mm:ss+00:00"
 
 
-```
+```JSON5
 "fieldName": {
     "type": "date",          // required
     "nullPercentage": <int>, // optional 
@@ -316,7 +330,7 @@ Generate a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/re
 Generate a random GPS position in Decimal Degrees ( WGS 84), 
 eg : [40.741895, -73.989308]
 
-```
+```JSON5
 "fieldName": {
     "type": "position",         // required
     "nullPercentage": <int>     // optional 
@@ -327,7 +341,7 @@ eg : [40.741895, -73.989308]
 
 Add the same value to each document 
 
-```
+```JSON5
 "fieldName": {
     "type": "constant",       // required
     "nullPercentage": <int>,  // optional
@@ -340,7 +354,7 @@ Add the same value to each document
 
 Create an autoincremented field (type <long>)
 
-```
+```JSON5
 "fieldName": {
     "type": "autoincrement",  // required
     "nullPercentage": <int>,  // optional
@@ -354,7 +368,7 @@ If a field reference an other field in an other collection, you can use a ref ge
 
 generator in first collection: 
 
-```
+```JSON5
 "fieldName":{  
     "type":"ref",               // required
     "nullPercentage": <int>,    // optional
@@ -366,7 +380,7 @@ generator in first collection:
 
 generator in other collections: 
 
-```
+```JSON5
 "fieldName": {
     "type": "ref",            // required
     "nullPercentage": <int>,  // optional
@@ -379,7 +393,7 @@ generator in other collections:
 Randomly pick value from an array as value for the field
 
 
-```
+```JSON5
 "fieldName": {
     "type": "fromArray",      // required
     "nullPercentage": <int>,  // optional   

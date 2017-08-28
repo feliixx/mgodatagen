@@ -1,7 +1,7 @@
 [{  
    "database": "test", 
    "name":"test",
-   "count": 1000000,
+   "count": 100000,
    "indexes": [
       {
          "name": "name_1",
@@ -102,7 +102,7 @@
 {  
    "database": "test", 
    "name":"link",
-   "count":1000000,
+   "count":100000,
    "content":{  
       "_id":{  
          "type":"objectId"
