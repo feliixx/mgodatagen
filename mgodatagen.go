@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	version = "0.0.1" // current version of mgodatagen
+	version = "0.1" // current version of mgodatagen
 )
 
 // Collection struct storing global collection info
