@@ -4,6 +4,7 @@
 *.so
 *.dylib
 mgodatagen
+build/
 # Test binary, build with `go test -c`
 *.test
 ROADMAP.md
