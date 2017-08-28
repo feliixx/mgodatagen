@@ -1,4 +1,4 @@
-// Package rg used to create object implementing Generator interface.
+// Package generators used to create object implementing Generator interface.
 // Each Generator generate a random value of a specific BSON type.
 // Relevant documentation:
 //
@@ -25,7 +25,7 @@
 //
 // It was created as part of mgodatagen, but is standalone
 // and may be used on its own.
-package rg
+package generators
 
 import (
 	"fmt"

@@ -18,7 +18,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"gopkg.in/cheggaaa/pb.v2"
 
-	"github.com/feliixx/mgodatagen/rg"
+	rg "github.com/feliixx/mgodatagen/generators"
 )
 
 const (
