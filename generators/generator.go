@@ -438,22 +438,22 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 	switch v.Type {
 	case "string":
 		if v.MinLength < 0 || v.MinLength > v.MaxLength {
-			return nil, fmt.Errorf("for object %s, make sure that MinLength >= 0 and MinLength < MaxLength", k)
+			return nil, fmt.Errorf("for field %s, make sure that MinLength >= 0 and MinLength < MaxLength", k)
 		}
 		return &StringGenerator{EmptyGenerator: eg, MinLength: v.MinLength, MaxLength: v.MaxLength}, nil
 	case "int":
 		if v.MaxInt32 == 0 || v.MaxInt32 <= v.MinInt32 {
-			return nil, fmt.Errorf("for object %s, make sure that MaxInt32 > MinInt32", k)
+			return nil, fmt.Errorf("for field %s, make sure that MaxInt32 > MinInt32", k)
 		}
 		return &Int32Generator{EmptyGenerator: eg, Min: v.MinInt32, Max: v.MaxInt32}, nil
 	case "long":
 		if v.MaxInt64 == 0 || v.MaxInt64 <= v.MinInt64 {
-			return nil, fmt.Errorf("for object %s, make sure that MaxInt64 > MinInt64", k)
+			return nil, fmt.Errorf("for field %s, make sure that MaxInt64 > MinInt64", k)
 		}
 		return &Int64Generator{EmptyGenerator: eg, Min: v.MinInt64, Max: v.MaxInt64}, nil
 	case "double":
 		if v.MaxFloat64 == 0 || v.MaxFloat64 <= v.MinFloat64 {
-			return nil, fmt.Errorf("for object %s, make sure that MaxFloat64 > MinFloat64", k)
+			return nil, fmt.Errorf("for field %s, make sure that MaxFloat64 > MinFloat64", k)
 		}
 		return &Float64Generator{EmptyGenerator: eg, Mean: v.MinFloat64, StdDev: (v.MaxFloat64 - v.MinFloat64) / 2}, nil
 	case "boolean":
@@ -462,11 +462,11 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 		return &ObjectIDGenerator{EmptyGenerator: eg}, nil
 	case "array":
 		if v.Size < 0 {
-			return nil, fmt.Errorf("for object %s, make sure that size >= 0", k)
+			return nil, fmt.Errorf("for field %s, make sure that size >= 0", k)
 		}
 		g, err := NewGenerator("", v.ArrayContent, shortNames)
 		if err != nil {
-			return nil, fmt.Errorf("for object %s, make sure that size >= 0", k)
+			return nil, fmt.Errorf("for field %s, make sure that size >= 0", k)
 		}
 		return &ArrayGenerator{EmptyGenerator: eg, Size: v.Size, Generator: g}, nil
 	case "object":
@@ -477,17 +477,17 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 		return &ObjectGenerator{EmptyGenerator: eg, Generators: g}, nil
 	case "fromArray":
 		if len(v.In) == 0 {
-			return nil, fmt.Errorf("for object %s, in array can't be null or empty", k)
+			return nil, fmt.Errorf("for field %s, in array can't be null or empty", k)
 		}
 		return &FromArrayGenerator{EmptyGenerator: eg, Array: v.In, Size: int32(len(v.In)), Index: -1}, nil
 	case "binary":
 		if v.MinLength < 0 || v.MinLength > v.MaxLength {
-			return nil, fmt.Errorf("for object %s, make sure that MinLength >= 0 and MinLength < MaxLength", k)
+			return nil, fmt.Errorf("for field %s, make sure that MinLength >= 0 and MinLength < MaxLength", k)
 		}
 		return &BinaryDataGenerator{EmptyGenerator: eg, MinLength: v.MinLength, MaxLength: v.MaxLength}, nil
 	case "date":
 		if v.StartDate.Unix() > v.EndDate.Unix() {
-			return nil, fmt.Errorf("for object %s, make sure StartDate < endDate", k)
+			return nil, fmt.Errorf("for field %s, make sure StartDate < endDate", k)
 		}
 		return &DateGenerator{EmptyGenerator: eg, StartDate: v.StartDate.Unix(), Delta: (v.EndDate.Unix() - v.StartDate.Unix())}, nil
 	case "position":
@@ -501,7 +501,7 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 		if !ok {
 			g, err := NewGenerator("", v.RefContent, shortNames)
 			if err != nil {
-				return nil, fmt.Errorf("for object %s, %s", k, err.Error())
+				return nil, fmt.Errorf("for field %s, %s", k, err.Error())
 			}
 			var arr []interface{}
 			mapRef[v.ID] = arr

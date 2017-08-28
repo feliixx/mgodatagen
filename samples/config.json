@@ -1,6 +1,6 @@
 [{  
    "database": "test", 
-   "name":"test",
+   "collection": "test",
    "count": 100000,
    "indexes": [
       {
@@ -9,91 +9,91 @@
          "sparse": true
       }
    ],
-   "content":{  
-      "_id":{  
-         "type":"ref",
-         "id":1,
+   "content": {  
+      "_id": {  
+         "type": "ref",
+         "id": 1,
          "refContent":{  
-            "type":"objectId"
+            "type": "objectId"
          }
       },
-      "date":{  
-         "type":"date",
-         "startDate":"2010-01-10T00:00:00+00:00",
-         "endDate":"2017-01-01T22:00:00+00:00"
+      "date": {  
+         "type": "date",
+         "startDate": "2010-01-10T00:00:00+00:00",
+         "endDate": "2017-01-01T22:00:00+00:00"
       },
-      "binaryData":{  
-         "type":"binary",
+      "binaryData": {  
+         "type": "binary",
          "minLength": 24,
          "maxLength": 24
       },
-      "dt":{  
-         "type":"fromArray",
-         "in":[  
+      "dt": {  
+         "type": "fromArray",
+         "in": [  
             "2012-10-10",
             "2012-12-12",
             "2014-01-01",
             "2016-05-05"
          ]
       },
-      "name":{  
-         "type":"string",
+      "name": {  
+         "type": "string",
          "minLength": 3,
-         "maxLength":8
+         "maxLength": 8
       },
-      "c32":{  
-         "type":"int",
-         "minInt":11,
-         "maxInt":20
+      "c32": {  
+         "type": "int",
+         "minInt": 11,
+         "maxInt": 20
       },
-      "c64":{  
-         "type":"long",
-         "minLong":1000,
-         "maxLong":20000
+      "c64": {  
+         "type": "long",
+         "minLong": 1000,
+         "maxLong": 20000
       },
-      "float":{  
+      "float": {  
          "type":"double",
-         "minDouble":0.0,
-         "maxDouble":10.0
+         "minDouble": 0.0,
+         "maxDouble": 10.0
       },
-      "verified":{  
-         "type":"boolean"
+      "verified": {  
+         "type": "boolean"
       },
-      "array":{  
-         "type":"array",
-         "size":3,
+      "array": {  
+         "type": "array",
+         "size": 3,
          "arrayContent":{  
-            "type":"string",
+            "type": "string",
             "minLength": 1,
-            "maxLength":3
+            "maxLength": 3
          }
       },
-      "nb":{  
-         "type":"autoincrement",
-         "counter":0
+      "nb": {  
+         "type": "autoincrement",
+         "counter": 0
       },
-      "pos":{  
-         "type":"position"
+      "pos": {  
+         "type": "position"
       },
-      "cst":{  
-         "type":"constant",
+      "cst": {  
+         "type": "constant",
          "constVal":{  
-            "k":2,
-            "nm":"adr"
+            "k": 2,
+            "nm": "adr"
          }
       },
-      "object":{  
-         "type":"object",
-         "objectContent":{  
-            "k1":{  
-               "type":"string",
+      "object": {  
+         "type": "object",
+         "objectContent": {  
+            "k1": {  
+               "type": "string",
                "minLength": 3,
                "maxLength": 3
             },
             "k2":{  
-               "type":"int",
-               "minInt":-10,
-               "maxInt":-5
+               "type": "int",
+               "minInt": -10,
+               "maxInt": -5
             }
          }
       }
@@ -101,15 +101,15 @@
 },
 {  
    "database": "test", 
-   "name":"link",
+   "collection": "link",
    "count":100000,
-   "content":{  
-      "_id":{  
-         "type":"objectId"
+   "content": {  
+      "_id": {  
+         "type": "objectId"
       },
-      "ref":{  
-         "type":"ref",
-         "id":1
+      "ref": {  
+         "type": "ref",
+         "id": 1
       }
    }
 }]

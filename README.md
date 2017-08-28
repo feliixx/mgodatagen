@@ -81,13 +81,24 @@ See **MongodB documentation** for details on parameters:
 
 ```JSON5
 
-[{  
-   "database": "test",                // required 
-   "name":"test",                     // required
-   "count":100000,                    // required, number of document to insert in the collection 
-   "compressionLevel": <string>,      // optional, for WT engine only: none, snappy, zlib, default: snappy
+[
+  // first collection to create 
+  {  
+   // main fields 
+   "database": "test",                // required, database name
+   "collection": "test",              // required, collection name
+   "count": 100000,                   // required, number of document to insert in the collection 
+   "content": {                       // required, the actual schema to generate documents   
+     "fieldName1": <generator>,       // required
+     "fieldName2": <generator>,       // required, see Generator below
+     ...
+   },
+   // optional configuration
+   // Compression level: can be : none, snappy, zlib (for WiredTiger engine only)
+   "compressionLevel": <string>,      // optional, default: snappy
 
-   "shardConfig": {                   // optional, configuration if the collection has to be sharded 
+   // configuration for sharded collection
+   "shardConfig": {                   // optional 
       "shardCollection": <string>.<string>, // required. <database>.<collection>
       "key": <object>,                // required, shard key, eg: {"_id": "hashed"}
       "unique": <boolean>,            // optional, default: false
@@ -104,7 +115,9 @@ See **MongodB documentation** for details on parameters:
         "backwards": <boolean>
       }
    },
-   "indexes": [                       // optional, list of index to build  
+
+   // list of index to build
+   "indexes": [                       // optional  
       {
          "name": <string>,            // required, index name
          "key": <object>,             // required, index key, eg: {"name": 1}
@@ -132,13 +145,13 @@ See **MongodB documentation** for details on parameters:
            "maxVariable": <string>,
            "backwards": <boolean>                
          }
-   ],
-   "content": {                       // required   
-     "fieldName1": <generator>,       // required
-     "fieldName2": <generator>,       // required
-   	 ...
-   }
-}]
+   ]
+  },
+  // second collection to create 
+  {
+    ...
+  }
+]
 ```
 
 Gnerators have a common structure: 

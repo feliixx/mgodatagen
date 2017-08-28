@@ -30,7 +30,7 @@ type Collection struct {
 	// Database to use
 	DB string `json:"database"`
 	// Collection name in the database
-	Name string `json:"name"`
+	Name string `json:"collection"`
 	// Number of documents to insert in the collection
 	Count int `json:"count"`
 	// Schema of the documents for this collection
@@ -79,7 +79,7 @@ func getGenerator(content map[string]rg.GeneratorJSON, batchSize int, shortNames
 	// create the global generator, used to generate 1000 items at a time
 	g, err := rg.NewGeneratorsFromMap(content, shortNames)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating generators from config file:\n\tcause: %s", err.Error())
+		return nil, fmt.Errorf("error while creating generators from configuration file:\n\tcause: %s", err.Error())
 	}
 	eg := rg.EmptyGenerator{K: "", NullPercentage: 0, T: 6}
 	gen := &rg.ArrayGenerator{
@@ -419,7 +419,7 @@ func main() {
 	var collectionList []Collection
 	err = json.Unmarshal(file, &collectionList)
 	if err != nil {
-		printErrorAndExit(fmt.Errorf("Error in config.json, object / array / Date badly formatted: \n\n\t\t%s", err.Error()))
+		printErrorAndExit(fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%s", err.Error()))
 	}
 	session, err := connectToDB(&options.Connection)
 	if err != nil {
@@ -429,10 +429,10 @@ func main() {
 	// iterate over collection config
 	for _, v := range collectionList {
 		if v.Name == "" || v.DB == "" {
-			printErrorAndExit(fmt.Errorf("collection name and database name can't be empty"))
+			printErrorAndExit(fmt.Errorf("Error in configuration file: \n\t'collection' and 'database' fields can't be empty"))
 		}
 		if v.Count == 0 {
-			printErrorAndExit(fmt.Errorf("for collection %s, count has to be > 0", v.Name))
+			printErrorAndExit(fmt.Errorf("Error in configuration file: \n\tfor collection %s, 'count' has to be > 0", v.Name))
 		}
 		// create the collection
 		c, err := createCollection(&v, session, options.IndexOnly)
