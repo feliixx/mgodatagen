@@ -64,12 +64,14 @@ var (
 type GeneratorJSON struct {
 	// Type of object to genereate.
 	Type string `json:"type"`
+	// Percentage of documents that won't contains this field
+	NullPercentage int64 `json:"nullPercentage"`
+	// Maximum number of distinct value for this field
+	MaxDistinctValue int `json:"maxDistinctValue"`
 	// For `string` and `binary` type only. Specify the Min length of the object to generate
 	MinLength int32 `json:"MinLength"`
 	// For `string` and `binary` type only. Specify the Max length of the object to generate
 	MaxLength int32 `json:"MaxLength"`
-	// Percentage of documents that won't contains this field
-	NullPercentage int64 `json:"nullPercentage"`
 	// For `int` type only. Lower bound for the int32 to generate
 	MinInt32 int32 `json:"MinInt"`
 	// For `int` type only. Higher bound for the int32 to generate
@@ -434,7 +436,27 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 	if shortNames && k != "_id" && len(k) > 2 {
 		k = k[:2]
 	}
+	// EmptyGenerator to store general info
 	eg := EmptyGenerator{K: k, NullPercentage: v.NullPercentage * 10, T: intType}
+
+	// if we want only a certain number of distinct values
+	if v.MaxDistinctValue != 0 {
+
+		size := v.MaxDistinctValue
+		v.MaxDistinctValue = 0
+		gen, err := NewGenerator(k, v, shortNames)
+		if err != nil {
+			return nil, fmt.Errorf("for field %s, error while creating base array: %s", k, err.Error())
+		}
+		rnd := NewRandSource()
+		// generate an array with the possible distinct values
+		array := make([]interface{}, size)
+		for i := range array {
+			array[i] = gen.Value(rnd)
+		}
+		return &FromArrayGenerator{EmptyGenerator: eg, Array: array, Size: int32(size), Index: -1}, nil
+	}
+
 	switch v.Type {
 	case "string":
 		if v.MinLength < 0 || v.MinLength > v.MaxLength {

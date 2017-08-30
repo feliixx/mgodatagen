@@ -316,6 +316,7 @@ func TestFromArrayValue(t *testing.T) {
 		}
 	}
 }
+
 func TestGeneratedDoc(t *testing.T) {
 	var exp expected
 	generator, err := getGeneratorFromFile(false)

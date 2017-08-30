@@ -5,7 +5,7 @@
 
 # mgodatagen 
 
-A small CLI tool to quickly generate millions of pseudo-random BSON documents and insert them into a Mongodb instance. Test how your application responds when your database grows
+A small CLI tool to quickly generate millions of pseudo-random BSON documents and insert them into a Mongodb instance. Quickly test new data structure or how your application responds when your database grows! 
 
 ## Features
 
@@ -161,6 +161,7 @@ Gnerators have a common structure:
   "type": <string>,            // required, type of the field 
   "nullPercentage": <int>,     // optional, int between 0 and 100. Percentage of documents 
                                // using this field
+  "maxDistinctValue": <int>,   // optional, maximum number of distinct values for this field
   "typeParam": ...             // parameters for this type
 }
 ```
@@ -209,10 +210,11 @@ Generate random string of a certain length. String is composed of char within th
 
 ```JSON5
 "fieldName": {
-    "type": "string",        // required
-    "nullPercentage": <int>, // optional 
-    "minLength": <int>,      // required,  must be >= 0 
-    "maxLength": <int>       // required,  must be >= minLength
+    "type": "string",          // required
+    "nullPercentage": <int>,   // optional 
+    "maxDistinctValue": <int>, // optional
+    "minLength": <int>,        // required,  must be >= 0 
+    "maxLength": <int>         // required,  must be >= minLength
 }
 ```
 
@@ -222,10 +224,11 @@ Generate random int within bounds.
 
 ```JSON5
 "fieldName": {
-    "type": "int",           // required
-    "nullPercentage": <int>, // optional 
-    "minInt": <int>,         // required
-    "maxInt": <int>          // required, must be >= minInt
+    "type": "int",             // required
+    "nullPercentage": <int>,   // optional 
+    "maxDistinctValue": <int>, // optional
+    "minInt": <int>,           // required
+    "maxInt": <int>            // required, must be >= minInt
 }
 ```
 
@@ -235,10 +238,11 @@ Generate random long within bounds.
 
 ```JSON5
 "fieldName": {
-    "type": "long",          // required
-    "nullPercentage": <int>, // optional 
-    "minLong": <long>,       // required
-    "maxLong": <long>        // required, must be >= minLong
+    "type": "long",            // required
+    "nullPercentage": <int>,   // optional 
+    "maxDistinctValue": <int>, // optional
+    "minLong": <long>,         // required
+    "maxLong": <long>          // required, must be >= minLong
 }
 ```
 
@@ -248,10 +252,11 @@ Generate random double within bounds.
 
 ```JSON5
 "fieldName": {
-    "type": "double",        // required
-    "nullPercentage": <int>, // optional 
-    "minDouble": <double>,   // required
-    "maxDouble": <double>    // required, must be >= minDouble
+    "type": "double",          // required
+    "nullPercentage": <int>,   // optional
+    "maxDistinctValue": <int>, // optional 
+    "minDouble": <double>,     // required
+    "maxDouble": <double>      // required, must be >= minDouble
 }
 ```
 
@@ -261,8 +266,9 @@ Generate random boolean
 
 ```JSON5
 "fieldName": {
-    "type": "boolean",       // required
-    "nullPercentage": <int>, // optional 
+    "type": "boolean",         // required
+    "nullPercentage": <int>,   // optional 
+    "maxDistinctValue": <int>  // optional
 }
 ```
 
@@ -272,8 +278,9 @@ Generate random and unique objectId
 
 ```JSON5
 "fieldName": {
-    "type": "objectId",      // required
-    "nullPercentage": <int>, // optional 
+    "type": "objectId",        // required
+    "nullPercentage": <int>,   // optional
+    "maxDistinctValue": <int>  // optional 
 }
 ```
 
@@ -285,6 +292,7 @@ Generate a random array of bson object
 "fieldName": {
     "type": "array",             // required
     "nullPercentage": <int>,     // optional
+    "maxDistinctValue": <int>,   // optional
     "size": <int>,               // required, size of the array 
     "arrayContent": <generator>  // genrator use to create element to fill the array.
                                  // can be of any type scpecified in generator types
@@ -299,6 +307,7 @@ Generate random nested object
 "fieldName": {
     "type": "object",                    // required
     "nullPercentage": <int>,             // optional
+    "maxDistinctValue": <int>,           // optional
     "objectContent": {                   // required, list of generator used to 
        "nestedFieldName1": <generator>,  // generate the nested document 
        "nestedFieldName2": <generator>,
@@ -313,10 +322,11 @@ Generate random binary data of length within bounds
 
 ```JSON5
 "fieldName": {
-    "type": "binary",        // required
-    "nullPercentage": <int>, // optional 
-    "minLength": <int>,      // required,  must be >= 0 
-    "maxLength": <int>       // required,  must be >= minLength
+    "type": "binary",           // required
+    "nullPercentage": <int>,    // optional 
+    "maxDistinctValue": <int>,  // optional
+    "minLength": <int>,         // required,  must be >= 0 
+    "maxLength": <int>          // required,  must be >= minLength
 }
 ```
 
@@ -331,10 +341,11 @@ Generate a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/re
 
 ```JSON5
 "fieldName": {
-    "type": "date",          // required
-    "nullPercentage": <int>, // optional 
-    "startDate": <string>,   // required
-    "endDate": <string>      // required,  must be >= startDate
+    "type": "date",            // required
+    "nullPercentage": <int>,   // optional 
+    "maxDistinctValue": <int>, // optional
+    "startDate": <string>,     // required
+    "endDate": <string>        // required,  must be >= startDate
 }
 ```
 
@@ -347,6 +358,7 @@ eg : [40.741895, -73.989308]
 "fieldName": {
     "type": "position",         // required
     "nullPercentage": <int>     // optional 
+    "maxDistinctValue": <int>   // optional
 }
 ```
 
@@ -385,6 +397,7 @@ generator in first collection:
 "fieldName":{  
     "type":"ref",               // required
     "nullPercentage": <int>,    // optional
+    "maxDistinctValue": <int>,  // optional
     "id": <int>,                // required, generator id used to link
                                 // field between collections
     "refContent": <generator>   // required
@@ -395,9 +408,10 @@ generator in other collections:
 
 ```JSON5
 "fieldName": {
-    "type": "ref",            // required
-    "nullPercentage": <int>,  // optional
-    "id": <int>               // required, same id as previous generator 
+    "type": "ref",              // required
+    "nullPercentage": <int>,    // optional
+    "maxDistinctValue": <int>,  // optional
+    "id": <int>                 // required, same id as previous generator 
 }
 ```
 

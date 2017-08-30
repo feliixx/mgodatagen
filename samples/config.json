@@ -1,7 +1,7 @@
 [{  
    "database": "test", 
    "collection": "test",
-   "count": 100000,
+   "count": 1000000,
    "indexes": [
       {
          "name": "name_1",
@@ -38,6 +38,7 @@
       },
       "name": {  
          "type": "string",
+         "maxDistinctValue": 500,
          "minLength": 3,
          "maxLength": 8
       },
@@ -48,6 +49,7 @@
       },
       "c64": {  
          "type": "long",
+         "nullPercentage": 10,
          "minLong": 1000,
          "maxLong": 20000
       },
