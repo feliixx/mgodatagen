@@ -123,10 +123,10 @@ func connectToDB(conn *Connection) (*mgo.Session, error) {
 }
 
 // create a collection with specific options
-func createCollection(coll *Collection, session *mgo.Session, indexOnly bool) (*mgo.Collection, error) {
+func createCollection(coll *Collection, session *mgo.Session, indexOnly bool, appendToColl bool) (*mgo.Collection, error) {
 	c := session.DB(coll.DB).C(coll.Name)
-	// if indexOnly, just return the collection as it already exists
-	if indexOnly {
+	// if indexOnly or append mode, just return the collection as it already exists
+	if indexOnly || appendToColl {
 		return c, nil
 	}
 	// drop the collection before inserting new document. Ignore the error
@@ -374,8 +374,9 @@ type Connection struct {
 // Config struct that stores info on config file from command line args
 type Config struct {
 	ConfigFile string `short:"f" long:"file" value-name:"<configfile>" description:"JSON config file. This field is required"`
-	IndexOnly  bool   `short:"i" long:"indexonly" description:"If present, mgodatagen will just try to rebuild index"`
-	ShortName  bool   `short:"s" long:"shortname" description:"If present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
+	IndexOnly  bool   `short:"i" long:"indexonly" description:"if present, mgodatagen will just try to rebuild index"`
+	ShortName  bool   `short:"s" long:"shortname" description:"if present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
+	Append     bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents"`
 }
 
 // Options struct to store flags from CLI
@@ -435,7 +436,7 @@ func main() {
 			printErrorAndExit(fmt.Errorf("Error in configuration file: \n\tfor collection %s, 'count' has to be > 0", v.Name))
 		}
 		// create the collection
-		c, err := createCollection(&v, session, options.IndexOnly)
+		c, err := createCollection(&v, session, options.IndexOnly, options.Append)
 		if err != nil {
 			printErrorAndExit(err)
 		}
