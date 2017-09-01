@@ -1,8 +1,13 @@
 [{
   "database": "mtx_large",
   "collection": "projects", 
-  "count": 1, 
+  "count": 100000, 
   "content": {
-  	
+  	"_id": {
+  		"type": "string",
+  		"minLength": 5,
+  		"maxLength": 5, 
+      "unique": true
+  	}
   } 
 }]

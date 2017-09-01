@@ -29,6 +29,7 @@ package generators
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 
@@ -57,7 +58,9 @@ var (
 		"other":         8,
 	}
 	// stores value for ref fields
-	mapRef = map[int][]interface{}{}
+	mapRef       = map[int][]interface{}{}
+	result       []interface{}
+	currentIndex int
 )
 
 // GeneratorJSON struct containing all possible options
@@ -68,6 +71,8 @@ type GeneratorJSON struct {
 	NullPercentage int64 `json:"nullPercentage"`
 	// Maximum number of distinct value for this field
 	MaxDistinctValue int `json:"maxDistinctValue"`
+	// For `string` type only. If set to 'true', string will be unique
+	Unique bool `json:"unique"`
 	// For `string` and `binary` type only. Specify the Min length of the object to generate
 	MinLength int32 `json:"MinLength"`
 	// For `string` and `binary` type only. Specify the Max length of the object to generate
@@ -425,8 +430,40 @@ func (g *RefGenerator) Value(rnd *RandSource) interface{} {
 	return v
 }
 
+// recursively generate all possible combinaison with repeat
+func recur(data []byte, stringSize int, index int, docCount int) {
+	for i := 0; i < len(letterBytes); i++ {
+		if currentIndex < docCount {
+			data[index] = letterBytes[i]
+			if index == stringSize-1 {
+				result[currentIndex] = string(data)
+				currentIndex++
+			} else {
+				recur(data, stringSize, index+1, docCount)
+			}
+		}
+	}
+}
+
+// generate an array of length 'docCount' containing unique string
+// array will look like (for stringSize=3)
+// [ "aaa", "aab", "aac", ...]
+func getUniqueArray(docCount int, stringSize int) ([]interface{}, error) {
+	maxNumber := int(math.Pow(float64(len(letterBytes)), float64(stringSize)))
+	if docCount > maxNumber {
+		return nil, fmt.Errorf("doc count is greater than possible value for string of size %v, max is %v ( %v^%v) ", stringSize, maxNumber, len(letterBytes), stringSize)
+	}
+	result = make([]interface{}, docCount)
+	data := make([]byte, stringSize)
+
+	currentIndex = 0
+
+	recur(data, stringSize, 0, docCount)
+	return result, nil
+}
+
 // NewGenerator returns a new Generator based on a JSON configuration
-func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error) {
+func NewGenerator(k string, v *GeneratorJSON, shortNames bool, docCount int) (Generator, error) {
 	intType, ok := mapType[v.Type]
 	if !ok {
 		intType = 8
@@ -444,7 +481,7 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 
 		size := v.MaxDistinctValue
 		v.MaxDistinctValue = 0
-		gen, err := NewGenerator(k, v, shortNames)
+		gen, err := NewGenerator(k, v, shortNames, docCount)
 		if err != nil {
 			return nil, fmt.Errorf("for field %s, error while creating base array: %s", k, err.Error())
 		}
@@ -461,6 +498,14 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 	case "string":
 		if v.MinLength < 0 || v.MinLength > v.MaxLength {
 			return nil, fmt.Errorf("for field %s, make sure that MinLength >= 0 and MinLength < MaxLength", k)
+		}
+		if v.Unique {
+			// unqiue string can only be of fixed length, use minLength as length
+			arr, err := getUniqueArray(docCount, int(v.MinLength))
+			if err != nil {
+				return nil, fmt.Errorf("for field %s, %v", k, err.Error())
+			}
+			return &FromArrayGenerator{EmptyGenerator: eg, Array: arr, Size: int32(docCount), Index: -1}, nil
 		}
 		return &StringGenerator{EmptyGenerator: eg, MinLength: v.MinLength, MaxLength: v.MaxLength}, nil
 	case "int":
@@ -486,13 +531,13 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 		if v.Size < 0 {
 			return nil, fmt.Errorf("for field %s, make sure that size >= 0", k)
 		}
-		g, err := NewGenerator("", v.ArrayContent, shortNames)
+		g, err := NewGenerator("", v.ArrayContent, shortNames, docCount)
 		if err != nil {
 			return nil, fmt.Errorf("for field %s, make sure that size >= 0", k)
 		}
 		return &ArrayGenerator{EmptyGenerator: eg, Size: v.Size, Generator: g}, nil
 	case "object":
-		g, err := NewGeneratorsFromMap(v.ObjectContent, shortNames)
+		g, err := NewGeneratorsFromMap(v.ObjectContent, shortNames, docCount)
 		if err != nil {
 			return nil, err
 		}
@@ -521,7 +566,7 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 	case "ref":
 		_, ok := mapRef[v.ID]
 		if !ok {
-			g, err := NewGenerator("", v.RefContent, shortNames)
+			g, err := NewGenerator("", v.RefContent, shortNames, docCount)
 			if err != nil {
 				return nil, fmt.Errorf("for field %s, %s", k, err.Error())
 			}
@@ -536,10 +581,10 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool) (Generator, error
 }
 
 // NewGeneratorsFromMap creates a slice of generators based on a JSON configuration map
-func NewGeneratorsFromMap(content map[string]GeneratorJSON, shortNames bool) ([]Generator, error) {
+func NewGeneratorsFromMap(content map[string]GeneratorJSON, shortNames bool, docCount int) ([]Generator, error) {
 	gArr := make([]Generator, 0)
 	for k, v := range content {
-		g, err := NewGenerator(k, &v, shortNames)
+		g, err := NewGenerator(k, &v, shortNames, docCount)
 		if err != nil {
 			return nil, err
 		}

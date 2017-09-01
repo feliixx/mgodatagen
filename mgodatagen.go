@@ -75,9 +75,9 @@ type ShardingConfig struct {
 }
 
 // Create an array generator to generate x json documetns at the same time
-func getGenerator(content map[string]rg.GeneratorJSON, batchSize int, shortNames bool) (*rg.ArrayGenerator, error) {
+func getGenerator(content map[string]rg.GeneratorJSON, batchSize int, shortNames bool, docCount int) (*rg.ArrayGenerator, error) {
 	// create the global generator, used to generate 1000 items at a time
-	g, err := rg.NewGeneratorsFromMap(content, shortNames)
+	g, err := rg.NewGeneratorsFromMap(content, shortNames, docCount)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating generators from configuration file:\n\tcause: %s", err.Error())
 	}
@@ -191,7 +191,7 @@ func insertInDB(coll *Collection, c *mgo.Collection, shortNames bool) error {
 		nbInsertingGoRoutines = 1
 		docBufferSize = 1
 	}
-	generator, err := getGenerator(coll.Content, batchSize, shortNames)
+	generator, err := getGenerator(coll.Content, batchSize, shortNames, coll.Count)
 	if err != nil {
 		return err
 	}
@@ -259,7 +259,7 @@ func insertInDB(coll *Collection, c *mgo.Collection, shortNames bool) error {
 		// if nb of remaining docs to insert < 1000, re generate a generator of smaller size
 		if (coll.Count-count) < 1000 && coll.Count > 1000 {
 			batchSize = coll.Count - count
-			generator, err = getGenerator(coll.Content, batchSize, shortNames)
+			generator, err = getGenerator(coll.Content, batchSize, shortNames, coll.Count)
 			if err != nil {
 				close(record)
 				bar.Finish()
@@ -336,7 +336,7 @@ func printCollStats(c *mgo.Collection) error {
 
 // pretty print an array of bson.M documents
 func prettyPrintBSONArray(coll *Collection, shortNames bool) error {
-	g, err := rg.NewGeneratorsFromMap(coll.Content, shortNames)
+	g, err := rg.NewGeneratorsFromMap(coll.Content, shortNames, coll.Count)
 	if err != nil {
 		return fmt.Errorf("fail to prettyPrint JSON doc:\n\tcause: %s", err.Error())
 	}

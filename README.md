@@ -213,9 +213,29 @@ Generate random string of a certain length. String is composed of char within th
     "type": "string",          // required
     "nullPercentage": <int>,   // optional 
     "maxDistinctValue": <int>, // optional
+    "unique": <bool>,          // optional, see details below 
     "minLength": <int>,        // required,  must be >= 0 
     "maxLength": <int>         // required,  must be >= minLength
 }
+```
+
+#### Unique String
+
+if `unique` is set to true, the field will only contains unique strings. Unique strings 
+have a **fixed length**, `minLength` is taken as length for the string. 
+There is  `64^x`  possible unique string for strings of length `x`. This number has to 
+be inferior or equal to the number of documents you want to generate. 
+For example, if you want unique strings of length 3, the is `64 * 64 * 64 = 262144` possible 
+strings
+
+They will look like 
+
+```
+"aaa",
+"aab",
+"aac",
+"aad",
+...
 ```
 
 ### Int 

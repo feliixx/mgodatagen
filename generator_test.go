@@ -69,7 +69,7 @@ func getGeneratorFromFile(shortNames bool) (rg.Generator, error) {
 	if err != nil {
 		return nil, fmt.Errorf("JSON error: %v", err.Error())
 	}
-	generators, err := rg.NewGeneratorsFromMap(collectionList[0].Content, shortNames)
+	generators, err := rg.NewGeneratorsFromMap(collectionList[0].Content, shortNames, 100000)
 	if err != nil {
 		return nil, fmt.Errorf("Config error: %v", err.Error())
 	}

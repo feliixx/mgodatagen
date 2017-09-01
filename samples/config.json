@@ -1,4 +1,4 @@
-[{  
+ [{  
    "database": "test", 
    "collection": "test",
    "count": 1000000,
