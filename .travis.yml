@@ -23,7 +23,7 @@ services:
 
 before_script: 
   - go build 
-  - ./setup_osx.sh 
+  - scripts/setup_osx.sh 
 script:
   - go test -v ./...
   - go test -bench=. -benchmem
