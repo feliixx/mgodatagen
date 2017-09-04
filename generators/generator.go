@@ -74,21 +74,21 @@ type GeneratorJSON struct {
 	// For `string` type only. If set to 'true', string will be unique
 	Unique bool `json:"unique"`
 	// For `string` and `binary` type only. Specify the Min length of the object to generate
-	MinLength int32 `json:"MinLength"`
+	MinLength int32 `json:"minLength"`
 	// For `string` and `binary` type only. Specify the Max length of the object to generate
-	MaxLength int32 `json:"MaxLength"`
+	MaxLength int32 `json:"maxLength"`
 	// For `int` type only. Lower bound for the int32 to generate
-	MinInt32 int32 `json:"MinInt"`
+	MinInt32 int32 `json:"minInt"`
 	// For `int` type only. Higher bound for the int32 to generate
-	MaxInt32 int32 `json:"MaxInt"`
+	MaxInt32 int32 `json:"maxInt"`
 	// For `long` type only. Lower bound for the int64 to generate
-	MinInt64 int64 `json:"MinLong"`
+	MinInt64 int64 `json:"minLong"`
 	// For `long` type only. Higher bound for the int64 to generate
-	MaxInt64 int64 `json:"MaxLong"`
+	MaxInt64 int64 `json:"maxLong"`
 	// For `double` type only. Lower bound for the float64 to generate
-	MinFloat64 float64 `json:"MinDouble"`
+	MinFloat64 float64 `json:"minDouble"`
 	// For `double` type only. Higher bound for the float64 to generate
-	MaxFloat64 float64 `json:"MaxDouble"`
+	MaxFloat64 float64 `json:"maxDouble"`
 	// For `array` only. Size of the array
 	Size int `json:"size"`
 	// For `array` only. GeneratorJSON to fill the array. Need to
@@ -100,7 +100,7 @@ type GeneratorJSON struct {
 	// For `fromArray` only. If specified, the generator pick one of the item of the array
 	In []interface{} `json:"in"`
 	// For `date` only. Lower bound for the date to generate
-	StartDate time.Time `json:"StartDate"`
+	StartDate time.Time `json:"startDate"`
 	// For `date` only. Higher bound for the date to generate
 	EndDate time.Time `json:"endDate"`
 	// For `constant` type only. Value of the constant field
@@ -449,9 +449,12 @@ func recur(data []byte, stringSize int, index int, docCount int) {
 // array will look like (for stringSize=3)
 // [ "aaa", "aab", "aac", ...]
 func getUniqueArray(docCount int, stringSize int) ([]interface{}, error) {
-	maxNumber := int(math.Pow(float64(len(letterBytes)), float64(stringSize)))
-	if docCount > maxNumber {
-		return nil, fmt.Errorf("doc count is greater than possible value for string of size %v, max is %v ( %v^%v) ", stringSize, maxNumber, len(letterBytes), stringSize)
+	// if string size = 5, there is 1073741824 possible string, so don't bother checking collection count
+	if stringSize < 5 {
+		maxNumber := int(math.Pow(float64(len(letterBytes)), float64(stringSize)))
+		if docCount > maxNumber {
+			return nil, fmt.Errorf("doc count is greater than possible value for string of size %v, max is %v ( %v^%v) ", stringSize, maxNumber, len(letterBytes), stringSize)
+		}
 	}
 	result = make([]interface{}, docCount)
 	data := make([]byte, stringSize)
