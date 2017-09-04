@@ -18,6 +18,7 @@ import (
 	"github.com/jessevdk/go-flags"
 	"gopkg.in/cheggaaa/pb.v2"
 
+	cf "github.com/feliixx/mgodatagen/config"
 	rg "github.com/feliixx/mgodatagen/generators"
 )
 
@@ -25,57 +26,8 @@ const (
 	version = "0.1" // current version of mgodatagen
 )
 
-// Collection struct storing global collection info
-type Collection struct {
-	// Database to use
-	DB string `json:"database"`
-	// Collection name in the database
-	Name string `json:"collection"`
-	// Number of documents to insert in the collection
-	Count int `json:"count"`
-	// Schema of the documents for this collection
-	Content map[string]rg.GeneratorJSON `json:"content"`
-	// Compression level for a collection. Available for `WiredTiger` only.
-	// can be none|snappy|zlib. Default is "snappy"
-	CompressionLevel string `json:"compressionLevel"`
-	// List of indexes to build on this collection
-	Indexes []Index `json:"indexes"`
-	// Sharding information for sharded collection
-	ShardConfig ShardingConfig `json:"shardConfig"`
-}
-
-// Index struct used to create an index from `db.runCommand({"createIndexes": "collName", ...})`
-type Index struct {
-	Name                    string         `bson:"name"`
-	Key                     bson.M         `bson:"key"`
-	Unique                  bool           `bson:"unique,omitempty"`
-	DropDups                bool           `bson:"dropDups,omitempty"`
-	Background              bool           `bson:"background,omitempty"`
-	Sparse                  bool           `bson:"sparse,omitempty"`
-	Bits                    int            `bson:"bits,omitempty"`
-	Min                     float64        `bson:"min,omitempty"`
-	Max                     float64        `bson:"max,omitempty"`
-	BucketSize              float64        `bson:"bucketSize,omitempty"`
-	ExpireAfter             int            `bson:"expireAfterSeconds,omitempty"`
-	Weights                 bson.M         `bson:"weights,omitempty"`
-	DefaultLanguage         string         `bson:"default_language,omitempty"`
-	LanguageOverride        string         `bson:"language_override,omitempty"`
-	TextIndexVersion        int            `bson:"textIndexVersion,omitempty"`
-	PartialFilterExpression bson.M         `bson:"partialFilterExpression,omitempty"`
-	Collation               *mgo.Collation `bson:"collation,omitempty"`
-}
-
-// ShardingConfig struct that holds information to shard the collection
-type ShardingConfig struct {
-	ShardCollection  string         `bson:"shardCollection"`
-	Key              bson.M         `bson:"key"`
-	unique           bool           `bson:"unique"`
-	NumInitialChunks int            `bson:"numInitialChunks,omitempty"`
-	Collation        *mgo.Collation `bson:"collation,omitempty"`
-}
-
 // Create an array generator to generate x json documetns at the same time
-func getGenerator(content map[string]rg.GeneratorJSON, batchSize int, shortNames bool, docCount int) (*rg.ArrayGenerator, error) {
+func getGenerator(content map[string]cf.GeneratorJSON, batchSize int, shortNames bool, docCount int) (*rg.ArrayGenerator, error) {
 	// create the global generator, used to generate 1000 items at a time
 	g, err := rg.NewGeneratorsFromMap(content, shortNames, docCount)
 	if err != nil {
@@ -123,7 +75,7 @@ func connectToDB(conn *Connection) (*mgo.Session, error) {
 }
 
 // create a collection with specific options
-func createCollection(coll *Collection, session *mgo.Session, indexOnly bool, appendToColl bool) (*mgo.Collection, error) {
+func createCollection(coll *cf.Collection, session *mgo.Session, indexOnly bool, appendToColl bool) (*mgo.Collection, error) {
 	c := session.DB(coll.DB).C(coll.Name)
 	// if indexOnly or append mode, just return the collection as it already exists
 	if indexOnly || appendToColl {
@@ -157,8 +109,8 @@ func createCollection(coll *Collection, session *mgo.Session, indexOnly bool, ap
 			return nil, fmt.Errorf("wrong value for 'shardConfig.key', can't be null and must be an object like {'_id': 'hashed'}, found: %v", coll.ShardConfig.Key)
 		}
 		// index to shard the collection
-		index := Index{Name: "shardKey", Key: coll.ShardConfig.Key}
-		err := c.Database.Run(bson.D{{Name: "createIndexes", Value: c.Name}, {Name: "indexes", Value: [1]Index{index}}}, &result)
+		index := cf.Index{Name: "shardKey", Key: coll.ShardConfig.Key}
+		err := c.Database.Run(bson.D{{Name: "createIndexes", Value: c.Name}, {Name: "indexes", Value: [1]cf.Index{index}}}, &result)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %s", index.Key, err.Error())
 		}
@@ -177,7 +129,7 @@ func createCollection(coll *Collection, session *mgo.Session, indexOnly bool, ap
 }
 
 // insert documents in DB, and then close the session
-func insertInDB(coll *Collection, c *mgo.Collection, shortNames bool) error {
+func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 	// number of document to insert in each bulkinsert. Default is 1000
 	// as mongodb insert 1000 docs at a time max
 	batchSize := 1000
@@ -286,7 +238,7 @@ func insertInDB(coll *Collection, c *mgo.Collection, shortNames bool) error {
 
 // create index on generated collections. Use run command as there is no wrapper
 // like dropIndexes() in current mgo driver.
-func ensureIndex(coll *Collection, c *mgo.Collection) error {
+func ensureIndex(coll *cf.Collection, c *mgo.Collection) error {
 	if len(coll.Indexes) == 0 {
 		fmt.Printf("No index to build for collection %s\n\n", coll.Name)
 		return nil
@@ -335,7 +287,7 @@ func printCollStats(c *mgo.Collection) error {
 }
 
 // pretty print an array of bson.M documents
-func prettyPrintBSONArray(coll *Collection, shortNames bool) error {
+func prettyPrintBSONArray(coll *cf.Collection, shortNames bool) error {
 	g, err := rg.NewGeneratorsFromMap(coll.Content, shortNames, coll.Count)
 	if err != nil {
 		return fmt.Errorf("fail to prettyPrint JSON doc:\n\tcause: %s", err.Error())
@@ -417,7 +369,7 @@ func main() {
 	}
 	// map to a json object
 	fmt.Println("Parsing configuration file...")
-	var collectionList []Collection
+	var collectionList []cf.Collection
 	err = json.Unmarshal(file, &collectionList)
 	if err != nil {
 		printErrorAndExit(fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%s", err.Error()))

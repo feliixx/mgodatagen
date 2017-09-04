@@ -1,4 +1,4 @@
-package main
+package generators
 
 import (
 	"encoding/json"
@@ -9,29 +9,29 @@ import (
 
 	"github.com/globalsign/mgo/bson"
 
-	rg "github.com/feliixx/mgodatagen/generators"
+	cf "github.com/feliixx/mgodatagen/config"
 )
 
 var (
-	source               = rg.NewRandSource()
+	source               = NewRandSource()
 	sd, _                = time.Parse(time.RFC3339, "2010-01-01T00:00:00-00:00")
 	ed, _                = time.Parse(time.RFC3339, "2016-01-01T00:00:00-00:00")
-	eg                   = rg.EmptyGenerator{K: "key", NullPercentage: 100, T: 8}
+	eg                   = EmptyGenerator{K: "key", NullPercentage: 100, T: 8}
 	constArr             = []interface{}{"2012-10-10", "2012-12-12", "2014-01-01", "2016-05-05"}
-	stringGenerator      = &rg.StringGenerator{EmptyGenerator: rg.EmptyGenerator{K: "key", NullPercentage: 100, T: 0}, MinLength: 2, MaxLength: 5}
-	int32Generator       = &rg.Int32Generator{EmptyGenerator: rg.EmptyGenerator{K: "key", NullPercentage: 100, T: 2}, Min: 0, Max: 100}
-	int64Generator       = &rg.Int64Generator{EmptyGenerator: rg.EmptyGenerator{K: "key", NullPercentage: 100, T: 3}, Min: 0, Max: 100}
-	float64Generator     = &rg.Float64Generator{EmptyGenerator: rg.EmptyGenerator{K: "key", NullPercentage: 100, T: 4}, Mean: 0, StdDev: 50}
-	dateGenerator        = &rg.DateGenerator{EmptyGenerator: rg.EmptyGenerator{K: "key", NullPercentage: 100, T: 7}, StartDate: sd.Unix(), Delta: (ed.Unix() - sd.Unix())}
-	boolGenerator        = &rg.BoolGenerator{EmptyGenerator: rg.EmptyGenerator{K: "key", NullPercentage: 100, T: 1}}
-	binaryGenerator      = &rg.BinaryDataGenerator{EmptyGenerator: eg, MinLength: 30, MaxLength: 30}
-	positionGenerator    = &rg.PositionGenerator{EmptyGenerator: eg}
-	arrayGeneratorString = &rg.ArrayGenerator{EmptyGenerator: eg, Size: 10, Generator: stringGenerator}
-	arrayGeneratorBool   = &rg.ArrayGenerator{EmptyGenerator: eg, Size: 10, Generator: boolGenerator}
-	autoIncrGenerator    = &rg.AutoIncrementGenerator{EmptyGenerator: rg.EmptyGenerator{K: "key", NullPercentage: 100, T: 3}, Counter: 0}
-	objectIDGenerator    = &rg.ObjectIDGenerator{EmptyGenerator: rg.EmptyGenerator{K: "key", NullPercentage: 100, T: 5}}
-	refGenerator         = &rg.RefGenerator{EmptyGenerator: eg, ID: 1, Generator: objectIDGenerator}
-	fromArrayGenerator   = &rg.FromArrayGenerator{EmptyGenerator: eg, Array: constArr, Size: int32(len(constArr)), Index: -1}
+	stringGenerator      = &StringGenerator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 0}, MinLength: 2, MaxLength: 5}
+	int32Generator       = &Int32Generator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 2}, Min: 0, Max: 100}
+	int64Generator       = &Int64Generator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 3}, Min: 0, Max: 100}
+	float64Generator     = &Float64Generator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 4}, Mean: 0, StdDev: 50}
+	dateGenerator        = &DateGenerator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 7}, StartDate: sd.Unix(), Delta: (ed.Unix() - sd.Unix())}
+	boolGenerator        = &BoolGenerator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 1}}
+	binaryGenerator      = &BinaryDataGenerator{EmptyGenerator: eg, MinLength: 30, MaxLength: 30}
+	positionGenerator    = &PositionGenerator{EmptyGenerator: eg}
+	arrayGeneratorString = &ArrayGenerator{EmptyGenerator: eg, Size: 10, Generator: stringGenerator}
+	arrayGeneratorBool   = &ArrayGenerator{EmptyGenerator: eg, Size: 10, Generator: boolGenerator}
+	autoIncrGenerator    = &AutoIncrementGenerator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 3}, Counter: 0}
+	objectIDGenerator    = &ObjectIDGenerator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 5}}
+	refGenerator         = &RefGenerator{EmptyGenerator: eg, ID: 1, Generator: objectIDGenerator}
+	fromArrayGenerator   = &FromArrayGenerator{EmptyGenerator: eg, Array: constArr, Size: int32(len(constArr)), Index: -1}
 )
 
 type expected struct {
@@ -59,24 +59,24 @@ type cst struct {
 	Key2 int32  `json:"key2"`
 }
 
-func getGeneratorFromFile(shortNames bool) (rg.Generator, error) {
-	file, err := ioutil.ReadFile("samples/config.json")
+func getGeneratorFromFile(shortNames bool) (Generator, error) {
+	file, err := ioutil.ReadFile("../samples/config.json")
 	if err != nil {
 		return nil, fmt.Errorf("File error: %v", err.Error())
 	}
-	var collectionList []Collection
+	var collectionList []cf.Collection
 	err = json.Unmarshal(file, &collectionList)
 	if err != nil {
 		return nil, fmt.Errorf("JSON error: %v", err.Error())
 	}
-	generators, err := rg.NewGeneratorsFromMap(collectionList[0].Content, shortNames, 100000)
+	generators, err := NewGeneratorsFromMap(collectionList[0].Content, shortNames, 100000)
 	if err != nil {
 		return nil, fmt.Errorf("Config error: %v", err.Error())
 	}
-	eg := rg.EmptyGenerator{K: "", NullPercentage: 0, T: 6}
-	return &rg.ArrayGenerator{EmptyGenerator: eg,
+	eg := EmptyGenerator{K: "", NullPercentage: 0, T: 6}
+	return &ArrayGenerator{EmptyGenerator: eg,
 		Size:      1000,
-		Generator: &rg.ObjectGenerator{EmptyGenerator: eg, Generators: generators}}, nil
+		Generator: &ObjectGenerator{EmptyGenerator: eg, Generators: generators}}, nil
 }
 
 func BenchmarkExists(b *testing.B) {

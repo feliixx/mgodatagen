@@ -34,6 +34,8 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo/bson"
+
+	cf "github.com/feliixx/mgodatagen/config"
 )
 
 const (
@@ -62,57 +64,6 @@ var (
 	result       []interface{}
 	currentIndex int
 )
-
-// GeneratorJSON struct containing all possible options
-type GeneratorJSON struct {
-	// Type of object to genereate.
-	Type string `json:"type"`
-	// Percentage of documents that won't contains this field
-	NullPercentage int64 `json:"nullPercentage"`
-	// Maximum number of distinct value for this field
-	MaxDistinctValue int `json:"maxDistinctValue"`
-	// For `string` type only. If set to 'true', string will be unique
-	Unique bool `json:"unique"`
-	// For `string` and `binary` type only. Specify the Min length of the object to generate
-	MinLength int32 `json:"MinLength"`
-	// For `string` and `binary` type only. Specify the Max length of the object to generate
-	MaxLength int32 `json:"MaxLength"`
-	// For `int` type only. Lower bound for the int32 to generate
-	MinInt32 int32 `json:"MinInt"`
-	// For `int` type only. Higher bound for the int32 to generate
-	MaxInt32 int32 `json:"MaxInt"`
-	// For `long` type only. Lower bound for the int64 to generate
-	MinInt64 int64 `json:"MinLong"`
-	// For `long` type only. Higher bound for the int64 to generate
-	MaxInt64 int64 `json:"MaxLong"`
-	// For `double` type only. Lower bound for the float64 to generate
-	MinFloat64 float64 `json:"MinDouble"`
-	// For `double` type only. Higher bound for the float64 to generate
-	MaxFloat64 float64 `json:"MaxDouble"`
-	// For `array` only. Size of the array
-	Size int `json:"size"`
-	// For `array` only. GeneratorJSON to fill the array. Need to
-	// pass a pointer here to avoid 'invalid recursive type' error
-	ArrayContent *GeneratorJSON `json:"arrayContent"`
-	// For `object` only. List of GeneratorJSON to generate the content
-	// of the object
-	ObjectContent map[string]GeneratorJSON `json:"objectContent"`
-	// For `fromArray` only. If specified, the generator pick one of the item of the array
-	In []interface{} `json:"in"`
-	// For `date` only. Lower bound for the date to generate
-	StartDate time.Time `json:"StartDate"`
-	// For `date` only. Higher bound for the date to generate
-	EndDate time.Time `json:"endDate"`
-	// For `constant` type only. Value of the constant field
-	ConstVal interface{} `json:"constVal"`
-	// For `autoincrement` type only. Start value
-	Counter int64 `json:"counter"`
-	// For `ref` type only. Used to retrieve the array storing the value
-	// for this field
-	ID int `json:"id"`
-	// For `ref` type only. generator for the field
-	RefContent *GeneratorJSON `json:"refContent"`
-}
 
 // RandSource stores ressources to get random value. Keep both as
 // src.int63() is faster than r.int63().
@@ -463,7 +414,7 @@ func getUniqueArray(docCount int, stringSize int) ([]interface{}, error) {
 }
 
 // NewGenerator returns a new Generator based on a JSON configuration
-func NewGenerator(k string, v *GeneratorJSON, shortNames bool, docCount int) (Generator, error) {
+func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) (Generator, error) {
 	intType, ok := mapType[v.Type]
 	if !ok {
 		intType = 8
@@ -581,7 +532,7 @@ func NewGenerator(k string, v *GeneratorJSON, shortNames bool, docCount int) (Ge
 }
 
 // NewGeneratorsFromMap creates a slice of generators based on a JSON configuration map
-func NewGeneratorsFromMap(content map[string]GeneratorJSON, shortNames bool, docCount int) ([]Generator, error) {
+func NewGeneratorsFromMap(content map[string]cf.GeneratorJSON, shortNames bool, docCount int) ([]Generator, error) {
 	gArr := make([]Generator, 0)
 	for k, v := range content {
 		g, err := NewGenerator(k, &v, shortNames, docCount)
