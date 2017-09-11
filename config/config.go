@@ -105,4 +105,12 @@ type GeneratorJSON struct {
 	ID int `json:"id"`
 	// For `ref` type only. generator for the field
 	RefContent *GeneratorJSON `json:"refContent"`
+	// For `countAggregator` and `valueAggregator` only
+	Collection string `json:"collection"`
+	// For `countAggregator` and `valueAggregator` onl
+	Database string `json:"database"`
+	// For `countAggregator` and `valueAggregator` only
+	Field string `json:"field"`
+	// For `countAggregator` and `valueAggregator` only
+	Query bson.M `json:"query"`
 }

@@ -26,6 +26,18 @@ const (
 	version = "0.1" // current version of mgodatagen
 )
 
+// DResult stores teh result of a `distinct` command
+type DResult struct {
+	Values []interface{} `bson:"values"`
+	Ok     bool          `bson:"ok"`
+}
+
+// CResult stores teh result of a `count` command
+type CResult struct {
+	N  int32 `bson:"n"`
+	Ok bool  `bson:"ok"`
+}
+
 // Create an array generator to generate x json documetns at the same time
 func getGenerator(content map[string]cf.GeneratorJSON, batchSize int, shortNames bool, docCount int) (*rg.ArrayGenerator, error) {
 	// create the global generator, used to generate 1000 items at a time
@@ -233,7 +245,72 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 	if ctx.Err() != nil {
 		return <-errs
 	}
-	return ctx.Err()
+	return updateWithAggregators(coll, c, shortNames)
+}
+
+// Update documents with pre-computed aggregations
+func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
+	aggArr, err := rg.NewAggregatorFromMap(coll.Content, shortNames)
+	if err != nil {
+		return err
+	}
+	for _, agg := range aggArr {
+
+		localVar := "_id"
+		localKey := "_id"
+		for k, v := range agg.Query {
+			vStr := fmt.Sprintf("%v", v)
+			if len(vStr) >= 2 && vStr[:2] == "$$" {
+				localVar = vStr[2:]
+				localKey = k
+			}
+		}
+		var result DResult
+		err = c.Database.Run(bson.D{{Name: "distinct", Value: c.Name}, {Name: "key", Value: localVar}}, &result)
+		if err != nil {
+			return err
+		}
+		switch agg.CountOnly {
+		case true:
+			var r CResult
+			for _, v := range result.Values {
+				command := bson.D{{Name: "count", Value: agg.Collection}}
+				if agg.Query != nil {
+					agg.Query[localKey] = v
+					command = append(command, bson.DocElem{Name: "query", Value: agg.Query})
+				}
+
+				err := c.Database.Session.DB(agg.Database).Run(command, &r)
+				if err != nil {
+					return err
+				}
+				err = c.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.N}})
+				if err != nil {
+					return err
+				}
+			}
+		case false:
+			var r DResult
+			for _, v := range result.Values {
+				agg.Query[localKey] = v
+
+				err = c.Database.Session.DB(agg.Database).Run(bson.D{
+					{Name: "distinct", Value: agg.Collection},
+					{Name: "key", Value: agg.Field},
+					{Name: "query", Value: agg.Query}}, &r)
+
+				if err != nil {
+					return err
+				}
+
+				err = c.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.Values}})
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // create index on generated collections. Use run command as there is no wrapper

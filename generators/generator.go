@@ -65,57 +65,6 @@ var (
 	currentIndex int
 )
 
-// GeneratorJSON struct containing all possible options
-type GeneratorJSON struct {
-	// Type of object to genereate.
-	Type string `json:"type"`
-	// Percentage of documents that won't contains this field
-	NullPercentage int64 `json:"nullPercentage"`
-	// Maximum number of distinct value for this field
-	MaxDistinctValue int `json:"maxDistinctValue"`
-	// For `string` type only. If set to 'true', string will be unique
-	Unique bool `json:"unique"`
-	// For `string` and `binary` type only. Specify the Min length of the object to generate
-	MinLength int32 `json:"minLength"`
-	// For `string` and `binary` type only. Specify the Max length of the object to generate
-	MaxLength int32 `json:"maxLength"`
-	// For `int` type only. Lower bound for the int32 to generate
-	MinInt32 int32 `json:"minInt"`
-	// For `int` type only. Higher bound for the int32 to generate
-	MaxInt32 int32 `json:"maxInt"`
-	// For `long` type only. Lower bound for the int64 to generate
-	MinInt64 int64 `json:"minLong"`
-	// For `long` type only. Higher bound for the int64 to generate
-	MaxInt64 int64 `json:"maxLong"`
-	// For `double` type only. Lower bound for the float64 to generate
-	MinFloat64 float64 `json:"minDouble"`
-	// For `double` type only. Higher bound for the float64 to generate
-	MaxFloat64 float64 `json:"maxDouble"`
-	// For `array` only. Size of the array
-	Size int `json:"size"`
-	// For `array` only. GeneratorJSON to fill the array. Need to
-	// pass a pointer here to avoid 'invalid recursive type' error
-	ArrayContent *GeneratorJSON `json:"arrayContent"`
-	// For `object` only. List of GeneratorJSON to generate the content
-	// of the object
-	ObjectContent map[string]GeneratorJSON `json:"objectContent"`
-	// For `fromArray` only. If specified, the generator pick one of the item of the array
-	In []interface{} `json:"in"`
-	// For `date` only. Lower bound for the date to generate
-	StartDate time.Time `json:"startDate"`
-	// For `date` only. Higher bound for the date to generate
-	EndDate time.Time `json:"endDate"`
-	// For `constant` type only. Value of the constant field
-	ConstVal interface{} `json:"constVal"`
-	// For `autoincrement` type only. Start value
-	Counter int64 `json:"counter"`
-	// For `ref` type only. Used to retrieve the array storing the value
-	// for this field
-	ID int `json:"id"`
-	// For `ref` type only. generator for the field
-	RefContent *GeneratorJSON `json:"refContent"`
-}
-
 // RandSource stores ressources to get random value. Keep both as
 // src.int63() is faster than r.int63().
 type RandSource struct {
@@ -432,6 +381,17 @@ func (g *RefGenerator) Value(rnd *RandSource) interface{} {
 	return v
 }
 
+// Aggregator is a type of generator that use another collection
+// to compute aggregation on it
+type Aggregator struct {
+	EmptyGenerator
+	Collection string
+	Database   string
+	Field      string
+	Query      bson.M
+	CountOnly  bool
+}
+
 // recursively generate all possible combinaison with repeat
 func recur(data []byte, stringSize int, index int, docCount int) {
 	for i := 0; i < len(letterBytes); i++ {
@@ -580,8 +540,34 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) 
 			return &RefGenerator{EmptyGenerator: eg, ID: v.ID, Generator: g}, nil
 		}
 		return &FromArrayGenerator{EmptyGenerator: eg, Array: mapRef[v.ID], Size: int32(len(mapRef[v.ID])), Index: -1}, nil
+	case "countAggregator", "valueAggregator":
+		return nil, nil
 	default:
-		return &BoolGenerator{EmptyGenerator: eg}, nil
+		return nil, fmt.Errorf("invalid type %v for field %v", v.Type, k)
+	}
+}
+
+// NewAggregator returns a new Aggregator based on a JSON configuration
+func NewAggregator(k string, v *cf.GeneratorJSON, shortNames bool) (*Aggregator, error) {
+	// if shortNames option is specified, keep only two letters for each field. This is a basic
+	// optimisation to save space in mongodb and during db exchanges
+	if shortNames && k != "_id" && len(k) > 2 {
+		k = k[:2]
+	}
+	eg := EmptyGenerator{K: k}
+	switch v.Type {
+	case "countAggregator":
+		if v.Query == nil || len(v.Query) == 0 {
+			return nil, fmt.Errorf("for field %v, query can't be null or empty", k)
+		}
+		return &Aggregator{EmptyGenerator: eg, Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, CountOnly: true}, nil
+	case "valueAggregator":
+		if v.Query == nil || len(v.Query) == 0 {
+			return nil, fmt.Errorf("for field %v, query can't be null or empty", k)
+		}
+		return &Aggregator{EmptyGenerator: eg, Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, CountOnly: false}, nil
+	default:
+		return nil, nil
 	}
 }
 
@@ -593,7 +579,24 @@ func NewGeneratorsFromMap(content map[string]cf.GeneratorJSON, shortNames bool, 
 		if err != nil {
 			return nil, err
 		}
-		gArr = append(gArr, g)
+		if g != nil {
+			gArr = append(gArr, g)
+		}
 	}
 	return gArr, nil
+}
+
+//NewAggregatorFromMap creates a slice of aggregator based on a JSON configuration map
+func NewAggregatorFromMap(content map[string]cf.GeneratorJSON, shortNames bool) ([]Aggregator, error) {
+	agArr := make([]Aggregator, 0)
+	for k, v := range content {
+		a, err := NewAggregator(k, &v, shortNames)
+		if err != nil {
+			return nil, err
+		}
+		if a != nil {
+			agArr = append(agArr, *a)
+		}
+	}
+	return agArr, nil
 }

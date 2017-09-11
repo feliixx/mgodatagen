@@ -202,6 +202,9 @@ List of custom <generator> types:
 - [autoincrement](#autoincrement)
 - [ref](#ref)
 - [fromArray](#fromarray)
+- [countAggregator](#countAggregator)
+- [valueAggregator](#valueAggregator)
+
 
 ### String
 
@@ -450,4 +453,122 @@ Randomly pick value from an array as value for the field
       ...
     ]
 }
+```
+### CountAggregator
+
+Count documents from <database>.<collection> matching a specific query. To use a 
+variable of the document in the query, prefix it with "$$"
+
+For the moment, the query can't be empty or null
+
+
+
+```JSON5
+"fieldName": {
+  "type": "countAggregator", // required
+  "database": <string>,      // required, db to use to perform aggregation
+  "collection": <string>,    // required, collection to use to perform aggregation
+  "query": <object>          // required, query that selects which documents to count in the collection 
+}
+```
+**Example:**
+
+Assuming that the collection `first` contains: 
+
+```JSON5
+{"_id": 1, "field1": 1, "field2": "a" }
+{"_id": 2, "field1": 1, "field2": "b" }
+{"_id": 3, "field1": 2, "field2": "c" }
+```
+
+and that the generator for collection `second` is: 
+
+```JSON5
+{
+  "database": "test",
+  "collection": "second",
+  "count": 2,
+  "content": {
+    "_id": {
+      "type": "autoincrement",
+      "counter": 0
+    },
+    "count": {
+      "type": "countAggregator",
+      "database": "test",
+      "collection": "first",
+      "query": {
+        "field1": "$$_id"
+      }
+    }
+  }
+}
+```
+
+The collection `second` will contain: 
+
+```JSON5
+{"_id": 1, "count": 2}
+{"_id": 2, "count": 1}
+```
+
+### ValueAggregator 
+
+Get distinct values for a specific field for documents from 
+<database>.<collection> matching a specific query. To use a variable of 
+the document in the query, prefix it with "$$"
+
+For the moment, the query can't be empty or null
+
+```JSON5
+"fieldName": {
+  "type": "valueAggregator", // required
+  "database": <string>,      // required, db to use to perform aggregation
+  "collection": <string>,    // required, collection to use to perform aggregation
+  "key": <string>,           // required, the field for which to return distinct values. 
+  "query": <object>          // required, query that specifies the documents from which 
+                             // to retrieve the distinct values
+}
+```
+
+**Example**: 
+
+Assuming that the collection `first` contains: 
+
+```JSON5
+{"_id": 1, "field1": 1, "field2": "a" }
+{"_id": 2, "field1": 1, "field2": "b" }
+{"_id": 3, "field1": 2, "field2": "c" }
+```
+
+and that the generator for collection `second` is: 
+
+```JSON5
+{
+  "database": "test",
+  "collection": "second",
+  "count": 2,
+  "content": {
+    "_id": {
+      "type": "autoincrement",
+      "counter": 0
+    },
+    "count": {
+      "type": "valueAggregator",
+      "database": "test",
+      "collection": "first",
+      "key": "field2",
+      "values": {
+        "field1": "$$_id"
+      }
+    }
+  }
+}
+```
+
+The collection `second` will contain: 
+
+```JSON5
+{"_id": 1, "values": ["a", "b"]}
+{"_id": 2, "values": ["c"]}
 ```

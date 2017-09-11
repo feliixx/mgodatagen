@@ -1,0 +1,34 @@
+[{
+	"database": "test",
+	"collection": "test",
+	"count": 10000,
+	"content": {
+		"link": {
+			"type": "fromArray",
+			"in": [1, 2, 3, 4, 5]
+		},
+		"field": {
+			"type": "fromArray",
+			"nullPercentage": 40,
+			"in": ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
+		}
+	}
+},
+{
+	"database": "test",
+	"collection": "agg", 
+	"count": 5,
+	"content": {
+		"_id": {
+			"type": "autoincrement",
+			"counter": 0
+		}, 
+		"AG-FI": {
+			"type": "countAggregator",
+			"collection": "test",
+			"database": "test",
+			"field": "field",
+			"query": {"link": "$$_id"}
+		}
+	}
+}]
