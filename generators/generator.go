@@ -351,15 +351,28 @@ type ConstGenerator struct {
 // Value always returns the same value as specified in the config file
 func (g *ConstGenerator) Value(rnd *RandSource) interface{} { return g.Val }
 
-// AutoIncrementGenerator struct that implements Generator. Used to
+// AutoIncrementGenerator32 struct that implements Generator. Used to
 // generate auto-incremented int64
-type AutoIncrementGenerator struct {
+type AutoIncrementGenerator32 struct {
+	EmptyGenerator
+	Counter int32
+}
+
+// Value returns prev counter +1, starting from `g.counter`
+func (g *AutoIncrementGenerator32) Value(rnd *RandSource) interface{} {
+	g.Counter++
+	return g.Counter
+}
+
+// AutoIncrementGenerator64 struct that implements Generator. Used to
+// generate auto-incremented int64
+type AutoIncrementGenerator64 struct {
 	EmptyGenerator
 	Counter int64
 }
 
 // Value returns prev counter +1, starting from `g.counter`
-func (g *AutoIncrementGenerator) Value(rnd *RandSource) interface{} {
+func (g *AutoIncrementGenerator64) Value(rnd *RandSource) interface{} {
 	g.Counter++
 	return g.Counter
 }
@@ -389,7 +402,7 @@ type Aggregator struct {
 	Database   string
 	Field      string
 	Query      bson.M
-	CountOnly  bool
+	Mode       int
 }
 
 // recursively generate all possible combinaison with repeat
@@ -477,12 +490,14 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) 
 		if v.MaxInt32 == 0 || v.MaxInt32 <= v.MinInt32 {
 			return nil, fmt.Errorf("for field %s, make sure that MaxInt32 > MinInt32", k)
 		}
-		return &Int32Generator{EmptyGenerator: eg, Min: v.MinInt32, Max: v.MaxInt32}, nil
+		// Max = MaxInt32 + 1 so bound are inclusive
+		return &Int32Generator{EmptyGenerator: eg, Min: v.MinInt32, Max: v.MaxInt32 + 1}, nil
 	case "long":
 		if v.MaxInt64 == 0 || v.MaxInt64 <= v.MinInt64 {
 			return nil, fmt.Errorf("for field %s, make sure that MaxInt64 > MinInt64", k)
 		}
-		return &Int64Generator{EmptyGenerator: eg, Min: v.MinInt64, Max: v.MaxInt64}, nil
+		// Max = MaxInt64 + 1 so bound are inclusive
+		return &Int64Generator{EmptyGenerator: eg, Min: v.MinInt64, Max: v.MaxInt64 + 1}, nil
 	case "double":
 		if v.MaxFloat64 == 0 || v.MaxFloat64 <= v.MinFloat64 {
 			return nil, fmt.Errorf("for field %s, make sure that MaxFloat64 > MinFloat64", k)
@@ -527,7 +542,15 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) 
 	case "constant":
 		return &ConstGenerator{EmptyGenerator: eg, Val: v.ConstVal}, nil
 	case "autoincrement":
-		return &AutoIncrementGenerator{EmptyGenerator: eg, Counter: v.Counter}, nil
+		switch v.AutoType {
+		case "int":
+			return &AutoIncrementGenerator32{EmptyGenerator: eg, Counter: v.Start32}, nil
+		case "long":
+			return &AutoIncrementGenerator64{EmptyGenerator: eg, Counter: v.Start64}, nil
+		default:
+			return nil, fmt.Errorf("invalid type %v for field %v", v.Type, k)
+
+		}
 	case "ref":
 		_, ok := mapRef[v.ID]
 		if !ok {
@@ -540,7 +563,7 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) 
 			return &RefGenerator{EmptyGenerator: eg, ID: v.ID, Generator: g}, nil
 		}
 		return &FromArrayGenerator{EmptyGenerator: eg, Array: mapRef[v.ID], Size: int32(len(mapRef[v.ID])), Index: -1}, nil
-	case "countAggregator", "valueAggregator":
+	case "countAggregator", "valueAggregator", "boundAggregator":
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("invalid type %v for field %v", v.Type, k)
@@ -549,6 +572,15 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) 
 
 // NewAggregator returns a new Aggregator based on a JSON configuration
 func NewAggregator(k string, v *cf.GeneratorJSON, shortNames bool) (*Aggregator, error) {
+	if v.Query == nil || len(v.Query) == 0 {
+		return nil, fmt.Errorf("for field %v, query can't be null or empty", k)
+	}
+	if v.Database == "" {
+		return nil, fmt.Errorf("for field %v, database can't be null or empty", k)
+	}
+	if v.Collection == "" {
+		return nil, fmt.Errorf("for field %v, collection can't be null or empty", k)
+	}
 	// if shortNames option is specified, keep only two letters for each field. This is a basic
 	// optimisation to save space in mongodb and during db exchanges
 	if shortNames && k != "_id" && len(k) > 2 {
@@ -557,15 +589,17 @@ func NewAggregator(k string, v *cf.GeneratorJSON, shortNames bool) (*Aggregator,
 	eg := EmptyGenerator{K: k}
 	switch v.Type {
 	case "countAggregator":
-		if v.Query == nil || len(v.Query) == 0 {
-			return nil, fmt.Errorf("for field %v, query can't be null or empty", k)
-		}
-		return &Aggregator{EmptyGenerator: eg, Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, CountOnly: true}, nil
+		return &Aggregator{EmptyGenerator: eg, Collection: v.Collection, Database: v.Database, Query: v.Query, Mode: 0}, nil
 	case "valueAggregator":
-		if v.Query == nil || len(v.Query) == 0 {
-			return nil, fmt.Errorf("for field %v, query can't be null or empty", k)
+		if v.Field == "" {
+			return nil, fmt.Errorf("for field %v, field can't be null or empty", k)
 		}
-		return &Aggregator{EmptyGenerator: eg, Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, CountOnly: false}, nil
+		return &Aggregator{EmptyGenerator: eg, Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, Mode: 1}, nil
+	case "boundAggregator":
+		if v.Field == "" {
+			return nil, fmt.Errorf("for field %v, field can't be null or empty", k)
+		}
+		return &Aggregator{EmptyGenerator: eg, Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, Mode: 2}, nil
 	default:
 		return nil, nil
 	}
@@ -590,12 +624,14 @@ func NewGeneratorsFromMap(content map[string]cf.GeneratorJSON, shortNames bool, 
 func NewAggregatorFromMap(content map[string]cf.GeneratorJSON, shortNames bool) ([]Aggregator, error) {
 	agArr := make([]Aggregator, 0)
 	for k, v := range content {
-		a, err := NewAggregator(k, &v, shortNames)
-		if err != nil {
-			return nil, err
-		}
-		if a != nil {
+		switch v.Type {
+		case "countAggregator", "valueAggregator", "boundAggregator":
+			a, err := NewAggregator(k, &v, shortNames)
+			if err != nil {
+				return nil, err
+			}
 			agArr = append(agArr, *a)
+		default:
 		}
 	}
 	return agArr, nil

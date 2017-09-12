@@ -280,8 +280,8 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 		if err != nil {
 			return err
 		}
-		switch agg.CountOnly {
-		case true:
+		switch agg.Mode {
+		case 0:
 			var r CResult
 			for _, v := range result.Values {
 				command := bson.D{{Name: "count", Value: agg.Collection}}
@@ -296,7 +296,7 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 				}
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.N}})
 			}
-		case false:
+		case 1:
 			var r DResult
 			for _, v := range result.Values {
 				agg.Query[localKey] = v
@@ -312,10 +312,39 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.Values}})
 			}
+		case 2:
+			res := bson.M{}
+			for _, v := range result.Values {
+				agg.Query[localKey] = v
+				agg.Query[agg.Field] = bson.M{"$ne": nil}
+				bound := bson.M{}
+
+				pipeline := []bson.M{bson.M{"$match": agg.Query},
+					bson.M{"$sort": bson.M{agg.Field: 1}},
+					bson.M{"$limit": 1},
+					bson.M{"$project": bson.M{"min": "$" + agg.Field}}}
+				err = c.Database.C(agg.Collection).Pipe(pipeline).One(&res)
+				if err != nil {
+					return err
+				}
+				bound["m"] = res["min"]
+				pipeline = []bson.M{bson.M{"$match": agg.Query},
+					bson.M{"$sort": bson.M{agg.Field: -1}},
+					bson.M{"$limit": 1},
+					bson.M{"$project": bson.M{"max": "$" + agg.Field}}}
+				err = c.Database.C(agg.Collection).Pipe(pipeline).One(&res)
+				if err != nil {
+					return err
+				}
+				bound["M"] = res["max"]
+				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): bound}})
+			}
 		}
 	}
 	_, err = bulk.Run()
-
+	if err == nil || err.Error() == "not found" {
+		return nil
+	}
 	return err
 }
 

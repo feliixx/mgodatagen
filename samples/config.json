@@ -72,7 +72,8 @@
       },
       "nb": {  
          "type": "autoincrement",
-         "counter": 0
+         "autoType": "long",
+         "startLong": 0
       },
       "pos": {  
          "type": "position"

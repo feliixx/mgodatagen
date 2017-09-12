@@ -99,7 +99,11 @@ type GeneratorJSON struct {
 	// For `constant` type only. Value of the constant field
 	ConstVal interface{} `json:"constVal"`
 	// For `autoincrement` type only. Start value
-	Counter int64 `json:"counter"`
+	Start32 int32 `json:"startInt"`
+	// For `autoincrement` type only. Start value
+	Start64 int64 `json:"startLong"`
+	// For `autoincrement` type only. Start value
+	AutoType string `json:"autoType"`
 	// For `ref` type only. Used to retrieve the array storing the value
 	// for this field
 	ID int `json:"id"`

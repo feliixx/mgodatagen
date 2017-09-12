@@ -28,7 +28,7 @@ var (
 	positionGenerator    = &PositionGenerator{EmptyGenerator: eg}
 	arrayGeneratorString = &ArrayGenerator{EmptyGenerator: eg, Size: 10, Generator: stringGenerator}
 	arrayGeneratorBool   = &ArrayGenerator{EmptyGenerator: eg, Size: 10, Generator: boolGenerator}
-	autoIncrGenerator    = &AutoIncrementGenerator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 3}, Counter: 0}
+	autoIncrGenerator    = &AutoIncrementGenerator64{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 3}, Counter: 0}
 	objectIDGenerator    = &ObjectIDGenerator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 5}}
 	refGenerator         = &RefGenerator{EmptyGenerator: eg, ID: 1, Generator: objectIDGenerator}
 	fromArrayGenerator   = &FromArrayGenerator{EmptyGenerator: eg, Array: constArr, Size: int32(len(constArr)), Index: -1}

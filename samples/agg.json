@@ -4,14 +4,22 @@
 	"count": 10000,
 	"content": {
 		"link": {
-			"type": "fromArray",
-			"in": [1, 2, 3, 4, 5]
+			"type": "int",
+			"minInt": 1,
+			"maxInt": 5
 		},
 		"field": {
 			"type": "fromArray",
 			"nullPercentage": 40,
 			"in": ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
+		},
+		"field1": {
+			"type": "int",
+			"nullPercentage": 10, 
+			"minInt": 0,
+			"maxInt": 10000
 		}
+
 	}
 },
 {
@@ -28,6 +36,13 @@
 			"collection": "test",
 			"database": "test",
 			"field": "field",
+			"query": {"link": "$$_id"}
+		}, 
+		"AG-CI": {
+			"type": "boundAggregator",
+			"collection": "test",
+			"database": "test",
+			"field": "field1",
 			"query": {"link": "$$_id"}
 		}
 	}
