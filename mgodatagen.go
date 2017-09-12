@@ -233,19 +233,23 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 		// push genrated []bson.M to the buffered channel
 		record <- generator.Value(source).([]bson.M)
 		count += batchSize
-		bar.Add(1000)
+		bar.Add(batchSize)
 	}
 	close(record)
 	// wait for goroutines to end
 	wg.Wait()
 	bar.Finish()
-	color.Green("Generating collection %s done\n", coll.Name)
 	// if an error occurs in one of the goroutines, return this error,
 	// otherwise return nil
 	if ctx.Err() != nil {
 		return <-errs
 	}
-	return updateWithAggregators(coll, c, shortNames)
+	err = updateWithAggregators(coll, c, shortNames)
+	if err != nil {
+		return err
+	}
+	color.Green("Generating collection %s done\n", coll.Name)
+	return nil
 }
 
 // Update documents with pre-computed aggregations
@@ -254,6 +258,12 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 	if err != nil {
 		return err
 	}
+	if len(aggArr) == 0 {
+		return nil
+	}
+	fmt.Printf("Generating aggregated data for collection %v\n", c.Name)
+	bulk := c.Bulk()
+	bulk.Unordered()
 	for _, agg := range aggArr {
 
 		localVar := "_id"
@@ -284,10 +294,7 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 				if err != nil {
 					return err
 				}
-				err = c.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.N}})
-				if err != nil {
-					return err
-				}
+				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.N}})
 			}
 		case false:
 			var r DResult
@@ -303,14 +310,13 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 					return err
 				}
 
-				err = c.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.Values}})
-				if err != nil {
-					return err
-				}
+				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.Values}})
 			}
 		}
 	}
-	return nil
+	_, err = bulk.Run()
+
+	return err
 }
 
 // create index on generated collections. Use run command as there is no wrapper
