@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"runtime/debug"
 	"sync"
+	"time"
 
 	"github.com/fatih/color"
 	"github.com/globalsign/mgo"
@@ -173,7 +174,7 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 	var wg sync.WaitGroup
 	wg.Add(nbInsertingGoRoutines)
 	// start a new progressbar to display progress in terminal
-	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}`).Start(coll.Count)
+	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}          `).Start(coll.Count)
 	// start numCPU goroutines to bulk insert documents in MongoDB
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
@@ -262,10 +263,11 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 		return nil
 	}
 	fmt.Printf("Generating aggregated data for collection %v\n", c.Name)
-	bulk := c.Bulk()
-	bulk.Unordered()
+	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}          `).Start(coll.Count * len(aggArr))
+	c.Database.Session.SetSocketTimeout(time.Duration(30) * time.Minute)
 	for _, agg := range aggArr {
-
+		bulk := c.Bulk()
+		bulk.Unordered()
 		localVar := "_id"
 		localKey := "_id"
 		for k, v := range agg.Query {
@@ -340,12 +342,14 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): bound}})
 			}
 		}
+		bar.Add(coll.Count)
+		_, err = bulk.Run()
+		if err != nil && err.Error() == "not found" {
+			return err
+		}
 	}
-	_, err = bulk.Run()
-	if err == nil || err.Error() == "not found" {
-		return nil
-	}
-	return err
+	bar.Finish()
+	return nil
 }
 
 // create index on generated collections. Use run command as there is no wrapper
@@ -368,6 +372,7 @@ func ensureIndex(coll *cf.Collection, c *mgo.Collection) error {
 	if !result.Ok {
 		return fmt.Errorf("error while dropping index for collection %s:\n\tcause: %s", coll.Name, result.ErrMsg)
 	}
+	c.Database.Session.SetSocketTimeout(time.Duration(30) * time.Minute)
 	//create the new indexes
 	err = c.Database.Run(bson.D{{Name: "createIndexes", Value: c.Name}, {Name: "indexes", Value: coll.Indexes}}, &result)
 	if err != nil {

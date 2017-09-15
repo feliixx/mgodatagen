@@ -1,0 +1,225 @@
+[ {
+  "database": "mtx_large",
+  "collection": "projects",
+  "count": 1500,
+  "content": {
+    "_id": {
+      "type": "autoincrement",
+      "autoType": "int", 
+      "startInt": 0
+    },
+    "_class": {
+      "type": "constant",
+      "constVal": "MP"
+    },
+    "ac": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 2,
+      "unique": true
+    },
+    "nm": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 20,
+      "unique": true
+    },
+    "de": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 200
+    },
+    "mi": {
+      "type": "fromArray",
+      "in": ["Vana"]
+    }, 
+    "au": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 20
+    },
+    "ci": {
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 20
+    },
+    "sqt": {
+      "type": "fromArray",
+      "in": ["Roche 454", "illumina", "PacBio"]
+    },
+    "asm": {
+      "type": "fromArray",
+      "in": ["CAP3", "SPADES"]
+    },
+    "asg": {
+      "type": "fromArray",
+      "in": ["BlastN and BlastX", "Megablast"]
+    },
+    "pb": {
+      "type": "string",
+      "minLength": 40,
+      "maxLength": 200,
+      "nullPercentage": 30
+    }, 
+    "av": {
+      "type": "boolean"
+    }, 
+    "p": {
+      "type": "constant",
+      "constVal": true
+    }, 
+    "SQ-rn": {
+      "type": "valueAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "rn",
+      "query": {"pj": "$$_id"}
+    }, 
+    "SQ-bt": {
+      "type": "constant",
+      "constVal": ["x", "n"]
+    },  
+    "SQ-in": {
+      "type": "valueAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "in",
+      "query": {"pj": "$$_id"}
+    }, 
+    "SQ-nm": {
+      "type": "valueAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "nm",
+      "query": {"pj": "$$_id"}
+    }, 
+    "SQ-pp": {
+      "type": "valueAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "pp",
+      "query": {"pj": "$$_id"}
+    }, 
+    "SQ-ln": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "ln",
+      "query": {"pj": "$$_id"}
+    }, 
+    "SQ-st": {
+      "type": "constant",
+      "constVal": [2, 3]
+    }, 
+    "SQ-qi": {
+      "type": "valueAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "qi",
+      "query": {"pj": "$$_id"}
+    }, 
+    "si": {
+          "type": "constant",
+          "constVal": ["AAB94385.1","AEA03261.1","KC813493.1","JX878427.1","KJ642615.1","KJ642618.1","JX489138.1","AY243312.1","AAF81697.2","AAF13930.1","M28824.1","NP_659591.1","NP_659599.1","NP_659622.1","NP_659638.1","NP_659648.1","NP_659657.1","NP_659666.1","NP_659675.1","NP_659717.1","P19747.1","CAA63892.1","HM585512.2","KR011279.1","KR011306.1","AAA46091.1","KF644572.1","KF644578.1","JF797217.1","JQ809330.1","KJ789182.1","KP745663.1","X83413.1","KF558370.1","AB850660.1","KC207814.1","KF992569.1","AJ410478.1","AY274934.1","X99519.1","EF526168.1","EF526175.1","EF526179.1","JQ806361.1","JX844666.1","DQ218142.1","AY522332.4","M32799.1","AJL34175.1","KM262844.1","NP_042814.1","JF411744.1","NP_048900.1","BAG71056.1","CAC67296.1","KP270918.1","AAQ10571.1","AP_000528.1","AF160185.1","AEX31126.1","AEX31148.1","AEX31160.1","AEX31173.1","AF489706.2","AGC09614.1","JF966372.1","JF966379.1","P06420.1","X74466.1","X70827.1","X04658.1","AAA21733.1","AAA46341.1","AAA46344.1","AAA46366.1","AAD37338.1","AB863157.1","AB863160.1","AB863164.1","AB863168.1","AB863172.1","AB863175.1","AB863181.1","AB863184.1","AB863187.1","AB863190.1","AB863195.1","AB863200.1","ABA60785.1","ABJ16053.1","ABX80502.1","ABY66569.1","ABY66596.1","AFI61739.1","AFI61742.1","AGT42074.1","AGT42105.1","AGT42112.1","AGT42144.1","AGT42160.1","AGT42175.1","AGT42195.1","AHA91323.1","AHX39212.1","AIE12124.1","AII80285.1","AKL90389.1","AY703456.1","BAO53360.1","BAO53366.1","BAO53372.1","BAO53378.1","BAO53385.1","BAO53392.1","BAO53406.1","BAO53411.1","BAO53431.1","BAO53441.1","BAO53461.1","BAO53468.1","BAO53484.1","BAO53511.1","BAO53525.1","BAO53546.1","BAO53557.1","BAO53572.1","BAO53587.1","BAO53605.1","BAO53614.1","BAO53620.1","BAO53634.1","BAO53680.1","CAA55974.1","CCK73153.1","CCK82553.1","DQ119037.1","EU215790.1","EU215793.1","JF809616.1","JX912258.1","JX912264.1","JX912268.1","JX912272.1","KF357590.1","KF357593.1","KF357596.1","KF498706.1","KJ716236.1","M19741.1","M90541.1","M94887.1","NP_056727.1","V00140.1","X79465.1","P03558.1","P03557.2","NP_619548.1","AAD30198.1","BR000030.1","FAA00012.1","YP_002117658.1","AY543070.1","NP_041402.1","AAV92658.1","AAV92671.1","AFG33319.1","AFV25459.1","GQ884037.1","AGF33870.1","AII78512.1","P05842.1","ADU54611.1","NP_047218.2","ADY17052.1","AIP88683.1","AFN80687.1","AFN80692.1","JQ948055.1","ABQ40207.1","ACF40525.1","ACF40543.1","ACF40561.1","ACZ04228.1","AEL32145.1","AHM88331.1","AIK26664.1","EU628591.1","HQ693334.1","HQ693466.1","KJ437654.1","281261","GQ415401.1","ACC94184.1","AIQ85933.1","AIQ86546.1","AAB47966.1","AAR00213.1","AAT02511.1","AAZ03521.1","AAZ03534.1","AAZ76100.1","ABC71642.1","ABC71661.1","ABC71693.1","ABH88141.1","ABK54303.1","ABL60923.1","ABL84746.1","ABR21087.1","ABR27667.1","ACF04189.1","ACF04224.1","ACJ64209.1","ACL80643.1","ACX42560.1","ACZ63264.1","ADC79162.1","ADE08404.1","ADK97704.1","ADT65383.1","AEL31241.1","AET14599.1","AEY77497.1","AEZ66873.1","AEZ67202.1","AF414089.1","AFD22883.1","AFL03418.1","AFT82980.1","AFT82996.1","AFT83029.1","AFU54634.1","AFV36722.1","AGC11941.1","AGG35477.1","AGH27762.1","AGH27792.1","AGH27804.1","AGH27824.1","AGH27841.1","AGH27859.1","AGI44282.1","AGJ70145.1","AGJ90451.1","AGO02214.1","AGQ50596.1","AGT55970.1","AGT55982.1","AGT59230.1","AGZ91423.1","AHE80668.1","AHI17210.1","AHN82535.1","AIG88620.1","AII78786.1","AIK19670.1","AIY31169.1","AIY31222.1","AIY67885.1","AIY67917.1","AIY67935.1","AIY67950.1","AJG06156.1","BAL03629.1","CAH57064.1","CAI99170.1","CAK54963.1","CAL90893.1","CAM91854.1","CBJ05747.1","CBL93637.1","CCA64204.1","CCE21586.1","CCE21605.1","CCH75849.1","CCO56183.1","CCO56199.1","CCQ77581.1","DQ058088.1","DQ058091.1","DQ058106.1","DQ317770.1","EF051116.1","EF185318.1","EF423667.1","FJ012358.1","FJ439569.1","GQ861427.1","GU585384.1","HE819243.1","HF548839.1","HM448447.1","JN182213.1","JN604488.1","JQ231214.1","JQ738375.1","JQ928338.1","JX070045.1","JX669543.1","JX961666.1","JX961669.1","KC312673.1","KC999849.1","KF435136.1","KF533856.1","KJ466047.1","KJ754192.1","KJ850344.1","KM435320.1","KM506950.1","KM506953.1","KM506956.1","KM506959.1","KM624028.1","KP419702.1","KP635445.1","NP_658995.1","CAC84662.1","AAA02942.1","NP_620491.1","KJ939772.1","KJ939776.1","739775","ABW74009.1","ACB97660.1","ACM44487.1","ADN84087.1","AY548948.1","EU857498.1","HQ214016.1","NP_040557.1","NP_598335.1","AAA50321.1","M28353.1","NP_620495.1","M27418.1","AEQ19305.1","AID54984.1","AAL32164.1","NP_740302.1","AAX45429.1","ADQ64391.1","AGW43225.1","AGW43229.1","EU293914.1","HQ266603.1","KC576953.1","KC576956.1","JX513298.1","X12724.1","AAZ57418.1","ACT75573.1","AFV95354.1","AHC55379.1","AII72213.1","ABQ28724.1","ADK35810.1","AHL29043.1","AHZ63364.1","A36329.1","AAY46592.1","ABO75488.1","ACJ23083.1","ACV93659.1","AFH37823.1","EU636940.1","GU329177.1","JX447795.1","JX447798.1","M19921.2","AIG51570.1","JQ744152.1","KF478005.1","KF478066.1","KM352424.1","AB979448.1","X05470.1","P31792.1","ABN69109.1","NP_955579.1","AAB19067.1","AAB19070.1","U27240.1","U29659.1","U37067.1","ABC26827.1","CBW37693.1","YP_002000605.1","AFV99544.1","AIM55742.1","AEN55756.2","ABU96118.1","ADA69469.1","AEK77595.1","AF192772.1","AKA60710.1","CAC22322.1","CAD71267.2","CAH25508.1","HQ660513.1","YP_009032644.1","AAM83188.1","AB250686.1","BAB82507.1","BAF47094.1","BAG13035.1","M22445.3","77306","AAS55446.1","ACO58404.1","AFU48537.1","CAA07530.1","CAA07534.1","CAA07738.1","CAA07748.1","CAA78496.1","JQ1419","JX067856.1","L12758.1","NP_620064.1","AAF23493.1","AAK77147.1"]
+    },
+    "ti": {
+          "type": "constant",
+          "constVal": [10243,10244,10245,10254,10258,10261,10266,10269,10271,10273,10276,10288,10298,10310,10326,10331,10345,10359,10368,10371,10372,10376,10381,10390,10397,10398,10401,10449,10464,10479,10489,10490,10493,10497,10500,10506,10507,10515,10533,10534,10547,10566,10579,10594,10604,10617,10640,10641,10642,10644,10645,10647,10649,10654,10704,10707,10719,10726,10784,10794,10796,10798,10799,10809,10815,10817,10820,10821,10826,10829,10830,10832,10834,10835,10836,10837,10838,10839,10840,10855,10857,11008,11009,11010,11053,11082,11083,11085,11103,11176,11234,11250,11620,11632,11636,11665,11673,11676,11723,11764,11766,11768,11827,11834,11836,11837,11840,11856,11864,11886,11908,11950,11986,11987,11988,12037,12038,12040,12041,12042,12043,12044,12049,12054,12055,12056,12063,12072,12136,12138,12139,12145,12152,12153,12158,12161,12162,12165,12166,12167,12169,12170,12171,12172,12173,12175,12177,12178,12179,12180,12181,12182,12183,12187,12188,12190,12194,12196,12197,12198,12199,12202,12203,12204,12205,12207,12211,12212,12215,12216,12222,12224,12227,12228,12230,12232,12235,12260,12261,12262,12263,12264,12267,12268,12271,12273,12275,12282,12295,12297,12298,12299,12305,12310,12317,12321,12327,12328,12336,12353,12430,12431,12432,12433,12435,12440,12441,12444,12458,12470,12472,12524,12585,12627,12657,12742,12844,12881,28285,28288,28312,28347,28348,28350,28353,28354,28355,28365,28375,28871,29250,29257,29271,31503,31507,31548,31555,31556,31557,31558,31600,31602,31604,31647,31709,31711,31713,31721,31722,31723,31724,31732,31738,31741,31743,31744,31750,31770,31771,32603,32604,32610,32612,32619,32629,33726,33759,33760,33763,35250,35252,35266,35284,35286,35287,35290,35291,35339,35340,35341,35350,35593,36344,36363,36396,36400,36410,36452,36772,37108,37128,37138,37296,37325,37665,37733,37955,37956,37957,37958,37961,38018,38062,38172,38251,38804,39046,39058,39085,39420,39443,39444,39637,39640,39720,40052,40279,40538,40540,40979,41460,42004,42475,42478,42631,42683,42841,43141,43240,44088,44560,44562,45237,45454,45617,45661,46015,46021,46076,46241,46253,46436,46448,46618,46917,47418,47669,47736,47740,47900,47903,47929,47985,48069,48726,49267,50290,51313,51354,51369,51673,51676,51680,52274,52280,52996,53010,53181,53260,53481,53954,54289,55216,55951,55987,56879,58103,58177,59304,59376,59504,59509,59749,59817,60714,61673,62079,62805,63723,64003,64279,64285,64293,64461,65068,65424,65467,65743,66200,66366,66834,67585,67754,67761,67762,68033,68347,68348,68876,68887,68893,69256,69577,70177,70822,70823,71032,71186,72003,72201,72202,72750,73488,73497,74660,75387,75448,75571,75574,75746,75747,77344,77767,77813,77856,78219,78395,79691,79917,79918,80341,80366,81583,81931,83191,83442,83810,83839,84739,85454,85543,85618,85708,85709,85752,86502,87786,88774,89382,89463,89464,89471,90963,91753,91913,92395,92444,92521,92943,92963,93465,93923,94118,94290,96779,96892,97195,97344,98383,99000,100216,100217,100220,100755,100887,101688,101764,101850,103722,103782,103926,103927,104240,104263,104392,104664,105154,106331,106518,106962,107324,107804,109348,110582,111469,111874,112227,112228,112229,112437,113370,113376,113553,114921,115987,116056,117126,117139,117198,117575,119102,119103,119104,119910,120168,123630,123735,125788,126070,127569,128790,128818,128941,129141,129143,129525,129526,129527,129951,130308,130663,131082,131083,132475,132477,133704,134374,134681,135210,135656,136138,136234,136418,137556,138982,142102,142661,142843,145398,145579,146015,146032,146269,146499,146500,146762,148359,148360,148879,148880,150284,150285,150286,152217,154339,155025,155414,156690,157777,158372,158463,158683,158685,159132,159153,159252,160484,160843,160844,161378,161494,163325,164750,165250,165432,166122,167018,167019,167020,167021,167132,167634,167927,169683,169864,169865,170617,170621,172220,172278,172386,172387,172391,172393,172394,173976,174178,175567,175568,175569,175814,176652,178276,178354,180170,180230,180399,180586,180587,180822,181082,181209,181211,181214,181216,181217,181522,183585,184020,184610,185017,185218,185636,185637,185638,185639,185793,186165,186617,186805,186815,187397,187850,188333,188887,190063,191031,191217,191289,191436,191460,191463,191547,192203,192584,193120,193121,194445,194802,194958,194959,194966,195054,195055,196093,196375,196398,196400,196690,197112,198110,199361,199362,201862,202566,202567,202568,203168,204440,204478,204507,204928,204933,205869,205870,205875,205879,206377,207240,207697,208177,209052,209529,210016,212035,213773,213777,213888,214439,216371,216614,217686,218387,218923,219299,219744,220340,220608,220638,220932,220933,220940,220943,220944,221262,221526,221527,221532,221542,222059,222073,222078,222079,222448,222459,222463,223250,223252,223253,223255,223257,223259,223260,223261,223262,223263,223264,223266,223268,223272,223280,223281,223284,223285,223287,223288,223293,223295,223301,223303,223305,223307,223312,223313,223317,223318,223322,223323,223332,223333,223334,223337,223340,223342,223347,223351,223353,223354,223356,223358,223363,223769,224578,225067,226084,227470,228277,228580,228581,228582,228897,229149,229634,231981,231992,232380,232802,233049,233050,233894,235347,235434,235994,239488,240269,240492,240555,240557,240865,243560,243563,245101,245685,247268,249151,251749,252584,252602,253700,253701,253702,254355,254946,255238,255255,256548,256729,257464,257468,260149,260373,260377,260378,260716,260717,260797,260908,260909,262177,262588,262957,262968,263001,263004,263793,263891]
+    },
+    "hd": {
+          "type": "constant",
+          "constVal": ["085L [Invertebrate iridescent virus 6]","12 kDa protein [Verbena latent virus]","12K protein [Potato virus H]","166K protein [Potato virus X]","19.5g1 protein [Chelonus inanitus bracovirus]","1a protein, partial [Cucumber mosaic virus]","24.4 kDa hypothetical protein [Grapevine rupestris stem pitting-associated virus]","2b protein [Tobacco rattle virus]","34.1 kDa protein [Human mastadenovirus C]","3a protein [Cucumber mosaic virus]","41K protein [Tomato bushy stunt virus]","54 kDa protein [Rice virus X]","89.7 kDa protein [Alfalfa mosaic virus]","AC1 [Tomato leaf curl New Delhi virus-Papaya [India:New Delhi:Papaya:2005]]","AC1 protein [Papaya leaf curl China virus - [G2]]","AC1 protein, partial [East African cassava mosaic virus]","AC2 [Tomato leaf curl Namakely virus]","AC3 protein [Tomato yellow leaf curl virus]","ATP-dependent CLP protease [Erwinia phage Ea9-2]","ATP-dependent DNA ligase [Escherichia phage V5]","AV1 [Premna leaf curl virus]","AV2 gene product [Cassava mosaic Madagascar virus]","AV2 protein [Watermelon chlorotic stunt virus]","Acanthamoeba polyphaga mimivirus isolate M4, complete genome","Acanthocystis turfacea Chlorella virus 1, complete genome","Acanthocystis turfacea Chlorella virus Canal-1, partial genome","Acetes erythraeus iridovirus major capsid protein gene, partial cds","Acinetobacter phage 133, complete genome","Aedes taeniorhynchus iridescent virus, complete genome","African swine fever virus strain NHV, complete genome","Agaricus bisporus virus X genomic RNA, band VX4DMR","Ageratum yellow vein Hualian virus-[Taiwan:Hualian4:2000] segment DNA A, complete sequence","Alfalfa latent virus isolate ATCC PV-264 RNA-dependent RNA polymerase, TGB1, TGB2, TGB3, and coat protein genes, complete cds","Alfalfa mosaic virus strain HZ segment RNA1, complete sequence","Alfalfa mosaic virus strain Manfredi MP and CP genes, complete cds","Alphacryptovirus JF-2012 RNA-dependent RNA polymerase (RdRp) gene, complete cds","Alternaria zinniae dsRNA element 49 kDa protein (p49) gene, complete cds","Amasya cherry disease-associated mycovirus RdRp gene for putative RNA-dependent RNA polymerase 1, genomic RNA","Ancient caribou feces associated virus, complete genome","Anticarsia gemmatalis nucleopolyhedrovirus, complete genome","Apple geminivirus PL-2015 isolate China, complete genome","Apple stem pitting virus isolate PM8, complete genome","Apteryx rowi circovirus-like virus isolate JWNM 090913, complete genome","Aristotelia chilensis virus 1 isolate AcPLV-1 movement protein and reverse transcriptase genes, complete cds","Asparagus virus 3 genomic RNA, complete genome","Aspergillus fumigatus chrysovirus segment 4, complete sequence, isolate A-56, genomic RNA","Asystasia begomovirus 2 segment DNA-A, complete sequence","Avian endogenous retrovirus EAV-HP partial proviral genome, clone EAV-21-1","Avon-Heathcote Estuary associated circular virus 15 isolate AHEaCV-15-NZ-2320TU-2012, complete genome","Avon-Heathcote Estuary associated circular virus 2 isolate AHEaCV-2-NZ-3024C3-2012, complete genome","Avon-Heathcote Estuary associated circular virus 25 isolate AHEaCV-25-NZ-1935SG-2012, complete genome","Avon-Heathcote Estuary associated circular virus 3 isolate AHEaCV-3-NZ-3887G-2012, complete genome","BA71V-L60L [African swine fever virus]","Bacillus phage B5S, complete genome","Bacillus phage G, complete genome","Bacteriophage TLS, complete genome","Banana bunchy top virus DNA III ORF V1 and ORF C1 genes, complete cds","Banana bunchy top virus putative satellite 4, complete sequence","Banana streak KA virus isolate Ke168 ORF III polyprotein gene, partial cds","Banana streak VN virus, complete genome","Barley stripe mosaic virus CV17 RNA alpha, alpha protein gene, complete cds","Barley stripe mosaic virus Type RNA gamma segment, complete sequence","Barley stripe mosaic virus strain Norwich segment alpha, complete sequence","Barley stripe mosaic virus strain Qasr Ibrim segment beta, complete sequence","Barley stripe mosaic virus strain XJ segment beta, complete sequence","Barley yellow dwarf virus (ISOLATE P-PAV) genomic RNA, complete sequence","Barley yellow dwarf virus - PAV coat protein mRNA, complete cds; and readthrough domain mRNA, partial cds","Barley yellow dwarf virus - PAV genomic RNA","Barley yellow dwarf virus - PAV isolate 0102, complete genome","Barley yellow dwarf virus - PAV isolate 014, complete genome","Barley yellow dwarf virus - PAV isolate 020, complete genome","Barley yellow dwarf virus - PAV isolate 048, complete genome","Barley yellow dwarf virus - PAV isolate 068, complete genome","Barley yellow dwarf virus - PAV isolate PAV TC14 3' UTR","Barley yellow dwarf virus -Pav isolate FSD coat protein (CP) RNA, complete cds","Barley yellow dwarf virus PAV-I isolate K460 putative aphid transmission protein (P5) gene, partial cds; and P6 protein-like (P6) gene, complete sequence","Barley yellow dwarf virus genes encoding coat protein, movement protein, and readthrough protein, isolate FHv2-PAV","Barley yellow dwarf virus-PAV coat protein and putative movement protein genes, complete cds","Barley yellow dwarf virus-PAV isolate 06GY1 RNA-dependent RNA polymerase, P1, aphid transmission protein, coat protein, movement protein, and P6 genes, complete cds","Barley yellow dwarf virus-PAV isolate 06KM25 RNA-dependent RNA polymerase, P1, aphid transmission protein, coat protein, movement protein, and P6 genes, complete cds"]
+    },
+    "BR-mt": {
+      "type": "valueAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.mt",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-to": {
+      "type": "valueAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.to",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-pi": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.pi",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-al": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.al",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-mc": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.mc",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-go": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.go",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-qs": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.qs",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-qe": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.qe",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-ss": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.ss",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-se": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.se",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-ev": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.ev",
+      "query": {"pj": "$$_id"}
+    }, 
+    "BR-bs": {
+      "type": "boundAggregator",
+      "collection": "sequences",
+      "database": "mtx_large",
+      "field": "BR.bs",
+      "query": {"pj": "$$_id"}
+    }, 
+    "IN-cd": {
+      "type": "valueAggregator",
+      "collection": "individuals",
+      "database": "mtx_large",
+      "field": "cd",
+      "query": {"pj": "$$_id"}
+    }
+  }
+}]
