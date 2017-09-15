@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	version = "0.1" // current version of mgodatagen
+	version = "0.2" // current version of mgodatagen
 )
 
 // DResult stores teh result of a `distinct` command
@@ -445,7 +445,7 @@ type Config struct {
 	ConfigFile string `short:"f" long:"file" value-name:"<configfile>" description:"JSON config file. This field is required"`
 	IndexOnly  bool   `short:"i" long:"indexonly" description:"if present, mgodatagen will just try to rebuild index"`
 	ShortName  bool   `short:"s" long:"shortname" description:"if present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
-	Append     bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents"`
+	Append     bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents or deleting the collection"`
 }
 
 // Options struct to store flags from CLI

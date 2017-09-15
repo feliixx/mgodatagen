@@ -43,9 +43,11 @@ Usage:
 
 configuration:
   -f, --file=<configfile>      JSON config file. This field is required
-  -i, --indexonly              If present, mgodatagen will just try to rebuild index
-  -s, --shortname              If present, JSON keys in the documents will be reduced
+  -i, --indexonly              if present, mgodatagen will just try to rebuild index
+  -s, --shortname              if present, JSON keys in the documents will be reduced
                                to the first two letters only ('name' => 'na')
+  -a, --append                 if present, append documents to the collection without
+                               removing older documents or deleting the collection
 
 connection infos:
   -h, --host=<hostname>        mongodb host to connect to (default: 127.0.0.1)
@@ -56,6 +58,7 @@ connection infos:
 general:
       --help                   show this help message
   -v, --version                print the tool version and exit
+
 ```
 
 Only the configuration file need to be specified ( -f | --file flag). A basic usage of mgodatagen would be 
