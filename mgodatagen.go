@@ -360,20 +360,18 @@ func ensureIndex(coll *cf.Collection, c *mgo.Collection) error {
 		return nil
 	}
 	fmt.Printf("Building indexes for collection %s...\n", coll.Name)
+
+	err := c.DropAllIndexes()
+	if err != nil {
+		return fmt.Errorf("error while dropping index for collection %s:\n\tcause: %s", coll.Name, err.Error())
+	}
+	// avoid timeout when building indexes
+	c.Database.Session.SetSocketTimeout(time.Duration(30) * time.Minute)
+	// create the new indexes
 	result := struct {
 		ErrMsg string
 		Ok     bool
 	}{}
-	// drop all the indexes of the collection
-	err := c.Database.Run(bson.D{{Name: "dropIndexes", Value: c.Name}, {Name: "index", Value: "*"}}, &result)
-	if err != nil {
-		return fmt.Errorf("error while dropping index for collection %s:\n\tcause: %s", coll.Name, err.Error())
-	}
-	if !result.Ok {
-		return fmt.Errorf("error while dropping index for collection %s:\n\tcause: %s", coll.Name, result.ErrMsg)
-	}
-	c.Database.Session.SetSocketTimeout(time.Duration(30) * time.Minute)
-	//create the new indexes
 	err = c.Database.Run(bson.D{{Name: "createIndexes", Value: c.Name}, {Name: "indexes", Value: coll.Indexes}}, &result)
 	if err != nil {
 		return fmt.Errorf("error while building indexes for collection %s:\n\tcause: %s", coll.Name, err.Error())

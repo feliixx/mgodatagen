@@ -396,20 +396,22 @@ Add the same value to each document
 "fieldName": {
     "type": "constant",       // required
     "nullPercentage": <int>,  // optional
-    "constVal": <object>      // required. Can be of any type including object and array
+    "constVal": <object>      // required, an be of any type including object and array
                               // eg: {"k": 1, "v": "val"} 
 }
 ```
 
 ### Autoincrement
 
-Create an autoincremented field (type <long>)
+Create an autoincremented field (type <long> or <int>)
 
 ```JSON5
 "fieldName": {
     "type": "autoincrement",  // required
     "nullPercentage": <int>,  // optional
-    "counter": <long>         // start value 
+    "autoType": <string>,     // required, can be `int` or `long`
+    "startLong": <long>,      // start value if autoType = long
+    "startInt": <int>       // start value if autoType = int
 }
 ```
 
