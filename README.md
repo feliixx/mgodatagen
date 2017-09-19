@@ -207,6 +207,7 @@ List of custom <generator> types:
 - [fromArray](#fromarray)
 - [countAggregator](#countAggregator)
 - [valueAggregator](#valueAggregator)
+- [boundAggregator](#boundAggregator)
 
 
 ### String
@@ -496,7 +497,8 @@ and that the generator for collection `second` is:
   "content": {
     "_id": {
       "type": "autoincrement",
-      "counter": 0
+      "autoType": "int"
+      "startInt": 0
     },
     "count": {
       "type": "countAggregator",
@@ -556,7 +558,8 @@ and that the generator for collection `second` is:
   "content": {
     "_id": {
       "type": "autoincrement",
-      "counter": 0
+      "autoType": "int"
+      "startInt": 0
     },
     "count": {
       "type": "valueAggregator",
@@ -577,3 +580,71 @@ The collection `second` will contain:
 {"_id": 1, "values": ["a", "b"]}
 {"_id": 2, "values": ["c"]}
 ```
+
+
+### BoundAggregator 
+
+Get lower ang higher values for a specific field for documents from 
+<database>.<collection> matching a specific query. To use a variable of 
+the document in the query, prefix it with "$$"
+
+For the moment, the query can't be empty or null
+
+```JSON5
+"fieldName": {
+  "type": "valueAggregator", // required
+  "database": <string>,      // required, db to use to perform aggregation
+  "collection": <string>,    // required, collection to use to perform aggregation
+  "key": <string>,           // required, the field for which to return distinct values. 
+  "query": <object>          // required, query that specifies the documents from which 
+                             // to retrieve lower/higer value
+}
+```
+
+**Example**: 
+
+Assuming that the collection `first` contains: 
+
+```JSON5
+{"_id": 1, "field1": 1, "field2": "0" }
+{"_id": 2, "field1": 1, "field2": "10" }
+{"_id": 3, "field1": 2, "field2": "20" }
+{"_id": 4, "field1": 2, "field2": "30" }
+{"_id": 5, "field1": 2, "field2": "15" }
+{"_id": 6, "field1": 2, "field2": "200" }
+```
+
+and that the generator for collection `second` is: 
+
+```JSON5
+{
+  "database": "test",
+  "collection": "second",
+  "count": 2,
+  "content": {
+    "_id": {
+      "type": "autoincrement",
+      "autoType": "int"
+      "startInt": 0
+    },
+    "count": {
+      "type": "valueAggregator",
+      "database": "test",
+      "collection": "first",
+      "key": "field2",
+      "values": {
+        "field1": "$$_id"
+      }
+    }
+  }
+}
+```
+
+The collection `second` will contain: 
+
+```JSON5
+{"_id": 1, "values": {"m": 0, "M": 10}}
+{"_id": 2, "values": {"m": 15, "M": 200}}
+```
+
+where `m` is the min value, and `M` the max value

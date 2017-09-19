@@ -19,7 +19,6 @@
 			"minInt": 0,
 			"maxInt": 10000
 		}
-
 	}
 },
 {
@@ -29,13 +28,13 @@
 	"content": {
 		"_id": {
 			"type": "autoincrement",
-			"counter": 0
+			"autoType": "int",
+			"startInt": 0
 		}, 
 		"AG-FI": {
 			"type": "countAggregator",
 			"collection": "test",
 			"database": "test",
-			"field": "field",
 			"query": {"link": "$$_id"}
 		}, 
 		"AG-CI": {
@@ -43,6 +42,13 @@
 			"collection": "test",
 			"database": "test",
 			"field": "field1",
+			"query": {"link": "$$_id"}
+		},
+		"AG-VA": {
+			"type": "valueAggregator",
+			"collection": "test",
+			"database": "test",
+			"field": "field",
 			"query": {"link": "$$_id"}
 		}
 	}
