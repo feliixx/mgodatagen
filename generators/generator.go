@@ -388,7 +388,7 @@ type Aggregator struct {
 	Mode       int
 }
 
-// recursively generate all possible combinaison with repeat
+// recursively generate all possible combinations with repeat
 func recur(data []byte, stringSize int, index int, docCount int) {
 	for i := 0; i < len(letterBytes); i++ {
 		if currentIndex < docCount {

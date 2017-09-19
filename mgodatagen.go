@@ -1,4 +1,4 @@
-//A small CLI tool to quickly generate millions of pseudo-random BSON documents
+// A small CLI tool to quickly generate millions of pseudo-random BSON documents
 // and insert them into a Mongodb instance.
 package main
 
@@ -28,13 +28,13 @@ const (
 	version = "0.2" // current version of mgodatagen
 )
 
-// DResult stores teh result of a `distinct` command
+// DResult stores the result of a `distinct` command
 type DResult struct {
 	Values []interface{} `bson:"values"`
 	Ok     bool          `bson:"ok"`
 }
 
-// CResult stores teh result of a `count` command
+// CResult stores the result of a `count` command
 type CResult struct {
 	N  int32 `bson:"n"`
 	Ok bool  `bson:"ok"`
