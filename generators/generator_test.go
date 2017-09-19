@@ -30,7 +30,6 @@ var (
 	arrayGeneratorBool   = &ArrayGenerator{EmptyGenerator: eg, Size: 10, Generator: boolGenerator}
 	autoIncrGenerator    = &AutoIncrementGenerator64{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 3}, Counter: 0}
 	objectIDGenerator    = &ObjectIDGenerator{EmptyGenerator: EmptyGenerator{K: "key", NullPercentage: 100, T: 5}}
-	refGenerator         = &RefGenerator{EmptyGenerator: eg, ID: 1, Generator: objectIDGenerator}
 	fromArrayGenerator   = &FromArrayGenerator{EmptyGenerator: eg, Array: constArr, Size: int32(len(constArr)), Index: -1}
 )
 
@@ -146,11 +145,6 @@ func BenchmarkRandomArray1(b *testing.B) {
 func BenchmarkAutoIncrement(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		autoIncrGenerator.Value(source)
-	}
-}
-func BenchmarkRefGenerator(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		refGenerator.Value(source)
 	}
 }
 

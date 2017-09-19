@@ -377,23 +377,6 @@ func (g *AutoIncrementGenerator64) Value(rnd *RandSource) interface{} {
 	return g.Counter
 }
 
-// RefGenerator struct that implements Generator. Generate random
-// objects and store them in mapRef
-type RefGenerator struct {
-	EmptyGenerator
-	ID        int
-	Generator Generator
-}
-
-// Value returns create a random value and stores it in a slice
-// hold in a map along with its id, so it can be used in fromArray
-// generator
-func (g *RefGenerator) Value(rnd *RandSource) interface{} {
-	v := g.Generator.Value(rnd)
-	mapRef[g.ID] = append(mapRef[g.ID], v)
-	return v
-}
-
 // Aggregator is a type of generator that use another collection
 // to compute aggregation on it
 type Aggregator struct {
@@ -454,6 +437,7 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) 
 	// EmptyGenerator to store general info
 	eg := EmptyGenerator{K: k, NullPercentage: v.NullPercentage * 10, T: intType}
 
+	rnd := NewRandSource()
 	// if we want only a certain number of distinct values
 	if v.MaxDistinctValue != 0 {
 
@@ -463,7 +447,6 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) 
 		if err != nil {
 			return nil, fmt.Errorf("for field %s, error while creating base array: %s", k, err.Error())
 		}
-		rnd := NewRandSource()
 		// generate an array with the possible distinct values
 		array := make([]interface{}, size)
 		for i := range array {
@@ -558,9 +541,11 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) 
 			if err != nil {
 				return nil, fmt.Errorf("for field %s, %s", k, err.Error())
 			}
-			var arr []interface{}
+			arr := make([]interface{}, docCount)
+			for i := 0; i < docCount; i++ {
+				arr[i] = g.Value(rnd)
+			}
 			mapRef[v.ID] = arr
-			return &RefGenerator{EmptyGenerator: eg, ID: v.ID, Generator: g}, nil
 		}
 		return &FromArrayGenerator{EmptyGenerator: eg, Array: mapRef[v.ID], Size: int32(len(mapRef[v.ID])), Index: -1}, nil
 	case "countAggregator", "valueAggregator", "boundAggregator":
