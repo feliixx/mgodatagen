@@ -127,6 +127,13 @@ func BenchmarkRandomPosition(b *testing.B) {
 		positionGenerator.Value(source)
 	}
 }
+
+func BenchmarkRandomObjectID(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		objectIDGenerator.Value(source)
+	}
+}
+
 func BenchmarkRandomArray(b *testing.B) {
 	var list []string
 	for n := 0; n < b.N; n++ {

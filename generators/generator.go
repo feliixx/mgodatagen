@@ -48,16 +48,15 @@ const (
 var (
 	// main available types
 	mapType = map[string]int{
-		"string":        0, // string
-		"boolean":       1, // bool
-		"int":           2, // int32
-		"long":          3, // int64
-		"double":        4, // float64
-		"objectId":      5, // bson.ObjectId
-		"object":        6, // bson.M
-		"date":          7, // time.Time
-		"autoincrement": 3, // int64
-		"other":         8,
+		"string":   0, // string
+		"boolean":  1, // bool
+		"int":      2, // int32
+		"long":     3, // int64
+		"double":   4, // float64
+		"objectId": 5, // bson.ObjectId
+		"object":   6, // bson.M
+		"date":     7, // time.Time
+		"other":    8,
 	}
 	// stores value for ref fields
 	mapRef       = map[int][]interface{}{}
@@ -527,8 +526,10 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int) 
 	case "autoincrement":
 		switch v.AutoType {
 		case "int":
+			eg.T = 2
 			return &AutoIncrementGenerator32{EmptyGenerator: eg, Counter: v.Start32}, nil
 		case "long":
+			eg.T = 3
 			return &AutoIncrementGenerator64{EmptyGenerator: eg, Counter: v.Start64}, nil
 		default:
 			return nil, fmt.Errorf("invalid type %v for field %v", v.Type, k)

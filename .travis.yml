@@ -1,16 +1,9 @@
 language: go
 
-cache:
-  directories:
-    - $HOME/Library/Caches/Homebrew
-
 go:
   - 1.8.3
   - 1.9
-
-os:
-  - linux
-  - osx
+  - tip
 
 matrix:
   allow_failures:
@@ -22,10 +15,9 @@ services:
 
 before_script: 
   - go build 
-  - scripts/setup_osx.sh 
 script:
   - go test -v ./...
-  - go test -bench=. -benchmem
+  - go test -v ./... -bench=. -benchmem
   - ./mgodatagen -f samples/config.json
   
 notifications: 

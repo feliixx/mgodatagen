@@ -10,7 +10,6 @@ import (
 	"os"
 	"runtime"
 	"runtime/debug"
-
 	"sync"
 	"time"
 
@@ -180,6 +179,10 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
 			defer wg.Done()
+			s := c.Database.Session.Copy()
+			defer s.Close()
+
+			coll := c.With(s)
 			for r := range record {
 				// if an error occurs in one of the goroutine, 'return' is called which trigger
 				// wg.Done() ==> the goroutine stops
@@ -188,7 +191,7 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 					return
 				default:
 				}
-				bulk := c.Bulk()
+				bulk := coll.Bulk()
 				bulk.Unordered()
 				for i := range r {
 					bulk.Insert(r[i])
@@ -208,6 +211,9 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 				}
 			}
 		}()
+
+		// sleep to prevent all threads from inserting at the same time at start
+		time.Sleep(time.Duration(i) * 10 * time.Millisecond)
 	}
 	// Create a rand.Rand object to generate our random values
 	source := rg.NewRandSource()
@@ -232,7 +238,7 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 				return err
 			}
 		}
-		// push genrated []bson.M to the buffered channel
+		// push generated []bson.M to the buffered channel
 		record <- generator.Value(source).([]bson.M)
 		count += batchSize
 		bar.Add(batchSize)
@@ -245,10 +251,6 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 	// otherwise return nil
 	if ctx.Err() != nil {
 		return <-errs
-	}
-	err = updateWithAggregators(coll, c, shortNames)
-	if err != nil {
-		return err
 	}
 	color.Green("Generating collection %s done\n", coll.Name)
 	return nil
