@@ -16,10 +16,13 @@ services:
 before_script: 
   - go build 
 script:
+  - go vet ./...          
+  - golint -set_exit_status ./...
   - go test -v ./...
   - go test -v ./... -bench=. -benchmem
   - ./mgodatagen -f samples/config.json
-  
+  - ./mgodatagen -f samples/agg.json
+    
 notifications: 
   email: false
 

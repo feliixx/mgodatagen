@@ -142,12 +142,15 @@ func createCollection(coll *cf.Collection, session *mgo.Session, indexOnly bool,
 }
 
 // insert documents in DB, and then close the session
-func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
+func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInsertWorker int) error {
 	// number of document to insert in each bulkinsert. Default is 1000
 	// as mongodb insert 1000 docs at a time max
 	batchSize := 1000
 	// number of routines inserting documents simultaneously in database
 	nbInsertingGoRoutines := runtime.NumCPU()
+	if numInsertWorker > 0 {
+		nbInsertingGoRoutines = numInsertWorker
+	}
 	// size of the buffered channel for docs to insert
 	docBufferSize := 3
 	// for really small insert, use only one goroutine and reduce the buffered channel size
@@ -175,14 +178,15 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 	wg.Add(nbInsertingGoRoutines)
 	// start a new progressbar to display progress in terminal
 	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}          `).Start(coll.Count)
-	// start numCPU goroutines to bulk insert documents in MongoDB
+	// start goroutines to bulk insert documents in MongoDB
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
 			defer wg.Done()
+			// get a session for each worker
 			s := c.Database.Session.Copy()
 			defer s.Close()
-
 			coll := c.With(s)
+
 			for r := range record {
 				// if an error occurs in one of the goroutine, 'return' is called which trigger
 				// wg.Done() ==> the goroutine stops
@@ -324,19 +328,19 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 				agg.Query[agg.Field] = bson.M{"$ne": nil}
 				bound := bson.M{}
 
-				pipeline := []bson.M{bson.M{"$match": agg.Query},
-					bson.M{"$sort": bson.M{agg.Field: 1}},
-					bson.M{"$limit": 1},
-					bson.M{"$project": bson.M{"min": "$" + agg.Field}}}
+				pipeline := []bson.M{{"$match": agg.Query},
+					{"$sort": bson.M{agg.Field: 1}},
+					{"$limit": 1},
+					{"$project": bson.M{"min": "$" + agg.Field}}}
 				err = c.Database.C(agg.Collection).Pipe(pipeline).One(&res)
 				if err != nil {
 					return err
 				}
 				bound["m"] = res["min"]
-				pipeline = []bson.M{bson.M{"$match": agg.Query},
-					bson.M{"$sort": bson.M{agg.Field: -1}},
-					bson.M{"$limit": 1},
-					bson.M{"$project": bson.M{"max": "$" + agg.Field}}}
+				pipeline = []bson.M{{"$match": agg.Query},
+					{"$sort": bson.M{agg.Field: -1}},
+					{"$limit": 1},
+					{"$project": bson.M{"max": "$" + agg.Field}}}
 				err = c.Database.C(agg.Collection).Pipe(pipeline).One(&res)
 				if err != nil {
 					return err
@@ -424,7 +428,7 @@ func prettyPrintBSONArray(coll *cf.Collection, shortNames bool) error {
 // print the error in red and exit
 func printErrorAndExit(err error) {
 	color.Red("ERROR: %s", err.Error())
-	os.Exit(0)
+	os.Exit(1)
 }
 
 // General struct that stores global options from command line args
@@ -443,10 +447,12 @@ type Connection struct {
 
 // Config struct that stores info on config file from command line args
 type Config struct {
-	ConfigFile string `short:"f" long:"file" value-name:"<configfile>" description:"JSON config file. This field is required"`
-	IndexOnly  bool   `short:"i" long:"indexonly" description:"if present, mgodatagen will just try to rebuild index"`
-	ShortName  bool   `short:"s" long:"shortname" description:"if present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
-	Append     bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents or deleting the collection"`
+	ConfigFile      string `short:"f" long:"file" value-name:"<configfile>" description:"JSON config file. This field is required"`
+	IndexOnly       bool   `short:"i" long:"indexonly" description:"if present, mgodatagen will just try to rebuild index"`
+	ShortName       bool   `short:"s" long:"shortname" description:"if present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
+	Append          bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents or deleting the collection"`
+	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU"`
+	HeapSizeFactor  int    `short:"m" long:"heapSizeFactor" value-name:"<nb>" description:"memory size factor, between 1 and 20" default:"15"`
 }
 
 // Options struct to store flags from CLI
@@ -457,15 +463,13 @@ type Options struct {
 }
 
 func main() {
-	// Reduce the number of GC calls as we are generating lots of objects
-	debug.SetGCPercent(2000)
 	// struct to store command line args
 	var options Options
 	p := flags.NewParser(&options, flags.Default&^flags.HelpFlag)
 	_, err := p.Parse()
 	if err != nil {
 		fmt.Println("try mgodatagen --help for more informations")
-		os.Exit(0)
+		os.Exit(1)
 	}
 	if options.Help {
 		fmt.Printf("mgodatagen version %s\n\n", version)
@@ -477,6 +481,12 @@ func main() {
 		fmt.Printf("mgodatagen version %s\n", version)
 		os.Exit(0)
 	}
+	heapSize := 15
+	if options.HeapSizeFactor > 0 {
+		heapSize = options.HeapSizeFactor
+	}
+	// Reduce the number of GC calls as we are generating lots of objects
+	debug.SetGCPercent(heapSize * 100)
 	if options.ConfigFile == "" {
 		printErrorAndExit(fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations "))
 	}
@@ -512,7 +522,7 @@ func main() {
 		}
 		// insert docs in database
 		if !options.IndexOnly {
-			err = insertInDB(&v, c, options.ShortName)
+			err = insertInDB(&v, c, options.ShortName, options.NumInsertWorker)
 			if err != nil {
 				printErrorAndExit(err)
 			}
