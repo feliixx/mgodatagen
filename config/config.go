@@ -14,7 +14,7 @@ type Collection struct {
 	// Collection name in the database
 	Name string `json:"collection"`
 	// Number of documents to insert in the collection
-	Count int `json:"count"`
+	Count int32 `json:"count"`
 	// Schema of the documents for this collection
 	Content map[string]GeneratorJSON `json:"content"`
 	// Compression level for a collection. Available for `WiredTiger` only.

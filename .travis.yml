@@ -19,7 +19,7 @@ before_script:
 
 script:
   - go vet ./...          
-  - golint ./... | grep -v "ID"
+  - golint ./... | grep -v 'ID' | cat
   - go test -v ./...
   - go test -v ./... -bench=. -benchmem
   - ./mgodatagen -f samples/config.json
