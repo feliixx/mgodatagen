@@ -185,7 +185,7 @@ This will insert 100000 random documents in collections `test` and `link` of dat
 
 # Generator types  
 
-List of main <generator> types: 
+List of main `<generator>` types: 
 
 - [string](#string)
 - [int](#int)
@@ -198,7 +198,7 @@ List of main <generator> types:
 - [binary](#binary) 
 - [date](#date) 
 
-List of custom <generator> types: 
+List of custom `<generator>` types: 
 
 - [position](#position)
 - [constant](#constant)
@@ -404,7 +404,7 @@ Add the same value to each document
 
 ### Autoincrement
 
-Create an autoincremented field (type <long> or <int>)
+Create an autoincremented field (type `<long>` or `<int>`)
 
 ```JSON5
 "fieldName": {
@@ -462,7 +462,7 @@ Randomly pick value from an array as value for the field
 ```
 ### CountAggregator
 
-Count documents from <database>.<collection> matching a specific query. To use a 
+Count documents from `<database>.<collection>` matching a specific query. To use a 
 variable of the document in the query, prefix it with "$$"
 
 For the moment, the query can't be empty or null
@@ -522,7 +522,7 @@ The collection `second` will contain:
 ### ValueAggregator 
 
 Get distinct values for a specific field for documents from 
-<database>.<collection> matching a specific query. To use a variable of 
+`<database>.<collection>` matching a specific query. To use a variable of 
 the document in the query, prefix it with "$$"
 
 For the moment, the query can't be empty or null
@@ -585,7 +585,7 @@ The collection `second` will contain:
 ### BoundAggregator 
 
 Get lower ang higher values for a specific field for documents from 
-<database>.<collection> matching a specific query. To use a variable of 
+`<database>.<collection>` matching a specific query. To use a variable of 
 the document in the query, prefix it with "$$"
 
 For the moment, the query can't be empty or null
