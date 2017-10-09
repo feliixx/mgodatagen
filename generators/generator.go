@@ -205,15 +205,15 @@ func (g *ArrayGenerator) Value(rnd *RandSource) interface{} {
 		}
 		return array
 	case 2:
-		array := make([]int64, g.Size)
-		for i := range array {
-			array[i] = g.Generator.Value(rnd).(int64)
-		}
-		return array
-	case 3:
 		array := make([]int32, g.Size)
 		for i := range array {
 			array[i] = g.Generator.Value(rnd).(int32)
+		}
+		return array
+	case 3:
+		array := make([]int64, g.Size)
+		for i := range array {
+			array[i] = g.Generator.Value(rnd).(int64)
 		}
 		return array
 	case 4:
