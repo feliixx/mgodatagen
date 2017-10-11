@@ -90,8 +90,9 @@
          "objectContent": {  
             "k1": {  
                "type": "string",
-               "minLength": 3,
-               "maxLength": 3
+               "unique": true,
+               "minLength": 4,
+               "maxLength": 4
             },
             "k2":{  
                "type": "int",
@@ -105,7 +106,7 @@
 {  
    "database": "test", 
    "collection": "link",
-   "count":100000,
+   "count":1000000,
    "content": {  
       "_id": {  
          "type": "objectId"
