@@ -455,7 +455,7 @@ func (u *UniqueGenerator) getUniqueArray(docCount int32, stringSize int) error {
 }
 
 // NewGenerator returns a new Generator based on a JSON configuration
-func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32, encoder *Encoder) (Generator, error) {
+func newGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32, encoder *Encoder) (Generator, error) {
 	// if shortNames option is specified, keep only two letters for each field. This is a basic
 	// optimisation to save space in mongodb and during db exchanges
 	if shortNames && k != "_id" && len(k) > 2 {
@@ -471,7 +471,7 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32
 		size := v.MaxDistinctValue
 		v.MaxDistinctValue = 0
 		tmpEnc := &Encoder{Data: make([]byte, 0), DocCount: int32(0)}
-		gen, err := NewGenerator(k, v, shortNames, docCount, tmpEnc)
+		gen, err := newGenerator(k, v, shortNames, docCount, tmpEnc)
 		if err != nil {
 			return nil, fmt.Errorf("for field %s, error while creating base array: %s", k, err.Error())
 		}
@@ -534,14 +534,14 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32
 		if v.Size < 0 {
 			return nil, fmt.Errorf("for field %s, make sure that size >= 0", k)
 		}
-		g, err := NewGenerator("", v.ArrayContent, shortNames, docCount, encoder)
+		g, err := newGenerator("", v.ArrayContent, shortNames, docCount, encoder)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create new generator: %v", err)
 		}
 		eg.T = bson.ElementArray
 		return &ArrayGenerator{EmptyGenerator: eg, Size: v.Size, Generator: g}, nil
 	case "object":
-		g, err := NewGeneratorsFromMap(v.ObjectContent, shortNames, docCount, encoder)
+		g, err := newGeneratorsFromMap(v.ObjectContent, shortNames, docCount, encoder)
 		if err != nil {
 			return nil, err
 		}
@@ -600,7 +600,7 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32
 		_, ok := mapRef[v.ID]
 		if !ok {
 			tmpEnc := &Encoder{Data: make([]byte, 0), DocCount: int32(0)}
-			g, err := NewGenerator(k, v.RefContent, shortNames, docCount, tmpEnc)
+			g, err := newGenerator(k, v.RefContent, shortNames, docCount, tmpEnc)
 			if err != nil {
 				return nil, fmt.Errorf("for field %s, %s", k, err.Error())
 			}
@@ -625,10 +625,10 @@ func NewGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32
 }
 
 // NewGeneratorsFromMap creates a slice of generators based on a JSON configuration map
-func NewGeneratorsFromMap(content map[string]cf.GeneratorJSON, shortNames bool, docCount int32, encoder *Encoder) ([]Generator, error) {
+func newGeneratorsFromMap(content map[string]cf.GeneratorJSON, shortNames bool, docCount int32, encoder *Encoder) ([]Generator, error) {
 	gArr := make([]Generator, 0)
 	for k, v := range content {
-		g, err := NewGenerator(k, &v, shortNames, docCount, encoder)
+		g, err := newGenerator(k, &v, shortNames, docCount, encoder)
 		if err != nil {
 			return nil, err
 		}
@@ -651,7 +651,7 @@ type Aggregator struct {
 }
 
 // NewAggregator returns a new Aggregator based on a JSON configuration
-func NewAggregator(k string, v *cf.GeneratorJSON, shortNames bool) (*Aggregator, error) {
+func newAggregator(k string, v *cf.GeneratorJSON, shortNames bool) (*Aggregator, error) {
 	if v.Query == nil || len(v.Query) == 0 {
 		return nil, fmt.Errorf("for field %v, query can't be null or empty", k)
 	}
@@ -690,7 +690,7 @@ func NewAggregatorFromMap(content map[string]cf.GeneratorJSON, shortNames bool) 
 	for k, v := range content {
 		switch v.Type {
 		case "countAggregator", "valueAggregator", "boundAggregator":
-			a, err := NewAggregator(k, &v, shortNames)
+			a, err := newAggregator(k, &v, shortNames)
 			if err != nil {
 				return nil, err
 			}
@@ -699,4 +699,14 @@ func NewAggregatorFromMap(content map[string]cf.GeneratorJSON, shortNames bool) 
 		}
 	}
 	return agArr, nil
+}
+
+// CreateGenerator creates an object generator to get bson.Raw objects
+func CreateGenerator(content map[string]cf.GeneratorJSON, shortNames bool, docCount int32, encoder *Encoder) (*ObjectGenerator, error) {
+	// create the global generator
+	g, err := newGeneratorsFromMap(content, shortNames, docCount, encoder)
+	if err != nil {
+		return nil, fmt.Errorf("error while creating generators from configuration file:\n\tcause: %s", err.Error())
+	}
+	return &ObjectGenerator{EmptyGenerator: EmptyGenerator{K: []byte(""), NullPercentage: 0, T: 6, Out: encoder}, Generators: g}, nil
 }

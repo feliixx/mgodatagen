@@ -1,6 +1,9 @@
 package config
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/globalsign/mgo"
@@ -117,4 +120,22 @@ type GeneratorJSON struct {
 	Field string `json:"field"`
 	// For `countAggregator` and `valueAggregator` only
 	Query bson.M `json:"query"`
+}
+
+// CollectionList returns a list of Collection to create from a
+// json configuration file
+func CollectionList(filename string) ([]Collection, error) {
+	// read the json config file
+	file, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("File error: %s", err.Error())
+	}
+	// map to a json object
+	fmt.Println("Parsing configuration file...")
+	var collectionList []Collection
+	err = json.Unmarshal(file, &collectionList)
+	if err != nil {
+		return nil, fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%s", err.Error())
+	}
+	return collectionList, nil
 }

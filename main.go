@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"sync"
@@ -23,30 +22,14 @@ import (
 )
 
 const (
-	version     = "0.2" // current version of mgodatagen
+	version     = "0.3" // current version of mgodatagen
 	maxBSONSize = 15 * 1000 * 1000
 )
 
-// DResult stores the result of a `distinct` command
-type DResult struct {
+// dResult stores the result of a `distinct` command
+type dResult struct {
 	Values []interface{} `bson:"values"`
 	Ok     bool          `bson:"ok"`
-}
-
-// CResult stores the result of a `count` command
-type CResult struct {
-	N  int32 `bson:"n"`
-	Ok bool  `bson:"ok"`
-}
-
-// Create an object generator to get bson.Raw objects
-func getGenerator(content map[string]cf.GeneratorJSON, shortNames bool, docCount int32, encoder *rg.Encoder) (*rg.ObjectGenerator, error) {
-	// create the global generator
-	g, err := rg.NewGeneratorsFromMap(content, shortNames, docCount, encoder)
-	if err != nil {
-		return nil, fmt.Errorf("error while creating generators from configuration file:\n\tcause: %s", err.Error())
-	}
-	return &rg.ObjectGenerator{EmptyGenerator: rg.EmptyGenerator{K: []byte(""), NullPercentage: 0, T: 6, Out: encoder}, Generators: g}, nil
 }
 
 // get a connection from Connection args
@@ -145,7 +128,7 @@ type bufferedBulkInserter struct {
 func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInsertWorker int) error {
 	// create a generator
 	encoder := &rg.Encoder{Data: make([]byte, 4), DocCount: int32(0)}
-	generator, err := getGenerator(coll.Content, shortNames, coll.Count, encoder)
+	generator, err := rg.CreateGenerator(coll.Content, shortNames, coll.Count, encoder)
 	if err != nil {
 		return err
 	}
@@ -305,14 +288,17 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 				localKey = k
 			}
 		}
-		var result DResult
+		var result dResult
 		err = c.Database.Run(bson.D{{Name: "distinct", Value: c.Name}, {Name: "key", Value: localVar}}, &result)
 		if err != nil {
 			return err
 		}
 		switch agg.Mode {
 		case 0:
-			var r CResult
+			var r struct {
+				N  int32 `bson:"n"`
+				Ok bool  `bson:"ok"`
+			}
 			for _, v := range result.Values {
 				command := bson.D{{Name: "count", Value: agg.Collection}}
 				if agg.Query != nil {
@@ -327,7 +313,7 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: r.N}})
 			}
 		case 1:
-			var r DResult
+			var r dResult
 			for _, v := range result.Values {
 				agg.Query[localKey] = v
 
@@ -429,23 +415,6 @@ func printCollStats(c *mgo.Collection) error {
 	return nil
 }
 
-// pretty print an array of bson.M documents
-// func prettyPrintBSONArray(coll *cf.Collection, shortNames bool) error {
-// 	g, err := rg.NewGeneratorsFromMap(coll.Content, shortNames, coll.Count)
-// 	if err != nil {
-// 		return fmt.Errorf("fail to prettyPrint JSON doc:\n\tcause: %s", err.Error())
-// 	}
-// 	generator := rg.ObjectGenerator{Generators: g}
-// 	source := rg.NewRandSource()
-// 	doc := generator.Value(source).(bson.M)
-// 	json, err := json.MarshalIndent(doc, "", "  ")
-// 	if err != nil {
-// 		return fmt.Errorf("fail to prettyPrint JSON doc:\n\tcause: %s", err.Error())
-// 	}
-// 	fmt.Printf("generated: %s", string(json))
-// 	return nil
-// }
-
 // print the error in red and exit
 func printErrorAndExit(err error) {
 	color.Red("ERROR: %s", err.Error())
@@ -506,17 +475,9 @@ func main() {
 	if options.ConfigFile == "" {
 		printErrorAndExit(fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations "))
 	}
-	// read the json config file
-	file, err := ioutil.ReadFile(options.ConfigFile)
+	collectionList, err := cf.CollectionList(options.ConfigFile)
 	if err != nil {
-		printErrorAndExit(fmt.Errorf("File error: %s", err.Error()))
-	}
-	// map to a json object
-	fmt.Println("Parsing configuration file...")
-	var collectionList []cf.Collection
-	err = json.Unmarshal(file, &collectionList)
-	if err != nil {
-		printErrorAndExit(fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%s", err.Error()))
+		printErrorAndExit(err)
 	}
 	session, err := connectToDB(&options.Connection)
 	if err != nil {
