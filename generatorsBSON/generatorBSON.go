@@ -1,10 +1,15 @@
 package generatorsBSON
 
 import (
+	"crypto/md5"
+	r "crypto/rand"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
+	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/globalsign/mgo/bson"
@@ -13,7 +18,7 @@ import (
 )
 
 const (
-	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_"
 	letterIdxBits = 6                    // 6 bits to represent a letter index (2^6 => 0-63)
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
@@ -23,8 +28,40 @@ var (
 	// stores value for ref fields
 	mapRef = map[int][][]byte{}
 	// stores bson type for each ref array
-	mapRefType = map[int]byte{}
+	mapRefType      = map[int]byte{}
+	machineID       = readMachineID()
+	processID       = os.Getpid()
+	objectIDCounter = readRandomUint32()
 )
+
+// readMachineId generates and returns a machine id.
+// If this function fails to get the hostname it will cause a runtime error.
+func readMachineID() []byte {
+	var sum [3]byte
+	id := sum[:]
+	hostname, err1 := os.Hostname()
+	if err1 != nil {
+		_, err2 := io.ReadFull(r.Reader, id)
+		if err2 != nil {
+			panic(fmt.Errorf("cannot get hostname: %v; %v", err1, err2))
+		}
+		return id
+	}
+	hw := md5.New()
+	hw.Write([]byte(hostname))
+	copy(id, hw.Sum(nil))
+	return id
+}
+
+// readRandomUint32 returns a random objectIdCounter.
+func readRandomUint32() uint32 {
+	var b [4]byte
+	_, err := io.ReadFull(r.Reader, b[:])
+	if err != nil {
+		panic(fmt.Errorf("cannot read random object id: %v", err))
+	}
+	return uint32((uint32(b[0]) << 0) | (uint32(b[1]) << 8) | (uint32(b[2]) << 16) | (uint32(b[3]) << 24))
+}
 
 // Int32Bytes convert an int32 into an array of bytes
 func Int32Bytes(v int32) []byte {
@@ -198,8 +235,25 @@ type ObjectIDGenerator struct {
 
 // Value add a bson.ObjectId to the encoder
 func (g *ObjectIDGenerator) Value(rnd *RandSource) {
-	g.Out.Data = append(g.Out.Data, []byte(bson.NewObjectId())...)
 
+	t := uint32(time.Now().Unix())
+
+	i := atomic.AddUint32(&objectIDCounter, 1)
+
+	g.Out.Data = append(g.Out.Data,
+		byte(t>>24),
+		byte(t>>16),
+		byte(t>>8),
+		byte(t),
+		machineID[0], // Machine, first 3 bytes of md5(hostname)
+		machineID[1],
+		machineID[2],
+		byte(processID>>8), // Pid, 2 bytes, specs don't specify endianness, but we use big endian.
+		byte(processID),
+		byte(i>>16), // Increment, 3 bytes, big endian
+		byte(i>>8),
+		byte(i),
+	)
 }
 
 // ObjectGenerator struct that implements Generator. Used to
@@ -304,9 +358,11 @@ func (g *BinaryDataGenerator) Value(rnd *RandSource) {
 	}
 	g.Out.Data = append(g.Out.Data, Int32Bytes(length)...)
 	g.Out.Data = append(g.Out.Data, bson.BinaryGeneric)
-	b := make([]byte, length)
-	rnd.R.Read(b) // returns len(b) and a nil error
-	g.Out.Data = append(g.Out.Data, b...)
+	l := len(g.Out.Data)
+	for i := 0; i < int(length); i++ {
+		g.Out.Data = append(g.Out.Data, byte(0))
+	}
+	rnd.R.Read(g.Out.Data[l : l+int(length)])
 }
 
 // DateGenerator struct that implements Generator. Used to

@@ -105,7 +105,18 @@ func BenchmarkGeneratorObjectId(b *testing.B) {
 }
 
 func BenchmarkGeneratorAll(b *testing.B) {
+	b.StopTimer()
+	collectionList, _ := cf.CollectionList("../samples/bson_test.json")
+
+	encoder := &Encoder{
+		Data:     make([]byte, 4),
+		DocCount: int32(0),
+	}
+	generator, _ := CreateGenerator(collectionList[0].Content, false, 1000, encoder)
+
+	source := NewRandSource()
+	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		objectGenerator.Value(source)
+		generator.Value(source)
 	}
 }

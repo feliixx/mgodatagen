@@ -131,7 +131,6 @@ func CollectionList(filename string) ([]Collection, error) {
 		return nil, fmt.Errorf("File error: %s", err.Error())
 	}
 	// map to a json object
-	fmt.Println("Parsing configuration file...")
 	var collectionList []Collection
 	err = json.Unmarshal(file, &collectionList)
 	if err != nil {

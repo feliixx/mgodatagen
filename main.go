@@ -135,7 +135,7 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInse
 	// Create a rand.Rand object to generate our random values
 	source := rg.NewRandSource()
 	// number of routines inserting documents simultaneously in database
-	nbInsertingGoRoutines := runtime.NumCPU()
+	nbInsertingGoRoutines := runtime.NumCPU() + 1
 	if numInsertWorker > 0 {
 		nbInsertingGoRoutines = numInsertWorker
 	}
@@ -244,7 +244,7 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInse
 			generator.Value(source)
 			data := make([]byte, len(encoder.Data))
 			copy(data, encoder.Data)
-			record <- bson.Raw{Data: data}
+			record <- bson.Raw{Data: data, Kind: bson.ElementDocument}
 		}
 		count += encoder.DocCount
 		//count += encoder.DocCount
@@ -441,7 +441,7 @@ type Config struct {
 	IndexOnly       bool   `short:"i" long:"indexonly" description:"if present, mgodatagen will just try to rebuild index"`
 	ShortName       bool   `short:"s" long:"shortname" description:"if present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
 	Append          bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents or deleting the collection"`
-	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU"`
+	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU+1"`
 }
 
 // Options struct to store flags from CLI
@@ -475,6 +475,7 @@ func main() {
 	if options.ConfigFile == "" {
 		printErrorAndExit(fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations "))
 	}
+	fmt.Println("Parsing configuration file...")
 	collectionList, err := cf.CollectionList(options.ConfigFile)
 	if err != nil {
 		printErrorAndExit(err)
