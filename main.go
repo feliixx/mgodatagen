@@ -6,10 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -20,38 +18,18 @@ import (
 	"gopkg.in/cheggaaa/pb.v2"
 
 	cf "github.com/feliixx/mgodatagen/config"
-	rg "github.com/feliixx/mgodatagen/generators"
+	rg "github.com/feliixx/mgodatagen/generatorsBSON"
 )
 
 const (
-	version = "0.2" // current version of mgodatagen
+	version     = "0.3" // current version of mgodatagen
+	maxBSONSize = 15 * 1000 * 1000
 )
 
-// DResult stores the result of a `distinct` command
-type DResult struct {
+// dResult stores the result of a `distinct` command
+type dResult struct {
 	Values []interface{} `bson:"values"`
 	Ok     bool          `bson:"ok"`
-}
-
-// CResult stores the result of a `count` command
-type CResult struct {
-	N  int32 `bson:"n"`
-	Ok bool  `bson:"ok"`
-}
-
-// Create an array generator to generate x json documetns at the same time
-func getGenerator(content map[string]cf.GeneratorJSON, batchSize int, shortNames bool, docCount int) (*rg.ArrayGenerator, error) {
-	// create the global generator, used to generate 1000 items at a time
-	g, err := rg.NewGeneratorsFromMap(content, shortNames, docCount)
-	if err != nil {
-		return nil, fmt.Errorf("error while creating generators from configuration file:\n\tcause: %s", err.Error())
-	}
-	eg := rg.EmptyGenerator{K: "", NullPercentage: 0, T: 6}
-	gen := &rg.ArrayGenerator{
-		EmptyGenerator: eg,
-		Size:           batchSize,
-		Generator:      &rg.ObjectGenerator{EmptyGenerator: eg, Generators: g}}
-	return gen, nil
 }
 
 // get a connection from Connection args
@@ -141,31 +119,36 @@ func createCollection(coll *cf.Collection, session *mgo.Session, indexOnly bool,
 	return c, nil
 }
 
+type bufferedBulkInserter struct {
+	Bulk     *mgo.Bulk
+	DocCount int
+}
+
 // insert documents in DB, and then close the session
 func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInsertWorker int) error {
-	// number of document to insert in each bulkinsert. Default is 1000
-	// as mongodb insert 1000 docs at a time max
-	batchSize := 1000
+	// create a generator
+	encoder := &rg.Encoder{Data: make([]byte, 4), DocCount: int32(0)}
+	generator, err := rg.CreateGenerator(coll.Content, shortNames, coll.Count, encoder)
+	if err != nil {
+		return err
+	}
+	// Create a rand.Rand object to generate our random values
+	source := rg.NewRandSource()
 	// number of routines inserting documents simultaneously in database
 	nbInsertingGoRoutines := runtime.NumCPU()
 	if numInsertWorker > 0 {
 		nbInsertingGoRoutines = numInsertWorker
 	}
 	// size of the buffered channel for docs to insert
-	docBufferSize := 3
+	docBufferSize := 100
 	// for really small insert, use only one goroutine and reduce the buffered channel size
 	if coll.Count < 3000 {
-		batchSize = coll.Count
 		nbInsertingGoRoutines = 1
 		docBufferSize = 1
 	}
-	generator, err := getGenerator(coll.Content, batchSize, shortNames, coll.Count)
-	if err != nil {
-		return err
-	}
 	// To make insertion faster, buffer the generated documents
-	// and push them to a channel. The channel stores 3 x 1000 docs by default
-	record := make(chan []bson.M, docBufferSize)
+	// and push them to a channel.
+	record := make(chan bson.Raw, docBufferSize)
 	// A channel to get error from goroutines
 	errs := make(chan error, 1)
 	// use context to handle errors in goroutines. If an error occurs in a goroutine,
@@ -177,7 +160,7 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInse
 	var wg sync.WaitGroup
 	wg.Add(nbInsertingGoRoutines)
 	// start a new progressbar to display progress in terminal
-	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}          `).Start(coll.Count)
+	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}          `).Start(int(coll.Count))
 	// start goroutines to bulk insert documents in MongoDB
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
@@ -187,6 +170,14 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInse
 			defer s.Close()
 			coll := c.With(s)
 
+			b := bufferedBulkInserter{
+				Bulk:     coll.Bulk(),
+				DocCount: 0,
+			}
+			// do not check error for each insert, but only one
+			// all documents in the Bulk have been inserted
+			b.Bulk.Unordered()
+
 			for r := range record {
 				// if an error occurs in one of the goroutine, 'return' is called which trigger
 				// wg.Done() ==> the goroutine stops
@@ -195,12 +186,30 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInse
 					return
 				default:
 				}
-				bulk := coll.Bulk()
-				bulk.Unordered()
-				for i := range r {
-					bulk.Insert(r[i])
+				if b.DocCount >= 1000 {
+					_, err := b.Bulk.Run()
+					if err != nil {
+						// if the bulk insert fails, push the error to the error channel
+						// so that we can use it from the main thread
+						select {
+						case errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %s", err.Error()):
+						default:
+						}
+						// cancel the context to terminate goroutine and stop the feeding of the
+						// buffered channel
+						cancel()
+						return
+					}
+					b.Bulk = coll.Bulk()
+					b.Bulk.Unordered()
+					b.DocCount = int(0)
 				}
-				_, err := bulk.Run()
+				b.Bulk.Insert(r)
+				b.DocCount++
+			}
+			// if there is some documents remaining in the bulk
+			if b.DocCount > 0 {
+				_, err := b.Bulk.Run()
 				if err != nil {
 					// if the bulk insert fails, push the error to the error channel
 					// so that we can use it from the main thread
@@ -219,33 +228,28 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInse
 		// sleep to prevent all threads from inserting at the same time at start
 		time.Sleep(time.Duration(i) * 10 * time.Millisecond)
 	}
-	// Create a rand.Rand object to generate our random values
-	source := rg.NewRandSource()
 	// counter for already generated documents
-	count := 0
-	// start []bson.M generation to feed the buffered channel
+	count := int32(0)
+	// start bson.Raw generation to feed the buffered channel
 	for count < coll.Count {
 		select {
 		case <-ctx.Done(): // if an error occurred in one of the 'inserting' goroutines, close the channel
 			close(record)
 			bar.Finish()
-			return <-errs
+			// return <-errs
 		default:
 		}
-		// if nb of remaining docs to insert < 1000, re generate a generator of smaller size
-		if (coll.Count-count) < 1000 && coll.Count > 1000 {
-			batchSize = coll.Count - count
-			generator, err = getGenerator(coll.Content, batchSize, shortNames, coll.Count)
-			if err != nil {
-				close(record)
-				bar.Finish()
-				return err
-			}
+		// push generated bson.Raw to the buffered channel
+		for encoder.DocCount < 1000 && count+encoder.DocCount < coll.Count {
+			generator.Value(source)
+			data := make([]byte, len(encoder.Data))
+			copy(data, encoder.Data)
+			record <- bson.Raw{Data: data}
 		}
-		// push generated []bson.M to the buffered channel
-		record <- generator.Value(source).([]bson.M)
-		count += batchSize
-		bar.Add(batchSize)
+		count += encoder.DocCount
+		//count += encoder.DocCount
+		bar.Add(int(encoder.DocCount))
+		encoder.DocCount = int32(0)
 	}
 	close(record)
 	// wait for goroutines to end
@@ -260,7 +264,7 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInse
 	return nil
 }
 
-// Update documents with pre-computed aggregations
+//Update documents with pre-computed aggregations
 func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bool) error {
 	aggArr, err := rg.NewAggregatorFromMap(coll.Content, shortNames)
 	if err != nil {
@@ -270,7 +274,7 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 		return nil
 	}
 	fmt.Printf("Generating aggregated data for collection %v\n", c.Name)
-	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}          `).Start(coll.Count * len(aggArr))
+	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}          `).Start(int(coll.Count) * len(aggArr))
 	c.Database.Session.SetSocketTimeout(time.Duration(30) * time.Minute)
 	for _, agg := range aggArr {
 		bulk := c.Bulk()
@@ -284,14 +288,17 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 				localKey = k
 			}
 		}
-		var result DResult
+		var result dResult
 		err = c.Database.Run(bson.D{{Name: "distinct", Value: c.Name}, {Name: "key", Value: localVar}}, &result)
 		if err != nil {
 			return err
 		}
 		switch agg.Mode {
 		case 0:
-			var r CResult
+			var r struct {
+				N  int32 `bson:"n"`
+				Ok bool  `bson:"ok"`
+			}
 			for _, v := range result.Values {
 				command := bson.D{{Name: "count", Value: agg.Collection}}
 				if agg.Query != nil {
@@ -303,10 +310,10 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 				if err != nil {
 					return err
 				}
-				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.N}})
+				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: r.N}})
 			}
 		case 1:
-			var r DResult
+			var r dResult
 			for _, v := range result.Values {
 				agg.Query[localKey] = v
 
@@ -319,7 +326,7 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 					return err
 				}
 
-				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): r.Values}})
+				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: r.Values}})
 			}
 		case 2:
 			res := bson.M{}
@@ -346,10 +353,10 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 					return err
 				}
 				bound["M"] = res["max"]
-				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.Key(): bound}})
+				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: bound}})
 			}
 		}
-		bar.Add(coll.Count)
+		bar.Add(int(coll.Count))
 		_, err = bulk.Run()
 		if err != nil && err.Error() == "not found" {
 			return err
@@ -408,23 +415,6 @@ func printCollStats(c *mgo.Collection) error {
 	return nil
 }
 
-// pretty print an array of bson.M documents
-func prettyPrintBSONArray(coll *cf.Collection, shortNames bool) error {
-	g, err := rg.NewGeneratorsFromMap(coll.Content, shortNames, coll.Count)
-	if err != nil {
-		return fmt.Errorf("fail to prettyPrint JSON doc:\n\tcause: %s", err.Error())
-	}
-	generator := rg.ObjectGenerator{Generators: g}
-	source := rg.NewRandSource()
-	doc := generator.Value(source).(bson.M)
-	json, err := json.MarshalIndent(doc, "", "  ")
-	if err != nil {
-		return fmt.Errorf("fail to prettyPrint JSON doc:\n\tcause: %s", err.Error())
-	}
-	fmt.Printf("generated: %s", string(json))
-	return nil
-}
-
 // print the error in red and exit
 func printErrorAndExit(err error) {
 	color.Red("ERROR: %s", err.Error())
@@ -452,7 +442,6 @@ type Config struct {
 	ShortName       bool   `short:"s" long:"shortname" description:"if present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
 	Append          bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents or deleting the collection"`
 	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU"`
-	HeapSizeFactor  int    `short:"m" long:"heapSizeFactor" value-name:"<nb>" description:"memory size factor, between 1 and 20" default:"15"`
 }
 
 // Options struct to store flags from CLI
@@ -463,6 +452,7 @@ type Options struct {
 }
 
 func main() {
+
 	// struct to store command line args
 	var options Options
 	p := flags.NewParser(&options, flags.Default&^flags.HelpFlag)
@@ -476,31 +466,18 @@ func main() {
 		p.WriteHelp(os.Stdout)
 		os.Exit(0)
 	}
+
 	// if -v|--version print version and exit
 	if options.Version {
 		fmt.Printf("mgodatagen version %s\n", version)
 		os.Exit(0)
 	}
-	heapSize := 15
-	if options.HeapSizeFactor > 0 {
-		heapSize = options.HeapSizeFactor
-	}
-	// Reduce the number of GC calls as we are generating lots of objects
-	debug.SetGCPercent(heapSize * 100)
 	if options.ConfigFile == "" {
 		printErrorAndExit(fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations "))
 	}
-	// read the json config file
-	file, err := ioutil.ReadFile(options.ConfigFile)
+	collectionList, err := cf.CollectionList(options.ConfigFile)
 	if err != nil {
-		printErrorAndExit(fmt.Errorf("File error: %s", err.Error()))
-	}
-	// map to a json object
-	fmt.Println("Parsing configuration file...")
-	var collectionList []cf.Collection
-	err = json.Unmarshal(file, &collectionList)
-	if err != nil {
-		printErrorAndExit(fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%s", err.Error()))
+		printErrorAndExit(err)
 	}
 	session, err := connectToDB(&options.Connection)
 	if err != nil {
