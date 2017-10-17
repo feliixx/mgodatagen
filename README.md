@@ -38,6 +38,8 @@ go get -v "github.com/feliixx/mgodatagen"
 Several options are available (you can see the list from `mgodatagen --help`): 
 
 ```
+mgodatagen version 0.3
+
 Usage:
   mgodatagen
 
@@ -48,6 +50,8 @@ configuration:
                                to the first two letters only ('name' => 'na')
   -a, --append                 if present, append documents to the collection without
                                removing older documents or deleting the collection
+  -n, --numWorker=<nb>         number of concurrent workers inserting documents
+                               in database. Default is number of CPU + 1
 
 connection infos:
   -h, --host=<hostname>        mongodb host to connect to (default: 127.0.0.1)
@@ -157,6 +161,23 @@ See **MongodB documentation** for details on parameters:
 ]
 ```
 
+### Example
+
+A set of sample config files can be found in the **samples** directory. To use it, 
+make sure that you have a mongodb instance running (on 127.0.0.1:27017 for example)
+and run 
+
+```
+./mgodatagen -f samples/config.json
+```
+
+This will insert 1000000 random documents in collections `test` and `link` of database 
+`test` with the structure defined in the config file. 
+
+
+# Generator types  
+
+
 Gnerators have a common structure: 
 
 ```JSON5
@@ -168,22 +189,6 @@ Gnerators have a common structure:
   "typeParam": ...             // parameters for this type
 }
 ```
-
-### Example
-
-A set of sample config files can be found in the **samples** directory. To use it, 
-make sure that you have a mongodb instance running (on 127.0.0.1:27017 for example)
-and run 
-
-```
-./mgodatagen -f samples/config.json
-```
-
-This will insert 100000 random documents in collections `test` and `link` of database 
-`test` with the structure defined in the config file. 
-
-
-# Generator types  
 
 List of main `<generator>` types: 
 
