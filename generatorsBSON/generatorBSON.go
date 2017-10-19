@@ -107,19 +107,6 @@ func Float64Bytes(v float64) []byte {
 	return Int64Bytes(int64(math.Float64bits(v)))
 }
 
-// RandSource stores ressources to get random value. Keep both as
-// src.int63() is faster than r.int63().
-type RandSource struct {
-	Src rand.Source
-	R   *rand.Rand
-}
-
-// NewRandSource creates a new RandSource
-func NewRandSource() *RandSource {
-	var rndSrc = rand.NewSource(time.Now().UnixNano())
-	return &RandSource{R: rand.New(rndSrc), Src: rndSrc}
-}
-
 // Generator interface for all generator objects
 type Generator interface {
 	// Key() return the key (bson::e_name) encoded in UTF-8, followed by 0x00
@@ -127,8 +114,8 @@ type Generator interface {
 	// Type() return the bson type of the element created by the generator
 	Type() byte
 	// get a random value according to the generator type
-	Value(rnd *RandSource)
-	Exists(rnd *RandSource) bool
+	Value()
+	Exists() bool
 }
 
 // EmptyGenerator serves as base for the actual generators
@@ -147,6 +134,8 @@ type EmptyGenerator struct {
 type Encoder struct {
 	Data     []byte
 	DocCount int32
+	Src      rand.Source
+	R        *rand.Rand
 }
 
 // Key returns the key of the object
@@ -155,11 +144,11 @@ func (g *EmptyGenerator) Key() []byte { return g.K }
 // Exists returns true if the generation should be performed
 // get the last 10 bits of the random int64 to get a number between 0 and 1023,
 // and compare it to nullPercentage * 10
-func (g *EmptyGenerator) Exists(rnd *RandSource) bool {
+func (g *EmptyGenerator) Exists() bool {
 	if g.NullPercentage == 0 {
 		return true
 	}
-	return rnd.Src.Int63()>>53 >= g.NullPercentage
+	return g.Out.Src.Int63()>>53 >= g.NullPercentage
 }
 
 // Type returns an int corresponding to a type from mapType
@@ -175,19 +164,19 @@ type StringGenerator struct {
 
 // Value add a random String of `g.length` length to
 // the encoder
-func (g *StringGenerator) Value(rnd *RandSource) {
+func (g *StringGenerator) Value() {
 	length := g.MinLength
 	if g.MaxLength != g.MinLength {
-		length = rnd.R.Int31n(g.MaxLength-g.MinLength) + g.MinLength
+		length = g.Out.R.Int31n(g.MaxLength-g.MinLength) + g.MinLength
 	}
 	// first, put the size of the string, which is length + 1 because of
 	// the terminating byte 0x00
 	g.Out.Data = append(g.Out.Data, Int32Bytes(length+1)...)
 	// create the random string
-	cache, remain := rnd.Src.Int63(), letterIdxMax
+	cache, remain := g.Out.Src.Int63(), letterIdxMax
 	for i := length - 1; i >= 0; i-- {
 		if remain == 0 {
-			cache, remain = rnd.Src.Int63(), letterIdxMax
+			cache, remain = g.Out.Src.Int63(), letterIdxMax
 		}
 		g.Out.Data = append(g.Out.Data, letterBytes[cache&letterIdxMask])
 		cache >>= letterIdxBits
@@ -207,8 +196,8 @@ type Int32Generator struct {
 
 // Value add a random int32 between `g.Min` and `g.Max` to the
 // encoder
-func (g *Int32Generator) Value(rnd *RandSource) {
-	g.Out.Data = append(g.Out.Data, Int32Bytes(rnd.R.Int31n(g.Max-g.Min)+g.Min)...)
+func (g *Int32Generator) Value() {
+	g.Out.Data = append(g.Out.Data, Int32Bytes(g.Out.R.Int31n(g.Max-g.Min)+g.Min)...)
 }
 
 // Int64Generator struct that implements Generator. Used to
@@ -220,8 +209,8 @@ type Int64Generator struct {
 }
 
 // Value add a random int64 between `g.Min` and `g.Max` to the encoder
-func (g *Int64Generator) Value(rnd *RandSource) {
-	g.Out.Data = append(g.Out.Data, Int64Bytes(rnd.R.Int63n(g.Max-g.Min)+g.Min)...)
+func (g *Int64Generator) Value() {
+	g.Out.Data = append(g.Out.Data, Int64Bytes(g.Out.R.Int63n(g.Max-g.Min)+g.Min)...)
 }
 
 // Float64Generator struct that implements Generator. Used to
@@ -233,8 +222,20 @@ type Float64Generator struct {
 }
 
 // Value returns a random float64 between `g.Min` and `g.Max`
-func (g *Float64Generator) Value(rnd *RandSource) {
-	g.Out.Data = append(g.Out.Data, Float64Bytes(rnd.R.Float64()*g.StdDev+g.Mean)...)
+func (g *Float64Generator) Value() {
+	g.Out.Data = append(g.Out.Data, Float64Bytes(g.Out.R.Float64()*g.StdDev+g.Mean)...)
+}
+
+// Decimal128Generator struct that implements Generator. Used to
+// generate random decimal128
+type Decimal128Generator struct {
+	EmptyGenerator
+}
+
+// Value returns a random Decimal128
+func (g *Decimal128Generator) Value() {
+	g.Out.Data = append(g.Out.Data, Int64Bytes(g.Out.Src.Int63())...)
+	g.Out.Data = append(g.Out.Data, Int64Bytes(g.Out.Src.Int63())...)
 }
 
 // BoolGenerator struct that implements Generator. Used to
@@ -245,8 +246,8 @@ type BoolGenerator struct {
 
 // Value add a random boolean to the encoder.
 // (check if first bit of a random int64 is 0 )
-func (g *BoolGenerator) Value(rnd *RandSource) {
-	if rnd.Src.Int63()&0x01 == 0 {
+func (g *BoolGenerator) Value() {
+	if g.Out.Src.Int63()&0x01 == 0 {
 		g.Out.Data = append(g.Out.Data, byte(0))
 	} else {
 		g.Out.Data = append(g.Out.Data, byte(1))
@@ -260,7 +261,7 @@ type ObjectIDGenerator struct {
 }
 
 // Value add a bson.ObjectId to the encoder
-func (g *ObjectIDGenerator) Value(rnd *RandSource) {
+func (g *ObjectIDGenerator) Value() {
 
 	t := uint32(time.Now().Unix())
 
@@ -290,17 +291,17 @@ type ObjectGenerator struct {
 }
 
 // Value add a random object to the encoder
-func (g *ObjectGenerator) Value(rnd *RandSource) {
+func (g *ObjectGenerator) Value() {
 	// reset the buffer. 4 first bytes are used to store
 	// the size of the document
 	g.Out.Data = g.Out.Data[0:4]
 	for _, gen := range g.Generators {
-		if gen.Exists(rnd) {
+		if gen.Exists() {
 			if gen.Type() != bson.ElementNil {
 				g.Out.Data = append(g.Out.Data, gen.Type())
 				g.Out.Data = append(g.Out.Data, gen.Key()...)
 			}
-			gen.Value(rnd)
+			gen.Value()
 		}
 	}
 	// end the document
@@ -317,7 +318,7 @@ func (g *ObjectGenerator) Value(rnd *RandSource) {
 type EmbeddedObjectGenerator ObjectGenerator
 
 // Value add a random document to the encoder
-func (g *EmbeddedObjectGenerator) Value(rnd *RandSource) {
+func (g *EmbeddedObjectGenerator) Value() {
 	// keep trace of current position so we can update the size of the
 	// document once it's been generated
 	current := len(g.Out.Data)
@@ -325,12 +326,12 @@ func (g *EmbeddedObjectGenerator) Value(rnd *RandSource) {
 	g.Out.Data = append(g.Out.Data, byte(0), byte(0), byte(0), byte(0))
 
 	for _, gen := range g.Generators {
-		if gen.Exists(rnd) {
+		if gen.Exists() {
 			if gen.Type() != bson.ElementNil {
 				g.Out.Data = append(g.Out.Data, gen.Type())
 				g.Out.Data = append(g.Out.Data, g.Key()...)
 			}
-			gen.Value(rnd)
+			gen.Value()
 		}
 	}
 	// end sub document
@@ -351,7 +352,7 @@ type ArrayGenerator struct {
 
 // Value add a random array of `g.size` size to the encoder. It's feed with the
 // provided generator
-func (g *ArrayGenerator) Value(rnd *RandSource) {
+func (g *ArrayGenerator) Value() {
 	current := len(g.Out.Data)
 	g.Out.Data = append(g.Out.Data, byte(0), byte(0), byte(0), byte(0))
 
@@ -359,7 +360,7 @@ func (g *ArrayGenerator) Value(rnd *RandSource) {
 		g.Out.Data = append(g.Out.Data, g.Generator.Type())
 		g.Out.Data = append(g.Out.Data, []byte(strconv.Itoa(i))...)
 		g.Out.Data = append(g.Out.Data, byte(0))
-		g.Generator.Value(rnd)
+		g.Generator.Value()
 	}
 	g.Out.Data = append(g.Out.Data, byte(0))
 	for i, b := range Int32Bytes(int32(len(g.Out.Data) - current)) {
@@ -377,10 +378,10 @@ type BinaryDataGenerator struct {
 
 // Value add a random array of bytes of length `g.length` to
 // the encoder
-func (g *BinaryDataGenerator) Value(rnd *RandSource) {
+func (g *BinaryDataGenerator) Value() {
 	length := g.MinLength
 	if g.MaxLength != g.MinLength {
-		length = rnd.R.Int31n(g.MaxLength-g.MinLength) + g.MinLength
+		length = g.Out.R.Int31n(g.MaxLength-g.MinLength) + g.MinLength
 	}
 	g.Out.Data = append(g.Out.Data, Int32Bytes(length)...)
 	g.Out.Data = append(g.Out.Data, bson.BinaryGeneric)
@@ -388,7 +389,7 @@ func (g *BinaryDataGenerator) Value(rnd *RandSource) {
 	for i := 0; i < int(length); i++ {
 		g.Out.Data = append(g.Out.Data, byte(0))
 	}
-	rnd.R.Read(g.Out.Data[l : l+int(length)])
+	g.Out.R.Read(g.Out.Data[l : l+int(length)])
 }
 
 // DateGenerator struct that implements Generator. Used to
@@ -401,8 +402,8 @@ type DateGenerator struct {
 
 // Value add a random date within `g.StartDate` and `g.endDate`
 // Date are not evenly distributed
-func (g *DateGenerator) Value(rnd *RandSource) {
-	g.Out.Data = append(g.Out.Data, Int64Bytes((rnd.R.Int63n(g.Delta)+g.StartDate)*1000)...)
+func (g *DateGenerator) Value() {
+	g.Out.Data = append(g.Out.Data, Int64Bytes((g.Out.R.Int63n(g.Delta)+g.StartDate)*1000)...)
 }
 
 // PositionGenerator struct that implements Generator. Used to
@@ -412,7 +413,7 @@ type PositionGenerator struct {
 }
 
 // Value add a random position to the encoder.
-func (g *PositionGenerator) Value(rnd *RandSource) {
+func (g *PositionGenerator) Value() {
 	current := len(g.Out.Data)
 	g.Out.Data = append(g.Out.Data, byte(0), byte(0), byte(0), byte(0))
 	for i := 0; i < 2; i++ {
@@ -420,9 +421,9 @@ func (g *PositionGenerator) Value(rnd *RandSource) {
 		g.Out.Data = append(g.Out.Data, []byte(strconv.Itoa(i))...)
 		g.Out.Data = append(g.Out.Data, byte(0))
 		if i == 0 {
-			g.Out.Data = append(g.Out.Data, Float64Bytes(rnd.R.Float64()*180-90)...)
+			g.Out.Data = append(g.Out.Data, Float64Bytes(g.Out.R.Float64()*180-90)...)
 		} else {
-			g.Out.Data = append(g.Out.Data, Float64Bytes(rnd.R.Float64()*360-180)...)
+			g.Out.Data = append(g.Out.Data, Float64Bytes(g.Out.R.Float64()*360-180)...)
 		}
 	}
 	g.Out.Data = append(g.Out.Data, byte(0))
@@ -439,7 +440,7 @@ type ConstGenerator struct {
 }
 
 // Value always add the same value as specified in the config file
-func (g *ConstGenerator) Value(rnd *RandSource) {
+func (g *ConstGenerator) Value() {
 	// the last byte is the bson element code, but we don't know it
 	// so we rely on mgo Marshal() to get it
 	//g.Out.Data = g.Out.Data[:len(g.Out.Data)-(len(g.K)+1)]
@@ -455,7 +456,7 @@ type AutoIncrementGenerator32 struct {
 
 // Value add prev counter, starting from `g.counter` to the
 // encoder
-func (g *AutoIncrementGenerator32) Value(rnd *RandSource) {
+func (g *AutoIncrementGenerator32) Value() {
 	g.Out.Data = append(g.Out.Data, Int32Bytes(g.Counter)...)
 	g.Counter++
 }
@@ -469,7 +470,7 @@ type AutoIncrementGenerator64 struct {
 
 // Value add prev counter, starting from `g.counter` to the
 // encoder
-func (g *AutoIncrementGenerator64) Value(rnd *RandSource) {
+func (g *AutoIncrementGenerator64) Value() {
 	g.Out.Data = append(g.Out.Data, Int64Bytes(g.Counter)...)
 	g.Counter++
 }
@@ -484,7 +485,7 @@ type FromArrayGenerator struct {
 }
 
 // Value add a random item of the input array to the encoder
-func (g *FromArrayGenerator) Value(rnd *RandSource) {
+func (g *FromArrayGenerator) Value() {
 	if g.Index == g.Size {
 		g.Index = 0
 	}
@@ -545,14 +546,13 @@ func newGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32
 	}
 	// EmptyGenerator to store general info
 	eg := EmptyGenerator{K: append([]byte(k), byte(0)), NullPercentage: v.NullPercentage * 10, Out: encoder}
-	rnd := NewRandSource()
 
 	// if we want only a certain number of distinct values
 	if v.MaxDistinctValue != 0 {
 
 		size := v.MaxDistinctValue
 		v.MaxDistinctValue = 0
-		tmpEnc := &Encoder{Data: make([]byte, 0), DocCount: int32(0)}
+		tmpEnc := &Encoder{Data: make([]byte, 0), DocCount: int32(0), R: encoder.R, Src: encoder.Src}
 		gen, err := newGenerator(k, v, shortNames, docCount, tmpEnc)
 		if err != nil {
 			return nil, fmt.Errorf("for field %s, error while creating base array: %s", k, err.Error())
@@ -560,7 +560,7 @@ func newGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32
 		// generate an array with the possible distinct values
 		arr := make([][]byte, size)
 		for i := range arr {
-			gen.Value(rnd)
+			gen.Value()
 			tmpArr := make([]byte, len(tmpEnc.Data))
 			copy(tmpArr, tmpEnc.Data)
 			arr[i] = tmpArr
@@ -606,6 +606,9 @@ func newGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32
 		}
 		eg.T = bson.ElementFloat64
 		return &Float64Generator{EmptyGenerator: eg, Mean: v.MinFloat64, StdDev: (v.MaxFloat64 - v.MinFloat64) / 2}, nil
+	case "decimal":
+		eg.T = bson.ElementDecimal128
+		return &Decimal128Generator{EmptyGenerator: eg}, nil
 	case "boolean":
 		eg.T = bson.ElementBool
 		return &BoolGenerator{EmptyGenerator: eg}, nil
@@ -681,14 +684,14 @@ func newGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32
 	case "ref":
 		_, ok := mapRef[v.ID]
 		if !ok {
-			tmpEnc := &Encoder{Data: make([]byte, 0), DocCount: int32(0)}
+			tmpEnc := &Encoder{Data: make([]byte, 0), DocCount: int32(0), R: encoder.R, Src: encoder.Src}
 			g, err := newGenerator(k, v.RefContent, shortNames, docCount, tmpEnc)
 			if err != nil {
 				return nil, fmt.Errorf("for field %s, %s", k, err.Error())
 			}
 			arr := make([][]byte, docCount)
 			for i := 0; i < int(docCount); i++ {
-				g.Value(rnd)
+				g.Value()
 				tmpArr := make([]byte, len(tmpEnc.Data))
 				copy(tmpArr, tmpEnc.Data)
 				arr[i] = tmpArr

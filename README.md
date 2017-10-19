@@ -196,6 +196,7 @@ List of main `<generator>` types:
 - [int](#int)
 - [long](#long)
 - [double](#double)
+- [decimal](#decimal)
 - [boolean](#boolean)
 - [objectId](#objectid)
 - [array](#array)
@@ -289,6 +290,18 @@ Generate random double within bounds.
     "maxDistinctValue": <int>, // optional 
     "minDouble": <double>,     // required
     "maxDouble": <double>      // required, must be >= minDouble
+}
+```
+
+### Decimal
+
+Generate random decimal128
+
+```JSON5
+"fieldName": {
+    "type": "decimal",         // required
+    "nullPercentage": <int>,   // optional
+    "maxDistinctValue": <int>, // optional 
 }
 ```
 

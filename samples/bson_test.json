@@ -33,6 +33,9 @@
         "minDouble": 0.0,
         "maxDouble": 10.0
       },
+      "dec": {
+        "type": "decimal"
+      },
       "verified": {
         "type": "boolean"
       },

@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"runtime"
 	"sync"
@@ -127,13 +128,16 @@ type bufferedBulkInserter struct {
 // insert documents in DB, and then close the session
 func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInsertWorker int) error {
 	// create a generator
-	encoder := &rg.Encoder{Data: make([]byte, 4), DocCount: int32(0)}
+	rndSrc := rand.NewSource(time.Now().UnixNano())
+
+	encoder := &rg.Encoder{Data: make([]byte, 4), DocCount: int32(0), R: rand.New(rndSrc), Src: rndSrc}
 	generator, err := rg.CreateGenerator(coll.Content, shortNames, coll.Count, encoder)
 	if err != nil {
 		return err
 	}
 	// Create a rand.Rand object to generate our random values
-	source := rg.NewRandSource()
+	//source := rg.NewRandSource()
+
 	// number of routines inserting documents simultaneously in database
 	nbInsertingGoRoutines := runtime.NumCPU() + 1
 	if numInsertWorker > 0 {
@@ -241,7 +245,7 @@ func insertInDB(coll *cf.Collection, c *mgo.Collection, shortNames bool, numInse
 		}
 		// push generated bson.Raw to the buffered channel
 		for encoder.DocCount < 1000 && count+encoder.DocCount < coll.Count {
-			generator.Value(source)
+			generator.Value()
 			data := make([]byte, len(encoder.Data))
 			copy(data, encoder.Data)
 			record <- bson.Raw{Data: data, Kind: bson.ElementDocument}
