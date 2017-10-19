@@ -2,13 +2,6 @@
    "database": "test", 
    "collection": "test",
    "count": 1000000,
-   "indexes": [
-      {
-         "name": "name_1",
-         "key": {"name": 1},
-         "sparse": true
-      }
-   ],
    "content": {  
       "_id": {  
          "type": "ref",

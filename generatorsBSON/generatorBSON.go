@@ -1,3 +1,29 @@
+// Package generatorsBSON used to create bson objects
+// Relevant documentation:
+//
+//     http://bsonspec.org/#/specification
+//
+// Currently supported BSON types:
+//  - string
+//  - int
+//  - long
+//  - double
+//  - boolean
+//  - date
+//  - objectId
+//  - object
+//  - array
+//  - binary data
+//
+// Custom types :
+//  - GPS position
+//  - constant
+//  - autoincrement
+//  - reference
+//  - from array
+//
+// It was created as part of mgodatagen, but is standalone
+// and may be used on its own.
 package generatorsBSON
 
 import (
@@ -286,12 +312,12 @@ func (g *ObjectGenerator) Value(rnd *RandSource) {
 	g.Out.DocCount++
 }
 
-// EmbededObjectGenerator struct that implements Generator. Used to
-// generate embeded documents
-type EmbededObjectGenerator ObjectGenerator
+// EmbeddedObjectGenerator struct that implements Generator. Used to
+// generate embedded documents
+type EmbeddedObjectGenerator ObjectGenerator
 
 // Value add a random document to the encoder
-func (g *EmbededObjectGenerator) Value(rnd *RandSource) {
+func (g *EmbeddedObjectGenerator) Value(rnd *RandSource) {
 	// keep trace of current position so we can update the size of the
 	// document once it's been generated
 	current := len(g.Out.Data)
@@ -602,7 +628,7 @@ func newGenerator(k string, v *cf.GeneratorJSON, shortNames bool, docCount int32
 			return nil, err
 		}
 		eg.T = bson.ElementDocument
-		return &EmbededObjectGenerator{EmptyGenerator: eg, Generators: g}, nil
+		return &EmbeddedObjectGenerator{EmptyGenerator: eg, Generators: g}, nil
 	case "fromArray":
 		if len(v.In) == 0 {
 			return nil, fmt.Errorf("for field %s, in array can't be null or empty", k)
