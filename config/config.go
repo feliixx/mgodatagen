@@ -138,5 +138,13 @@ func CollectionList(filename string) ([]Collection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%s", err.Error())
 	}
+	for _, v := range collectionList {
+		if v.Name == "" || v.DB == "" {
+			return nil, fmt.Errorf("Error in configuration file: \n\t'collection' and 'database' fields can't be empty")
+		}
+		if v.Count == 0 {
+			return nil, fmt.Errorf("Error in configuration file: \n\tfor collection %s, 'count' has to be > 0", v.Name)
+		}
+	}
 	return collectionList, nil
 }

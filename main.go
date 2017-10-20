@@ -80,8 +80,7 @@ func createCollection(coll *cf.Collection, session *mgo.Session, indexOnly bool,
 	// if a compression level is specified, explicitly create the collection with the selected
 	// compression level
 	if coll.CompressionLevel != "" {
-		strEng := bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}
-		err := c.Create(&mgo.CollectionInfo{StorageEngine: strEng})
+		err := c.Create(&mgo.CollectionInfo{StorageEngine: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
 		if err != nil {
 			return nil, fmt.Errorf("coulnd't create collection with compression level %s:\n\tcause: %s", coll.CompressionLevel, err.Error())
 		}
@@ -92,7 +91,7 @@ func createCollection(coll *cf.Collection, session *mgo.Session, indexOnly bool,
 			ErrMsg string
 			Ok     bool
 		}{}
-		// chack that the config is correct
+		// check that the config is correct
 		nm := c.Database.Name + "." + c.Name
 		if coll.ShardConfig.ShardCollection != nm {
 			return nil, fmt.Errorf("wrong value for 'shardConfig.shardCollection', should be <database>.<collection>: found %s, expected %s", coll.ShardConfig.ShardCollection, nm)
@@ -279,6 +278,7 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 	}
 	fmt.Printf("Generating aggregated data for collection %v\n", c.Name)
 	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}          `).Start(int(coll.Count) * len(aggArr))
+	// aggregation might be very long, so make sure the connection won't timeout
 	c.Database.Session.SetSocketTimeout(time.Duration(30) * time.Minute)
 	for _, agg := range aggArr {
 		bulk := c.Bulk()
@@ -298,7 +298,7 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 			return err
 		}
 		switch agg.Mode {
-		case 0:
+		case rg.CountAggregator:
 			var r struct {
 				N  int32 `bson:"n"`
 				Ok bool  `bson:"ok"`
@@ -316,7 +316,7 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 				}
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: r.N}})
 			}
-		case 1:
+		case rg.ValueAggregator:
 			var r dResult
 			for _, v := range result.Values {
 				agg.Query[localKey] = v
@@ -332,7 +332,7 @@ func updateWithAggregators(coll *cf.Collection, c *mgo.Collection, shortNames bo
 
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: r.Values}})
 			}
-		case 2:
+		case rg.BoundAggregator:
 			res := bson.M{}
 			for _, v := range result.Values {
 				agg.Query[localKey] = v
@@ -491,12 +491,6 @@ func main() {
 	defer session.Close()
 	// iterate over collection config
 	for _, v := range collectionList {
-		if v.Name == "" || v.DB == "" {
-			printErrorAndExit(fmt.Errorf("Error in configuration file: \n\t'collection' and 'database' fields can't be empty"))
-		}
-		if v.Count == 0 {
-			printErrorAndExit(fmt.Errorf("Error in configuration file: \n\tfor collection %s, 'count' has to be > 0", v.Name))
-		}
 		// create the collection
 		c, err := createCollection(&v, session, options.IndexOnly, options.Append)
 		if err != nil {

@@ -49,6 +49,12 @@ const (
 	letterIdxBits = 6                    // 6 bits to represent a letter index (2^6 => 0-63)
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+	// CountAggregator count mode
+	CountAggregator = 0
+	// ValueAggregator value mode
+	ValueAggregator = 1
+	// BoundAggregator bound mode
+	BoundAggregator = 2
 )
 
 var (
@@ -850,17 +856,17 @@ func newAggregator(k string, v *cf.GeneratorJSON, shortNames bool) (*Aggregator,
 	}
 	switch v.Type {
 	case "countAggregator":
-		return &Aggregator{Collection: v.Collection, Database: v.Database, Query: v.Query, Mode: 0}, nil
+		return &Aggregator{Collection: v.Collection, Database: v.Database, Query: v.Query, Mode: CountAggregator}, nil
 	case "valueAggregator":
 		if v.Field == "" {
 			return nil, fmt.Errorf("for field %v, field can't be null or empty", k)
 		}
-		return &Aggregator{Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, Mode: 1}, nil
+		return &Aggregator{Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, Mode: ValueAggregator}, nil
 	case "boundAggregator":
 		if v.Field == "" {
 			return nil, fmt.Errorf("for field %v, field can't be null or empty", k)
 		}
-		return &Aggregator{Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, Mode: 2}, nil
+		return &Aggregator{Collection: v.Collection, Database: v.Database, Field: v.Field, Query: v.Query, Mode: BoundAggregator}, nil
 	default:
 		return nil, nil
 	}
