@@ -107,6 +107,8 @@ type GeneratorJSON struct {
 	Start64 int64 `json:"startLong"`
 	// For `autoincrement` type only. Start value
 	AutoType string `json:"autoType"`
+	// For `faker` type only. Method to use
+	Method string `json:"method"`
 	// For `ref` type only. Used to retrieve the array storing the value
 	// for this field
 	ID int `json:"id"`

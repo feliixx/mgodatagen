@@ -51,6 +51,10 @@
           "2016-05-05"
         ]
       },
+      "faker": {
+        "type": "faker",
+        "method": "City"
+      },
       "cst": {
         "type": "constant",
         "constVal": 2

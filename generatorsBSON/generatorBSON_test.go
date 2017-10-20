@@ -37,6 +37,7 @@ type expectedDoc struct {
 	Verified   bool            `bson:"verified"`
 	Position   []float64       `bson:"position"`
 	Dt         string          `bson:"dt"`
+	Fake       string          `bson:"faker"`
 	Cst        int32           `bson:"cst"`
 	Nb         int64           `bson:"nb"`
 	Date       time.Time       `bson:"date"`
