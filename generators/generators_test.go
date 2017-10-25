@@ -1,19 +1,20 @@
-package generatorsBSON
+package generators
 
 import (
 	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
 
-	cf "github.com/feliixx/mgodatagen/config"
+	"github.com/feliixx/mgodatagen/config"
 )
 
 var (
 	rndSrc                = rand.NewSource(time.Now().UnixNano())
-	encoder               = &Encoder{Data: make([]byte, 4), DocCount: int32(0), R: rand.New(rndSrc), Src: rndSrc}
+	encoder               = &Encoder{Data: make([]byte, 4), R: rand.New(rndSrc), Src: rndSrc}
 	stringGenerator       = &StringGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key1"), byte(0)), NullPercentage: 100, T: bson.ElementString, Out: encoder}, MinLength: 5, MaxLength: 5}
 	int32Generator        = &Int32Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 100, T: bson.ElementInt32, Out: encoder}, Min: 0, Max: 100}
 	int64Generator        = &Int64Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 0, T: bson.ElementInt64, Out: encoder}, Min: 0, Max: 100}
@@ -54,16 +55,15 @@ type expectedDoc struct {
 
 func TestIsDocumentCorrect(t *testing.T) {
 
-	collectionList, err := cf.CollectionList("../samples/bson_test.json")
+	collectionList, err := config.CollectionList("../samples/bson_test.json")
 	assert.Nil(t, err)
 
 	src := rand.NewSource(time.Now().UnixNano())
 
 	encoder := &Encoder{
-		Data:     make([]byte, 4),
-		DocCount: int32(0),
-		R:        rand.New(src),
-		Src:      src,
+		Data: make([]byte, 4),
+		R:    rand.New(src),
+		Src:  src,
 	}
 	generator, err := CreateGenerator(collectionList[0].Content, false, 1000, encoder)
 	assert.Nil(t, err)
@@ -112,20 +112,51 @@ func BenchmarkGeneratorObjectId(b *testing.B) {
 
 func BenchmarkGeneratorAll(b *testing.B) {
 	b.StopTimer()
-	collectionList, _ := cf.CollectionList("../samples/bson_test.json")
+	collectionList, _ := config.CollectionList("../samples/config.json")
 
 	src := rand.NewSource(time.Now().UnixNano())
 
 	encoder := &Encoder{
-		Data:     make([]byte, 4),
-		DocCount: int32(0),
-		R:        rand.New(src),
-		Src:      src,
+		Data: make([]byte, 4),
+		R:    rand.New(src),
+		Src:  src,
 	}
 	generator, _ := CreateGenerator(collectionList[0].Content, false, 1000, encoder)
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		generator.Value()
+		tmp := make([]byte, len(encoder.Data))
+		copy(tmp, encoder.Data)
+	}
+}
+
+func BenchmarkBulk(b *testing.B) {
+	b.StopTimer()
+	s, err := mgo.Dial("mongodb://localhost:27017")
+	if err != nil {
+		b.Fail()
+	}
+	collectionList, _ := config.CollectionList("../samples/config.json")
+
+	src := rand.NewSource(time.Now().UnixNano())
+
+	encoder := &Encoder{
+		Data: make([]byte, 4),
+		R:    rand.New(src),
+		Src:  src,
+	}
+	generator, _ := CreateGenerator(collectionList[0].Content, false, 1000, encoder)
+
+	generator.Value()
+	raw := bson.Raw{Data: encoder.Data}
+
+	c := s.DB("test").C("bench")
+	b.StartTimer()
+	bulk := c.Bulk()
+	bulk.Unordered()
+	for i := 0; i < b.N; i++ {
+
+		bulk.Insert(raw)
 	}
 }

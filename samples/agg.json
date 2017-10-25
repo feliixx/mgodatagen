@@ -5,7 +5,7 @@
 	"content": {
 		"link": {
 			"type": "int",
-			"minInt": 1,
+			"minInt": 0,
 			"maxInt": 5
 		},
 		"field": {
@@ -24,7 +24,7 @@
 {
 	"database": "test",
 	"collection": "agg", 
-	"count": 5,
+	"count": 6,
 	"content": {
 		"_id": {
 			"type": "autoincrement",
