@@ -1,8 +1,8 @@
 [
   {
-    "database": "test",
-    "collection": "test",
-    "count": 1000000,
+    "database": "datagen_it_test",
+    "collection": "test_bson",
+    "count": 1000,
     "content": {
       "_id": {
         "type": "ref",
@@ -14,27 +14,24 @@
       "name": {
         "type": "string",
         "maxDistinctValue": 500,
-        "minLength": 3,
+        "minLength": 4,
         "maxLength": 8
       },
       "c32": {
         "type": "int",
-        "minInt": 11,
+        "minInt": 10,
         "maxInt": 20
       },
       "c64": {
         "type": "long",
         "nullPercentage": 10,
-        "minLong": 1000,
+        "minLong": 10000,
         "maxLong": 20000
       },
       "float": {
         "type": "double",
         "minDouble": 0.0,
         "maxDouble": 10.0
-      },
-      "dec": {
-        "type": "decimal"
       },
       "verified": {
         "type": "boolean"

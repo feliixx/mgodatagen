@@ -681,7 +681,7 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 			EmptyGenerator: eg,
 		}, nil
 	case "array":
-		if v.Size < 0 {
+		if v.Size <= 0 {
 			return nil, fmt.Errorf("for field %s, make sure that size >= 0", k)
 		}
 		g, err := newGenerator("", v.ArrayContent, shortNames, docCount, encoder)

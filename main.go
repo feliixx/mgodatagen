@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand"
 	"os"
 	"runtime"
@@ -25,11 +26,6 @@ import (
 const (
 	version = "0.4" // current version of mgodatagen
 )
-
-type rawChunk struct {
-	documents  []bson.Raw
-	nbToInsert int
-}
 
 // get a connection from Connection args
 func connectToDB(conn *Connection) (*mgo.Session, error) {
@@ -64,21 +60,21 @@ func connectToDB(conn *Connection) (*mgo.Session, error) {
 }
 
 // create a collection with specific options
-func createCollection(coll *config.Collection, session *mgo.Session, indexOnly bool, appendToColl bool) (*mgo.Collection, error) {
-	c := session.DB(coll.DB).C(coll.Name)
+func (d *datagen) createCollection(coll *config.Collection) error {
+	c := d.session.DB(coll.DB).C(coll.Name)
 	// if indexOnly or append mode, just return the collection as it already exists
-	if indexOnly || appendToColl {
-		return c, nil
+	if d.Append || d.IndexOnly {
+		return nil
 	}
 	// drop the collection before inserting new document. Ignore the error
 	// if the collection does not exists
 	c.DropCollection()
-	fmt.Printf("Creating collection %s...\n", coll.Name)
+	fmt.Fprintf(d.out, "Creating collection %s...\n", coll.Name)
 
 	if coll.CompressionLevel != "" {
 		err := c.Create(&mgo.CollectionInfo{StorageEngine: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
 		if err != nil {
-			return nil, fmt.Errorf("coulnd't create collection with compression level %s:\n\tcause: %s", coll.CompressionLevel, err.Error())
+			return fmt.Errorf("coulnd't create collection with compression level %s:\n\tcause: %s", coll.CompressionLevel, err.Error())
 		}
 	}
 	if coll.ShardConfig.ShardCollection != "" {
@@ -89,10 +85,10 @@ func createCollection(coll *config.Collection, session *mgo.Session, indexOnly b
 		// check that the config is correct
 		nm := c.Database.Name + "." + c.Name
 		if coll.ShardConfig.ShardCollection != nm {
-			return nil, fmt.Errorf("wrong value for 'shardConfig.shardCollection', should be <database>.<collection>: found %s, expected %s", coll.ShardConfig.ShardCollection, nm)
+			return fmt.Errorf("wrong value for 'shardConfig.shardCollection', should be <database>.<collection>: found %s, expected %s", coll.ShardConfig.ShardCollection, nm)
 		}
 		if len(coll.ShardConfig.Key) == 0 {
-			return nil, fmt.Errorf("wrong value for 'shardConfig.key', can't be null and must be an object like {'_id': 'hashed'}, found: %v", coll.ShardConfig.Key)
+			return fmt.Errorf("wrong value for 'shardConfig.key', can't be null and must be an object like {'_id': 'hashed'}, found: %v", coll.ShardConfig.Key)
 		}
 		// index to shard the collection
 		index := config.Index{
@@ -101,24 +97,28 @@ func createCollection(coll *config.Collection, session *mgo.Session, indexOnly b
 		}
 		err := c.Database.Run(bson.D{{Name: "createIndexes", Value: c.Name}, {Name: "indexes", Value: [1]config.Index{index}}}, &result)
 		if err != nil {
-			return nil, fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %s", index.Key, err.Error())
+			return fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %s", index.Key, err.Error())
 		}
 		if !result.Ok {
-			return nil, fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %s", index.Key, result.ErrMsg)
+			return fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %s", index.Key, result.ErrMsg)
 		}
-		err = session.Run(coll.ShardConfig, &result)
+		err = d.session.Run(coll.ShardConfig, &result)
 		if err != nil {
-			return nil, fmt.Errorf("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details\n\tcause: %s", err.Error())
+			return fmt.Errorf("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details\n\tcause: %s", err.Error())
 		}
 		if !result.Ok {
-			return nil, fmt.Errorf("couldn't create sharded collection \n\tcause: %s", result.ErrMsg)
+			return fmt.Errorf("couldn't create sharded collection \n\tcause: %s", result.ErrMsg)
 		}
 	}
-	return c, nil
+	return nil
 }
 
-// insert documents in DB, and then close the session
-func insertInDB(coll *config.Collection, c *mgo.Collection, shortNames bool, numInsertWorker int) error {
+type rawChunk struct {
+	documents  []bson.Raw
+	nbToInsert int
+}
+
+func (d *datagen) fillCollection(coll *config.Collection) error {
 
 	rndSrc := rand.NewSource(time.Now().UnixNano())
 	encoder := &generators.Encoder{
@@ -126,22 +126,21 @@ func insertInDB(coll *config.Collection, c *mgo.Collection, shortNames bool, num
 		R:    rand.New(rndSrc),
 		Src:  rndSrc,
 	}
-	generator, err := generators.CreateGenerator(coll.Content, shortNames, coll.Count, encoder)
+	generator, err := generators.CreateGenerator(coll.Content, d.ShortName, coll.Count, encoder)
 	if err != nil {
 		return err
 	}
-
 	nbInsertingGoRoutines := runtime.NumCPU()
-	if numInsertWorker > 0 {
-		nbInsertingGoRoutines = numInsertWorker
+	if d.NumInsertWorker > 0 {
+		nbInsertingGoRoutines = d.NumInsertWorker
 	}
-
 	taskBufferSize := 10
 	// for really small insert, use only one goroutine and reduce the buffered channel size
-	if coll.Count < 10000 {
+	if coll.Count <= 10000 {
 		nbInsertingGoRoutines = 1
 		taskBufferSize = 1
 	}
+
 	// use a sync.Pool to reduce memory consumption
 	// also reduce the nb of items to send to the channel
 	var pool = sync.Pool{
@@ -170,14 +169,15 @@ func insertInDB(coll *config.Collection, c *mgo.Collection, shortNames bool, num
 	wg.Add(nbInsertingGoRoutines)
 	// start a new progressbar to display progress in terminal
 	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}          `).Start(int(coll.Count))
+	bar.SetWriter(d.out)
 	// start goroutines to bulk insert documents in MongoDB
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
 			defer wg.Done()
 			// get a session with a distinct socket for each worker
-			s := c.Database.Session.Copy()
+			s := d.session.Copy()
 			defer s.Close()
-			coll := c.With(s)
+			c := s.DB(coll.DB).C(coll.Name)
 
 			for t := range task {
 				// if an error occurs in one of the goroutine, 'return' is called which trigger
@@ -187,7 +187,7 @@ func insertInDB(coll *config.Collection, c *mgo.Collection, shortNames bool, num
 					return
 				default:
 				}
-				bulk := coll.Bulk()
+				bulk := c.Bulk()
 				bulk.Unordered()
 
 				for i := 0; i < t.nbToInsert; i++ {
@@ -198,7 +198,7 @@ func insertInDB(coll *config.Collection, c *mgo.Collection, shortNames bool, num
 					// if the bulk insert fails, push the error to the error channel
 					// so that we can use it from the main thread
 					select {
-					case errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %s", err.Error()):
+					case errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %v", err):
 					default:
 					}
 					// cancel the context to terminate goroutine and stop the feeding of the
@@ -251,29 +251,30 @@ func insertInDB(coll *config.Collection, c *mgo.Collection, shortNames bool, num
 	if ctx.Err() != nil {
 		return <-errs
 	}
-
-	err = updateWithAggregators(coll, c, shortNames)
+	err = d.updateWithAggregators(coll)
 	if err != nil {
-		printErrorAndExit(err)
+		return err
 	}
-
-	color.Green("Generating collection %s done\n", coll.Name)
+	color.New(color.FgGreen).Fprintf(d.out, "Generating collection %s done\n", coll.Name)
 	return nil
 }
 
 // Update documents with pre-computed aggregations
-func updateWithAggregators(coll *config.Collection, c *mgo.Collection, shortNames bool) error {
-	aggArr, err := generators.NewAggregatorFromMap(coll.Content, shortNames)
+func (d *datagen) updateWithAggregators(coll *config.Collection) error {
+	aggArr, err := generators.NewAggregatorFromMap(coll.Content, d.ShortName)
 	if err != nil {
 		return err
 	}
 	if len(aggArr) == 0 {
 		return nil
 	}
-	fmt.Printf("Generating aggregated data for collection %v\n", c.Name)
-	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}          `).Start(int(coll.Count) * len(aggArr))
+	fmt.Fprintf(d.out, "Generating aggregated data for collection %v\n", coll.Name)
+	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}                          `).Start(int(coll.Count))
+	bar.SetWriter(d.out)
 	// aggregation might be very long, so make sure the connection won't timeout
-	c.Database.Session.SetSocketTimeout(time.Duration(30) * time.Minute)
+	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
+	c := d.session.DB(coll.DB).C(coll.Name)
+
 	for _, agg := range aggArr {
 		bulk := c.Bulk()
 		bulk.Unordered()
@@ -355,7 +356,7 @@ func updateWithAggregators(coll *config.Collection, c *mgo.Collection, shortName
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: bound}})
 			}
 		}
-		bar.Add(int(coll.Count))
+		bar.Add(int(coll.Count) / len(aggArr))
 		_, err = bulk.Run()
 		if err != nil {
 			return fmt.Errorf("bulk update failed for aggregator %v : %v", agg.K, err)
@@ -367,19 +368,20 @@ func updateWithAggregators(coll *config.Collection, c *mgo.Collection, shortName
 
 // create index on generated collections. Use run command as there is no wrapper
 // like dropIndexes() in current mgo driver.
-func ensureIndex(coll *config.Collection, c *mgo.Collection) error {
+func (d *datagen) ensureIndex(coll *config.Collection) error {
 	if len(coll.Indexes) == 0 {
 		fmt.Printf("No index to build for collection %s\n\n", coll.Name)
 		return nil
 	}
-	fmt.Printf("Building indexes for collection %s...\n", coll.Name)
+	fmt.Fprintf(d.out, "Building indexes for collection %s...\n", coll.Name)
 
+	c := d.session.DB(coll.DB).C(coll.Name)
 	err := c.DropAllIndexes()
 	if err != nil {
 		return fmt.Errorf("error while dropping index for collection %s:\n\tcause: %s", coll.Name, err.Error())
 	}
 	// avoid timeout when building indexes
-	c.Database.Session.SetSocketTimeout(time.Duration(30) * time.Minute)
+	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
 	// create the new indexes
 	result := struct {
 		ErrMsg string
@@ -392,11 +394,12 @@ func ensureIndex(coll *config.Collection, c *mgo.Collection) error {
 	if !result.Ok {
 		return fmt.Errorf("error while building indexes for collection %s:\n\tcause: %s", coll.Name, result.ErrMsg)
 	}
-	color.Green("Building indexes for collection %s done\n\n", coll.Name)
+	color.New(color.FgGreen).Fprintf(d.out, "Building indexes for collection %s done\n\n", coll.Name)
 	return nil
 }
 
-func printCollStats(c *mgo.Collection) error {
+func (d *datagen) printCollStats(coll *config.Collection) error {
+	c := d.session.DB(coll.DB).C(coll.Name)
 	stats := struct {
 		Count      int64  `bson:"count"`
 		AvgObjSize int64  `bson:"avgObjSize"`
@@ -410,13 +413,13 @@ func printCollStats(c *mgo.Collection) error {
 	for k, v := range stats.IndexSizes {
 		indexString += fmt.Sprintf("%s %v KB\n\t\t    ", k, v)
 	}
-	fmt.Printf("Stats for collection %s:\n\t - doc count: %v\n\t - average object size: %v bytes\n\t - indexes: %s\n", c.Name, stats.Count, stats.AvgObjSize, indexString)
+	fmt.Fprintf(d.out, "Stats for collection %s:\n\t - doc count: %v\n\t - average object size: %v bytes\n\t - indexes: %s\n", c.Name, stats.Count, stats.AvgObjSize, indexString)
 	return nil
 }
 
 // print the error in red and exit
 func printErrorAndExit(err error) {
-	color.Red("ERROR: %s", err.Error())
+	color.Red("ERROR: %v", err)
 	os.Exit(1)
 }
 
@@ -450,6 +453,30 @@ type Options struct {
 	General    `group:"general"`
 }
 
+type datagen struct {
+	out     io.Writer
+	session *mgo.Session
+	Options
+}
+
+func (d *datagen) generate(v *config.Collection) error {
+	err := d.createCollection(v)
+	if err != nil {
+		return err
+	}
+	if !d.IndexOnly {
+		err = d.fillCollection(v)
+		if err != nil {
+			return err
+		}
+	}
+	err = d.ensureIndex(v)
+	if err != nil {
+		return err
+	}
+	return d.printCollStats(v)
+}
+
 func main() {
 	var options Options
 	p := flags.NewParser(&options, flags.Default&^flags.HelpFlag)
@@ -481,22 +508,14 @@ func main() {
 	}
 	defer session.Close()
 
+	datagen := &datagen{
+		out:     os.Stderr,
+		session: session,
+		Options: options,
+	}
+
 	for _, v := range collectionList {
-		c, err := createCollection(&v, session, options.IndexOnly, options.Append)
-		if err != nil {
-			printErrorAndExit(err)
-		}
-		if !options.IndexOnly {
-			err = insertInDB(&v, c, options.ShortName, options.NumInsertWorker)
-			if err != nil {
-				printErrorAndExit(err)
-			}
-		}
-		err = ensureIndex(&v, c)
-		if err != nil {
-			printErrorAndExit(err)
-		}
-		err = printCollStats(c)
+		err = datagen.generate(&v)
 		if err != nil {
 			printErrorAndExit(err)
 		}

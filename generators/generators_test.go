@@ -5,7 +5,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/assert"
 
@@ -13,19 +12,14 @@ import (
 )
 
 var (
-	rndSrc                = rand.NewSource(time.Now().UnixNano())
-	encoder               = &Encoder{Data: make([]byte, 4), R: rand.New(rndSrc), Src: rndSrc}
-	stringGenerator       = &StringGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key1"), byte(0)), NullPercentage: 100, T: bson.ElementString, Out: encoder}, MinLength: 5, MaxLength: 5}
-	int32Generator        = &Int32Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 100, T: bson.ElementInt32, Out: encoder}, Min: 0, Max: 100}
-	int64Generator        = &Int64Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 0, T: bson.ElementInt64, Out: encoder}, Min: 0, Max: 100}
-	float64Generator      = &Float64Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key4"), byte(0)), NullPercentage: 100, T: bson.ElementFloat64, Out: encoder}, Mean: 0, StdDev: 50}
-	boolGenerator         = &BoolGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key5"), byte(0)), NullPercentage: 100, T: bson.ElementBool, Out: encoder}}
-	objectIDGenerator     = &ObjectIDGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("_id"), byte(0)), NullPercentage: 100, T: bson.ElementObjectId, Out: encoder}}
-	gen                   = []Generator{stringGenerator, int32Generator, int64Generator, boolGenerator, float64Generator}
-	objectGenerator       = &ObjectGenerator{EmptyGenerator: EmptyGenerator{K: []byte(""), NullPercentage: 100, T: bson.ElementDocument, Out: encoder}, Generators: gen}
-	embeddedDocGenerator  = &EmbeddedObjectGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key1"), byte(0)), NullPercentage: 0, T: bson.ElementDocument, Out: encoder}, Generators: []Generator{int64Generator}}
-	embeddedDocGenerator2 = &EmbeddedObjectGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 0, T: bson.ElementDocument, Out: encoder}, Generators: []Generator{embeddedDocGenerator}}
-	arrayGenerator        = &ArrayGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key1"), byte(0)), NullPercentage: 0, T: bson.ElementArray, Out: encoder}, Generator: int32Generator, Size: int(3)}
+	rndSrc            = rand.NewSource(time.Now().UnixNano())
+	encoder           = &Encoder{Data: make([]byte, 4), R: rand.New(rndSrc), Src: rndSrc}
+	stringGenerator   = &StringGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key1"), byte(0)), NullPercentage: 100, T: bson.ElementString, Out: encoder}, MinLength: 5, MaxLength: 5}
+	int32Generator    = &Int32Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 100, T: bson.ElementInt32, Out: encoder}, Min: 0, Max: 100}
+	int64Generator    = &Int64Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 0, T: bson.ElementInt64, Out: encoder}, Min: 0, Max: 100}
+	float64Generator  = &Float64Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key4"), byte(0)), NullPercentage: 100, T: bson.ElementFloat64, Out: encoder}, Mean: 0, StdDev: 50}
+	boolGenerator     = &BoolGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key5"), byte(0)), NullPercentage: 100, T: bson.ElementBool, Out: encoder}}
+	objectIDGenerator = &ObjectIDGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("_id"), byte(0)), NullPercentage: 100, T: bson.ElementObjectId, Out: encoder}}
 )
 
 type expectedDoc struct {
@@ -128,35 +122,5 @@ func BenchmarkGeneratorAll(b *testing.B) {
 		generator.Value()
 		tmp := make([]byte, len(encoder.Data))
 		copy(tmp, encoder.Data)
-	}
-}
-
-func BenchmarkBulk(b *testing.B) {
-	b.StopTimer()
-	s, err := mgo.Dial("mongodb://localhost:27017")
-	if err != nil {
-		b.Fail()
-	}
-	collectionList, _ := config.CollectionList("../samples/config.json")
-
-	src := rand.NewSource(time.Now().UnixNano())
-
-	encoder := &Encoder{
-		Data: make([]byte, 4),
-		R:    rand.New(src),
-		Src:  src,
-	}
-	generator, _ := CreateGenerator(collectionList[0].Content, false, 1000, encoder)
-
-	generator.Value()
-	raw := bson.Raw{Data: encoder.Data}
-
-	c := s.DB("test").C("bench")
-	b.StartTimer()
-	bulk := c.Bulk()
-	bulk.Unordered()
-	for i := 0; i < b.N; i++ {
-
-		bulk.Insert(raw)
 	}
 }

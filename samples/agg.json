@@ -1,5 +1,5 @@
 [{
-	"database": "test",
+	"database": "datagen_it_test",
 	"collection": "test",
 	"count": 10000,
 	"content": {
@@ -22,7 +22,7 @@
 	}
 },
 {
-	"database": "test",
+	"database": "datagen_it_test",
 	"collection": "agg", 
 	"count": 6,
 	"content": {
@@ -34,20 +34,20 @@
 		"AG-FI": {
 			"type": "countAggregator",
 			"collection": "test",
-			"database": "test",
+			"database": "datagen_it_test",
 			"query": {"link": "$$_id"}
 		}, 
 		"AG-CI": {
 			"type": "boundAggregator",
 			"collection": "test",
-			"database": "test",
+			"database": "datagen_it_test",
 			"field": "field1",
 			"query": {"link": "$$_id"}
 		},
 		"AG-VA": {
 			"type": "valueAggregator",
 			"collection": "test",
-			"database": "test",
+			"database": "datagen_it_test",
 			"field": "field",
 			"query": {"link": "$$_id"}
 		}
