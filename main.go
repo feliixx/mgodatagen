@@ -497,6 +497,7 @@ func main() {
 	if options.ConfigFile == "" {
 		printErrorAndExit(fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations "))
 	}
+
 	fmt.Println("Parsing configuration file...")
 	collectionList, err := config.CollectionList(options.ConfigFile)
 	if err != nil {

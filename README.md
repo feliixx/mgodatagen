@@ -21,7 +21,7 @@ A small CLI tool to quickly generate millions of pseudo-random BSON documents an
 
 ## installation
 
-Download the binary from [release page](https://github.com/feliixx/mgodatagen/releases)
+Download the binary from the [release page](https://github.com/feliixx/mgodatagen/releases)
 
 or 
 
@@ -30,7 +30,7 @@ Build from source:
 First, make sure that go is installed on your machine (see [install go](https://golang.org/doc/install) for details ). Then, use `go get`:
 
 ```
-go get -v "github.com/feliixx/mgodatagen"
+go get -u "github.com/feliixx/mgodatagen"
 ```
 
 ## Options
@@ -91,17 +91,23 @@ See **MongodB documentation** for details on parameters:
 [
   // first collection to create 
   {  
-   // main fields 
-   "database": "test",                // required, database name
-   "collection": "test",              // required, collection name
-   "count": 100000,                   // required, number of document to insert in the collection 
+   // REQUIRED FIELDS
+   // 
+   "database": <string>,              // required, database name
+   "collection": <string>,            // required, collection name
+   "count": <int>,                    // required, number of document to insert in the collection 
    "content": {                       // required, the actual schema to generate documents   
      "fieldName1": <generator>,       // required
      "fieldName2": <generator>,       // required, see Generator below
      ...
    },
-   // optional configuration
-   // Compression level: can be : none, snappy, zlib (for WiredTiger engine only)
+   // OPTIONAL FIELDS
+   //
+   // compression level (for WiredTiger engine only)
+   // possible values:
+   // - none
+   // - snappy
+   // - zlib 
    "compressionLevel": <string>,      // optional, default: snappy
 
    // configuration for sharded collection
@@ -178,15 +184,15 @@ This will insert 1000000 random documents in collections `test` and `link` of da
 # Generator types  
 
 
-Gnerators have a common structure: 
+Generators have a common structure: 
 
 ```JSON5
 "fieldName": {                 // required, field name in generated document
   "type": <string>,            // required, type of the field 
   "nullPercentage": <int>,     // optional, int between 0 and 100. Percentage of documents 
-                               // using this field
+                               // that will have this field
   "maxDistinctValue": <int>,   // optional, maximum number of distinct values for this field
-  "typeParam": ...             // parameters for this type
+  "typeParam": ...             // specific parameters for this type
 }
 ```
 
@@ -718,4 +724,4 @@ Generate 'real' data using [Faker library](https://github.com/manveru/faker)
 If you're building large datasets (1000000+ items) you should avoid faker generators 
 and use main or custom generators instead, as faker generator are way slower. 
 
-Currently, only "en" locale is available  
+Currently, only `"en"` locale is available  

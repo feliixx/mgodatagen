@@ -816,10 +816,6 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 			method = (*faker.Faker).FirstName
 		case "FreeEmail":
 			method = (*faker.Faker).FreeEmail
-		// case "":
-		// 	method= (*faker.Faker).IPv4Address() net.IP
-		// case:
-		// 	method= (*faker.Faker).IPv6Address() net.IP
 		case "JobTitle":
 			method = (*faker.Faker).JobTitle
 		case "LastName":
@@ -857,7 +853,8 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 		}
 		return &FakerGenerator{
 			EmptyGenerator: eg,
-			Faker:          fk, F: method,
+			Faker:          fk,
+			F:              method,
 		}, nil
 	case "ref":
 		_, ok := mapRef[v.ID]

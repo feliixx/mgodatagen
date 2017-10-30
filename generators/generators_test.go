@@ -120,7 +120,5 @@ func BenchmarkGeneratorAll(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		generator.Value()
-		tmp := make([]byte, len(encoder.Data))
-		copy(tmp, encoder.Data)
 	}
 }
