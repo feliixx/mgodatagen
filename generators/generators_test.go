@@ -19,7 +19,8 @@ var (
 	int64Generator    = &Int64Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 0, T: bson.ElementInt64, Out: encoder}, Min: 0, Max: 100}
 	float64Generator  = &Float64Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key4"), byte(0)), NullPercentage: 100, T: bson.ElementFloat64, Out: encoder}, Mean: 0, StdDev: 50}
 	boolGenerator     = &BoolGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key5"), byte(0)), NullPercentage: 100, T: bson.ElementBool, Out: encoder}}
-	objectIDGenerator = &ObjectIDGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("_id"), byte(0)), NullPercentage: 100, T: bson.ElementObjectId, Out: encoder}}
+	posGenerator      = &PositionGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key6"), byte(0)), NullPercentage: 0, T: bson.ElementArray, Out: encoder}}
+	objectIDGenerator = &ObjectIDGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("_id"), byte(0)), NullPercentage: 0, T: bson.ElementObjectId, Out: encoder}}
 )
 
 type expectedDoc struct {
@@ -95,6 +96,12 @@ func BenchmarkGeneratorFloat64(b *testing.B) {
 func BenchmarkGeneratorBool(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		boolGenerator.Value()
+	}
+}
+
+func BenchmarkGeneratorPos(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		posGenerator.Value()
 	}
 }
 
