@@ -17,6 +17,6 @@ install:
   - go build 
 
 build_script:
-  - go test -v ./... -bench=. -benchmem 
+  - go test -v ./...  
   - mgodatagen.exe -f samples\config.json 
   - mgodatagen.exe -f samples\agg.json

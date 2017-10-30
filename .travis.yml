@@ -20,7 +20,7 @@ before_script:
   - go vet ./...
 
 script:
-  - go test -v ./... -bench=. -benchmem
+  - go test -v ./... 
   - ./mgodatagen -f samples/config.json
   - ./mgodatagen -f samples/agg.json
 
