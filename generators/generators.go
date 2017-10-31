@@ -594,8 +594,20 @@ func (u *UniqueGenerator) getUniqueArray(docCount int32, stringSize int) error {
 	return nil
 }
 
+func versionAtLeast(versionArray []int, v ...int) (result bool) {
+	for i := range v {
+		if i == len(versionArray) {
+			return false
+		}
+		if versionArray[i] != v[i] {
+			return versionArray[i] >= v[i]
+		}
+	}
+	return true
+}
+
 // NewGenerator returns a new Generator based on a JSON configuration
-func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount int32, encoder *Encoder) (Generator, error) {
+func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount int32, version []int, encoder *Encoder) (Generator, error) {
 	// if shortNames option is specified, keep only two letters for each field. This is a basic
 	// optimisation to save space in mongodb and during db exchanges
 	if shortNames && k != "_id" && len(k) > 2 {
@@ -617,7 +629,7 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 			R:    encoder.R,
 			Src:  encoder.Src,
 		}
-		gen, err := newGenerator(k, v, shortNames, docCount, tmpEnc)
+		gen, err := newGenerator(k, v, shortNames, docCount, version, tmpEnc)
 		if err != nil {
 			return nil, fmt.Errorf("for field %s, error while creating base array: %s", k, err.Error())
 		}
@@ -700,6 +712,9 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 			StdDev:         (v.MaxFloat64 - v.MinFloat64) / 2,
 		}, nil
 	case "decimal":
+		if !versionAtLeast(version, 3, 4) {
+			return nil, fmt.Errorf("for field %s, decimal type (bson decimal128) requires mongodb 3.4 at least", k)
+		}
 		eg.T = bson.ElementDecimal128
 		return &Decimal128Generator{
 			EmptyGenerator: eg,
@@ -718,7 +733,7 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 		if v.Size <= 0 {
 			return nil, fmt.Errorf("for field %s, make sure that size >= 0", k)
 		}
-		g, err := newGenerator("", v.ArrayContent, shortNames, docCount, encoder)
+		g, err := newGenerator("", v.ArrayContent, shortNames, docCount, version, encoder)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create new generator: %v", err)
 		}
@@ -730,7 +745,7 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 			Generator:      g,
 		}, nil
 	case "object":
-		g, err := newGeneratorsFromMap(v.ObjectContent, shortNames, docCount, encoder)
+		g, err := newGeneratorsFromMap(v.ObjectContent, shortNames, docCount, version, encoder)
 		if err != nil {
 			return nil, err
 		}
@@ -899,7 +914,7 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 				R:    encoder.R,
 				Src:  encoder.Src,
 			}
-			g, err := newGenerator(k, v.RefContent, shortNames, docCount, tmpEnc)
+			g, err := newGenerator(k, v.RefContent, shortNames, docCount, version, tmpEnc)
 			if err != nil {
 				return nil, fmt.Errorf("for field %s, %s", k, err.Error())
 			}
@@ -929,10 +944,10 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 }
 
 // NewGeneratorsFromMap creates a slice of generators based on a JSON configuration map
-func newGeneratorsFromMap(content map[string]config.GeneratorJSON, shortNames bool, docCount int32, encoder *Encoder) ([]Generator, error) {
+func newGeneratorsFromMap(content map[string]config.GeneratorJSON, shortNames bool, docCount int32, version []int, encoder *Encoder) ([]Generator, error) {
 	gArr := make([]Generator, 0)
 	for k, v := range content {
-		g, err := newGenerator(k, &v, shortNames, docCount, encoder)
+		g, err := newGenerator(k, &v, shortNames, docCount, version, encoder)
 		if err != nil {
 			return nil, err
 		}
@@ -1026,9 +1041,9 @@ func NewAggregatorFromMap(content map[string]config.GeneratorJSON, shortNames bo
 }
 
 // CreateGenerator creates an object generator to get bson.Raw objects
-func CreateGenerator(content map[string]config.GeneratorJSON, shortNames bool, docCount int32, encoder *Encoder) (*ObjectGenerator, error) {
+func CreateGenerator(content map[string]config.GeneratorJSON, shortNames bool, docCount int32, version []int, encoder *Encoder) (*ObjectGenerator, error) {
 	// create the global generator
-	g, err := newGeneratorsFromMap(content, shortNames, docCount, encoder)
+	g, err := newGeneratorsFromMap(content, shortNames, docCount, version, encoder)
 	if err != nil {
 		return nil, fmt.Errorf("error while creating generators from configuration file:\n\tcause: %s", err.Error())
 	}

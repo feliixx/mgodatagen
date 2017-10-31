@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/globalsign/mgo/bson"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/feliixx/mgodatagen/config"
 )
@@ -49,9 +49,9 @@ type expectedDoc struct {
 }
 
 func TestIsDocumentCorrect(t *testing.T) {
-
+	assert := require.New(t)
 	collectionList, err := config.CollectionList("../samples/bson_test.json")
-	assert.Nil(t, err)
+	assert.Nil(err)
 
 	src := rand.NewSource(time.Now().UnixNano())
 
@@ -60,17 +60,23 @@ func TestIsDocumentCorrect(t *testing.T) {
 		R:    rand.New(src),
 		Src:  src,
 	}
-	generator, err := CreateGenerator(collectionList[0].Content, false, 1000, encoder)
-	assert.Nil(t, err)
+	generator, err := CreateGenerator(collectionList[0].Content, false, 1000, []int{3, 2}, encoder)
+	assert.Nil(err)
 
 	var d expectedDoc
 
 	for i := 0; i < 1000; i++ {
 		generator.Value()
 		err := bson.Unmarshal(encoder.Data, &d)
-		assert.Nil(t, err)
+		assert.Nil(err)
 	}
+}
 
+func TestVersionAtLeast(t *testing.T) {
+	assert := require.New(t)
+	assert.Equal(versionAtLeast([]int{2, 6}, 3, 4), false)
+	assert.Equal(versionAtLeast([]int{3, 4}, 3, 2), true)
+	assert.Equal(versionAtLeast([]int{3, 4}, 3, 4), true)
 }
 
 func BenchmarkGeneratorString(b *testing.B) {
@@ -122,7 +128,7 @@ func BenchmarkGeneratorAll(b *testing.B) {
 		R:    rand.New(src),
 		Src:  src,
 	}
-	generator, _ := CreateGenerator(collectionList[0].Content, false, 1000, encoder)
+	generator, _ := CreateGenerator(collectionList[0].Content, false, 1000, []int{3, 2}, encoder)
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {

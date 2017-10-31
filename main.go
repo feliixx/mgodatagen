@@ -10,6 +10,8 @@ import (
 	"math/rand"
 	"os"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -28,7 +30,7 @@ const (
 )
 
 // get a connection from Connection args
-func connectToDB(conn *Connection) (*mgo.Session, error) {
+func connectToDB(conn *Connection) (*mgo.Session, []int, error) {
 	fmt.Printf("Connecting to mongodb://%s:%s\n\n", conn.Host, conn.Port)
 	url := "mongodb://"
 	if conn.UserName != "" && conn.Password != "" {
@@ -36,13 +38,21 @@ func connectToDB(conn *Connection) (*mgo.Session, error) {
 	}
 	session, err := mgo.Dial(url + conn.Host + ":" + conn.Port)
 	if err != nil {
-		return nil, fmt.Errorf("connection failed:\n\tcause: %s", err.Error())
+		return nil, nil, fmt.Errorf("connection failed:\n\tcause: %s", err.Error())
 	}
 	infos, err := session.BuildInfo()
 	if err != nil {
-		return nil, fmt.Errorf("couldn't get mongodb version:\n\tcause: %s", err.Error())
+		return nil, nil, fmt.Errorf("couldn't get mongodb version:\n\tcause: %s", err.Error())
 	}
 	fmt.Printf("mongodb server version %s\ngit version %s\nOpenSSL version %s\n\n", infos.Version, infos.GitVersion, infos.OpenSSLVersion)
+	version := strings.Split(infos.Version, ".")
+	versionInt := make([]int, len(version))
+
+	for i := range version {
+		v, _ := strconv.Atoi(version[i])
+		versionInt[i] = v
+	}
+
 	result := struct {
 		ErrMsg string
 		Shards []bson.M
@@ -56,7 +66,7 @@ func connectToDB(conn *Connection) (*mgo.Session, error) {
 			fmt.Printf("shard list: %v\n", string(json))
 		}
 	}
-	return session, nil
+	return session, versionInt, nil
 }
 
 // create a collection with specific options
@@ -126,7 +136,7 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 		R:    rand.New(rndSrc),
 		Src:  rndSrc,
 	}
-	generator, err := generators.CreateGenerator(coll.Content, d.ShortName, coll.Count, encoder)
+	generator, err := generators.CreateGenerator(coll.Content, d.ShortName, coll.Count, d.version, encoder)
 	if err != nil {
 		return err
 	}
@@ -456,6 +466,7 @@ type Options struct {
 type datagen struct {
 	out     io.Writer
 	session *mgo.Session
+	version []int
 	Options
 }
 
@@ -503,7 +514,7 @@ func main() {
 	if err != nil {
 		printErrorAndExit(err)
 	}
-	session, err := connectToDB(&options.Connection)
+	session, version, err := connectToDB(&options.Connection)
 	if err != nil {
 		printErrorAndExit(err)
 	}
@@ -513,6 +524,7 @@ func main() {
 		out:     os.Stderr,
 		session: session,
 		Options: options,
+		version: version,
 	}
 
 	for _, v := range collectionList {
