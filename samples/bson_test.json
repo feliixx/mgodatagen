@@ -30,7 +30,7 @@
       },
       "float": {
         "type": "double",
-        "minDouble": 0.0,
+        "minDouble": 1.0,
         "maxDouble": 10.0
       },
       "verified": {
@@ -85,6 +85,7 @@
         "objectContent": {
           "k1": {
             "type": "string",
+            "unique": true,
             "minLength": 3,
             "maxLength": 3
           },

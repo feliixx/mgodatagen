@@ -141,9 +141,32 @@ func TestCollectionContent(t *testing.T) {
 		assert.Equal(24, len(r.BinaryData))
 		// array
 		assert.Equal(3, len(r.List))
+		// object
+		assert.Equal(3, len(r.Object.K1))
+		assert.InDelta(-7, r.Object.K2, 3)
+		assert.InDelta(5, r.Object.Subob.Sk, 5)
 	}
 	// null precentage test
 	assert.InDelta(100, count, 25)
+
+	var result struct {
+		Values []string `bson:"values"`
+		Ok     bool     `bson:"ok"`
+	}
+	// test maxDistinctValues option
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "name"},
+	}, &result)
+	assert.Nil(err)
+	assert.Equal(collections[0].Content["name"].MaxDistinctValue, len(result.Values))
+	// test unique option
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "object.k1"},
+	}, &result)
+	assert.Nil(err)
+	assert.Equal(1000, len(result.Values))
 }
 
 func TestCollectionContentWithAggregation(t *testing.T) {

@@ -372,7 +372,7 @@ func (g *EmbeddedObjectGenerator) Value() {
 		if gen.Exists() {
 			if gen.Type() != bson.ElementNil {
 				g.Out.WriteSingleByte(gen.Type())
-				g.Out.Write(g.Key())
+				g.Out.Write(gen.Key())
 			}
 			gen.Value()
 		}
