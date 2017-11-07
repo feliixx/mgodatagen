@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	version = "0.4" // current version of mgodatagen
+	version = "0.4.1" // current version of mgodatagen
 )
 
 // get a connection from Connection args
