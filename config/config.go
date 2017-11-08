@@ -128,13 +128,13 @@ type GeneratorJSON struct {
 // json configuration file
 func CollectionList(filename string) ([]Collection, error) {
 	// read the json config file
-	file, err := ioutil.ReadFile(filename)
+	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("File error: %s", err.Error())
 	}
 	// map to a json object
 	var collectionList []Collection
-	err = json.Unmarshal(file, &collectionList)
+	err = json.Unmarshal(content, &collectionList)
 	if err != nil {
 		return nil, fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%s", err.Error())
 	}

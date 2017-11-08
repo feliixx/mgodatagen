@@ -1,5 +1,5 @@
  [{  
-   "database": "test", 
+   "database": "datagen_it_test", 
    "collection": "test",
    "count": 1000000,
    "content": {  
@@ -97,7 +97,7 @@
    }
 },
 {  
-   "database": "test", 
+   "database": "datagen_it_test", 
    "collection": "link",
    "count":1000000,
    "content": {  

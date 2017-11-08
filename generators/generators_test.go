@@ -12,15 +12,114 @@ import (
 )
 
 var (
-	rndSrc            = rand.NewSource(time.Now().UnixNano())
-	encoder           = &Encoder{Data: make([]byte, 4), R: rand.New(rndSrc), Src: rndSrc}
-	stringGenerator   = &StringGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key1"), byte(0)), NullPercentage: 100, T: bson.ElementString, Out: encoder}, MinLength: 5, MaxLength: 5}
-	int32Generator    = &Int32Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 100, T: bson.ElementInt32, Out: encoder}, Min: 0, Max: 100}
-	int64Generator    = &Int64Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key2"), byte(0)), NullPercentage: 0, T: bson.ElementInt64, Out: encoder}, Min: 0, Max: 100}
-	float64Generator  = &Float64Generator{EmptyGenerator: EmptyGenerator{K: append([]byte("key4"), byte(0)), NullPercentage: 100, T: bson.ElementFloat64, Out: encoder}, Mean: 0, StdDev: 50}
-	boolGenerator     = &BoolGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key5"), byte(0)), NullPercentage: 100, T: bson.ElementBool, Out: encoder}}
-	posGenerator      = &PositionGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("key6"), byte(0)), NullPercentage: 0, T: bson.ElementArray, Out: encoder}}
-	objectIDGenerator = &ObjectIDGenerator{EmptyGenerator: EmptyGenerator{K: append([]byte("_id"), byte(0)), NullPercentage: 0, T: bson.ElementObjectId, Out: encoder}}
+	rndSrc  = rand.NewSource(time.Now().UnixNano())
+	encoder = &Encoder{
+		Data: make([]byte, 4),
+		R:    rand.New(rndSrc),
+		Src:  rndSrc,
+	}
+	stringGenerator = &StringGenerator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key1"), byte(0)),
+			NullPercentage: 100,
+			T:              bson.ElementString,
+			Out:            encoder,
+		},
+		MinLength: 5,
+		MaxLength: 8,
+	}
+	int32Generator = &Int32Generator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key2"), byte(0)),
+			NullPercentage: 100,
+			T:              bson.ElementInt32,
+			Out:            encoder,
+		},
+		Min: 0,
+		Max: 100,
+	}
+	int64Generator = &Int64Generator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key2"), byte(0)),
+			NullPercentage: 0,
+			T:              bson.ElementInt64,
+			Out:            encoder,
+		},
+		Min: 0,
+		Max: 100,
+	}
+	float64Generator = &Float64Generator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key4"), byte(0)),
+			NullPercentage: 100,
+			T:              bson.ElementFloat64,
+			Out:            encoder,
+		},
+		Mean:   0,
+		StdDev: 50,
+	}
+	boolGenerator = &BoolGenerator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key5"), byte(0)),
+			NullPercentage: 100,
+			T:              bson.ElementBool,
+			Out:            encoder,
+		},
+	}
+	posGenerator = &PositionGenerator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key6"), byte(0)),
+			NullPercentage: 0,
+			T:              bson.ElementArray,
+			Out:            encoder,
+		},
+	}
+	objectIDGenerator = &ObjectIDGenerator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("_id"), byte(0)),
+			NullPercentage: 0,
+			T:              bson.ElementObjectId,
+			Out:            encoder,
+		},
+	}
+	binaryGenerator = &BinaryDataGenerator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key0"), byte(0)),
+			NullPercentage: 0,
+			T:              bson.ElementBinary,
+			Out:            encoder,
+		},
+		MinLength: 20,
+		MaxLength: 40,
+	}
+	dateGenerator = &DateGenerator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key7"), byte(0)),
+			NullPercentage: 0,
+			T:              bson.ElementDatetime,
+			Out:            encoder,
+		},
+		StartDate: time.Now().Unix(),
+		Delta:     200000,
+	}
+	decimal128Generator = &Decimal128Generator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key8"), byte(0)),
+			NullPercentage: 0,
+			T:              bson.ElementDecimal128,
+			Out:            encoder,
+		},
+	}
+	arrayGenerator = &ArrayGenerator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key9"), byte(0)),
+			NullPercentage: 0,
+			T:              bson.ElementArray,
+			Out:            encoder,
+		},
+		Size:      5,
+		Generator: boolGenerator,
+	}
 )
 
 type expectedDoc struct {
@@ -82,38 +181,71 @@ func TestVersionAtLeast(t *testing.T) {
 func BenchmarkGeneratorString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		stringGenerator.Value()
+		encoder.Data = encoder.Data[0:0]
 	}
 }
 func BenchmarkGeneratorInt32(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		int32Generator.Value()
+		encoder.Data = encoder.Data[0:0]
 	}
 }
 func BenchmarkGeneratorInt64(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		int64Generator.Value()
+		encoder.Data = encoder.Data[0:0]
 	}
 }
 func BenchmarkGeneratorFloat64(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		float64Generator.Value()
+		encoder.Data = encoder.Data[0:0]
 	}
 }
 func BenchmarkGeneratorBool(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		boolGenerator.Value()
+		encoder.Data = encoder.Data[0:0]
 	}
 }
 
 func BenchmarkGeneratorPos(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		posGenerator.Value()
+		encoder.Data = encoder.Data[0:0]
 	}
 }
 
 func BenchmarkGeneratorObjectId(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		objectIDGenerator.Value()
+		encoder.Data = encoder.Data[0:0]
+	}
+}
+
+func BenchmarkGeneratorBinary(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		binaryGenerator.Value()
+		encoder.Data = encoder.Data[0:0]
+	}
+}
+func BenchmarkGeneratorDecimal128(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		decimal128Generator.Value()
+		encoder.Data = encoder.Data[0:0]
+	}
+}
+func BenchmarkGeneratorDate(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		dateGenerator.Value()
+		encoder.Data = encoder.Data[0:0]
+	}
+}
+
+func BenchmarkGeneratorArray(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		arrayGenerator.Value()
+		encoder.Data = encoder.Data[0:0]
 	}
 }
 
@@ -133,5 +265,6 @@ func BenchmarkGeneratorAll(b *testing.B) {
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		generator.Value()
+		encoder.Data = encoder.Data[0:0]
 	}
 }
