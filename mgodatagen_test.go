@@ -51,7 +51,7 @@ type expectedDoc struct {
 
 type logger struct{}
 
-// redirect progress bar and non usefull info to avoid polluting stderr
+// redirect progress bar and non useful info to avoid polluting stderr
 func (l logger) Write(b []byte) (int, error) {
 	return 0, nil
 }
