@@ -1,10 +1,10 @@
 package generators
 
 import (
-	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/MichaelTJones/pcg"
 	"github.com/globalsign/mgo/bson"
 	"github.com/stretchr/testify/require"
 
@@ -12,11 +12,10 @@ import (
 )
 
 var (
-	rndSrc  = rand.NewSource(time.Now().UnixNano())
 	encoder = &Encoder{
-		Data: make([]byte, 4),
-		R:    rand.New(rndSrc),
-		Src:  rndSrc,
+		Data:  make([]byte, 4),
+		PCG32: pcg.NewPCG32().Seed(1, 1),
+		PCG64: pcg.NewPCG64().Seed(1, 1, 1, 1),
 	}
 	stringGenerator = &StringGenerator{
 		EmptyGenerator: EmptyGenerator{
@@ -99,7 +98,7 @@ var (
 			T:              bson.ElementDatetime,
 			Out:            encoder,
 		},
-		StartDate: time.Now().Unix(),
+		StartDate: uint64(time.Now().Unix()),
 		Delta:     200000,
 	}
 	decimal128Generator = &Decimal128Generator{
@@ -151,13 +150,11 @@ func TestIsDocumentCorrect(t *testing.T) {
 	assert := require.New(t)
 	collectionList, err := config.CollectionList("../samples/bson_test.json")
 	assert.Nil(err)
-
-	src := rand.NewSource(time.Now().UnixNano())
-
+	now := time.Now().UnixNano()
 	encoder := &Encoder{
-		Data: make([]byte, 4),
-		R:    rand.New(src),
-		Src:  src,
+		Data:  make([]byte, 4),
+		PCG32: pcg.NewPCG32().Seed(uint64(now), uint64(now)),
+		PCG64: pcg.NewPCG64().Seed(1, 1, 1, 1),
 	}
 	generator, err := CreateGenerator(collectionList[0].Content, false, 1000, []int{3, 2}, encoder)
 	assert.Nil(err)
@@ -253,18 +250,15 @@ func BenchmarkGeneratorAll(b *testing.B) {
 	b.StopTimer()
 	collectionList, _ := config.CollectionList("../samples/config.json")
 
-	src := rand.NewSource(time.Now().UnixNano())
-
 	encoder := &Encoder{
-		Data: make([]byte, 4),
-		R:    rand.New(src),
-		Src:  src,
+		Data:  make([]byte, 4),
+		PCG32: pcg.NewPCG32().Seed(1, 1),
+		PCG64: pcg.NewPCG64().Seed(1, 1, 1, 1),
 	}
 	generator, _ := CreateGenerator(collectionList[0].Content, false, 1000, []int{3, 2}, encoder)
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		generator.Value()
-		encoder.Data = encoder.Data[0:0]
 	}
 }

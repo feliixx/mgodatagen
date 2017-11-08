@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"runtime"
 	"strconv"
@@ -130,12 +129,7 @@ type rawChunk struct {
 
 func (d *datagen) fillCollection(coll *config.Collection) error {
 
-	rndSrc := rand.NewSource(time.Now().UnixNano())
-	encoder := &generators.Encoder{
-		Data: make([]byte, 4),
-		R:    rand.New(rndSrc),
-		Src:  rndSrc,
-	}
+	encoder := generators.NewEncoder(4)
 	generator, err := generators.CreateGenerator(coll.Content, d.ShortName, coll.Count, d.version, encoder)
 	if err != nil {
 		return err
@@ -163,8 +157,7 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 				}
 			}
 			return &rawChunk{
-				documents:  list,
-				nbToInsert: 1000,
+				documents: list,
 			}
 		},
 	}
@@ -220,8 +213,6 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 				pool.Put(t)
 			}
 		}()
-		// sleep to prevent all threads from inserting at the same time at start
-		time.Sleep(time.Duration(i) * 10 * time.Millisecond)
 	}
 	// counter for already generated documents
 	count := int32(0)
@@ -234,6 +225,7 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 		default:
 		}
 		rc := pool.Get().(*rawChunk)
+		rc.nbToInsert = 1000
 		if coll.Count-count < 1000 {
 			rc.nbToInsert = int(coll.Count - count)
 		}
@@ -248,9 +240,9 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 			}
 			copy(rc.documents[i].Data, encoder.Data)
 		}
-		task <- rc
 		count += int32(rc.nbToInsert)
 		bar.Add(rc.nbToInsert)
+		task <- rc
 	}
 	close(task)
 
@@ -376,8 +368,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 	return nil
 }
 
-// create index on generated collections. Use run command as there is no wrapper
-// like dropIndexes() in current mgo driver.
+// create index on generated collections
 func (d *datagen) ensureIndex(coll *config.Collection) error {
 	if len(coll.Indexes) == 0 {
 		fmt.Printf("No index to build for collection %s\n\n", coll.Name)

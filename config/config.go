@@ -64,7 +64,7 @@ type GeneratorJSON struct {
 	// Type of object to genereate.
 	Type string `json:"type"`
 	// Percentage of documents that won't contains this field
-	NullPercentage int64 `json:"nullPercentage"`
+	NullPercentage int32 `json:"nullPercentage"`
 	// Maximum number of distinct value for this field
 	MaxDistinctValue int `json:"maxDistinctValue"`
 	// For `string` type only. If set to 'true', string will be unique
@@ -105,7 +105,7 @@ type GeneratorJSON struct {
 	Start32 int32 `json:"startInt"`
 	// For `autoincrement` type only. Start value
 	Start64 int64 `json:"startLong"`
-	// For `autoincrement` type only. Start value
+	// For `autoincrement` type only. Type of the field, can be int | long
 	AutoType string `json:"autoType"`
 	// For `faker` type only. Method to use
 	Method string `json:"method"`
@@ -114,25 +114,23 @@ type GeneratorJSON struct {
 	ID int `json:"id"`
 	// For `ref` type only. generator for the field
 	RefContent *GeneratorJSON `json:"refContent"`
-	// For `countAggregator` and `valueAggregator` only
+	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
 	Collection string `json:"collection"`
-	// For `countAggregator` and `valueAggregator` onl
+	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
 	Database string `json:"database"`
-	// For `countAggregator` and `valueAggregator` only
+	// For `boundAggregator` and `valueAggregator` only
 	Field string `json:"field"`
-	// For `countAggregator` and `valueAggregator` only
+	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
 	Query bson.M `json:"query"`
 }
 
 // CollectionList returns a list of Collection to create from a
 // json configuration file
 func CollectionList(filename string) ([]Collection, error) {
-	// read the json config file
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("File error: %s", err.Error())
 	}
-	// map to a json object
 	var collectionList []Collection
 	err = json.Unmarshal(content, &collectionList)
 	if err != nil {
@@ -142,7 +140,7 @@ func CollectionList(filename string) ([]Collection, error) {
 		if v.Name == "" || v.DB == "" {
 			return nil, fmt.Errorf("Error in configuration file: \n\t'collection' and 'database' fields can't be empty")
 		}
-		if v.Count == 0 {
+		if v.Count <= 0 {
 			return nil, fmt.Errorf("Error in configuration file: \n\tfor collection %s, 'count' has to be > 0", v.Name)
 		}
 	}
