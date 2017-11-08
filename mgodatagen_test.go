@@ -146,7 +146,7 @@ func TestCollectionContent(t *testing.T) {
 		assert.InDelta(-7, r.Object.K2, 3)
 		assert.InDelta(5, r.Object.Subob.Sk, 5)
 	}
-	// null precentage test
+	// null precentage test, allow 2.5% error
 	assert.InDelta(100, count, 25)
 
 	var result struct {
@@ -167,6 +167,52 @@ func TestCollectionContent(t *testing.T) {
 	}, &result)
 	assert.Nil(err)
 	assert.Equal(1000, len(result.Values))
+}
+
+func TestCollectionWithRef(t *testing.T) {
+	assert := require.New(t)
+
+	refColl, err := config.CollectionList("samples/config.json")
+	assert.Nil(err)
+
+	// TODO : for some reason, the test fails if first collection has more documents
+	// than seconf collection
+	refColl[0].Count = 1000
+	refColl[1].Count = 1000
+
+	err = d.createCollection(&refColl[0])
+	assert.Nil(err)
+
+	err = d.fillCollection(&refColl[0])
+	assert.Nil(err)
+
+	err = d.createCollection(&refColl[1])
+	assert.Nil(err)
+
+	err = d.fillCollection(&refColl[1])
+	assert.Nil(err)
+
+	var result struct {
+		Values []bson.ObjectId `bson:"values"`
+		Ok     bool            `bson:"ok"`
+	}
+	err = d.session.DB(refColl[0].DB).Run(bson.D{
+		{Name: "distinct", Value: refColl[0].Name},
+		{Name: "key", Value: "_id"},
+	}, &result)
+	assert.Nil(err)
+
+	c := d.session.DB(refColl[1].DB).C(refColl[1].Name)
+	var results []struct {
+		ID  bson.ObjectId `bson:"_id"`
+		Ref bson.ObjectId `bson:"ref"`
+	}
+	err = c.Find(nil).All(&results)
+	assert.Nil(err)
+
+	for _, doc := range results {
+		assert.Contains(result.Values, doc.Ref)
+	}
 }
 
 func TestCollectionContentWithAggregation(t *testing.T) {
