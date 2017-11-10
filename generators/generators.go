@@ -1059,7 +1059,8 @@ func CreateGenerator(content map[string]config.GeneratorJSON, shortNames bool, d
 		EmptyGenerator: EmptyGenerator{K: []byte(""),
 			NullPercentage: 0,
 			T:              bson.ElementDocument,
-			Out:            encoder},
+			Out:            encoder,
+		},
 		Generators: g,
 	}, nil
 }
