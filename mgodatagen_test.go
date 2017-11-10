@@ -37,6 +37,7 @@ type expectedDoc struct {
 	Fake       string        `bson:"faker"`
 	Cst        int32         `bson:"cst"`
 	Nb         int64         `bson:"nb"`
+	Nnb        int32         `bson:"nnb"`
 	Date       time.Time     `bson:"date"`
 	BinaryData []byte        `bson:"binaryData"`
 	List       []int32       `bson:"list"`
@@ -122,7 +123,7 @@ func TestCollectionContent(t *testing.T) {
 		if r.C64 == 0 {
 			count++
 		} else {
-			assert.InDelta(15000, r.C64, 5000)
+			assert.InDelta(150, r.C64, 50)
 		}
 		// float
 		assert.InDelta(5, r.Float, 5)
@@ -149,24 +150,109 @@ func TestCollectionContent(t *testing.T) {
 	// null precentage test, allow 2.5% error
 	assert.InDelta(100, count, 25)
 
-	var result struct {
+	var resultStr struct {
 		Values []string `bson:"values"`
-		Ok     bool     `bson:"ok"`
 	}
 	// test maxDistinctValues option
 	err = d.session.DB(collections[0].DB).Run(bson.D{
 		{Name: "distinct", Value: collections[0].Name},
 		{Name: "key", Value: "name"},
-	}, &result)
+	}, &resultStr)
 	assert.Nil(err)
-	assert.Equal(collections[0].Content["name"].MaxDistinctValue, len(result.Values))
+	assert.Equal(collections[0].Content["name"].MaxDistinctValue, len(resultStr.Values))
 	// test unique option
 	err = d.session.DB(collections[0].DB).Run(bson.D{
 		{Name: "distinct", Value: collections[0].Name},
 		{Name: "key", Value: "object.k1"},
-	}, &result)
+	}, &resultStr)
 	assert.Nil(err)
-	assert.Equal(1000, len(result.Values))
+	assert.Equal(1000, len(resultStr.Values))
+
+	// test value distribution
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "dt"},
+	}, &resultStr)
+	assert.Nil(err)
+	assert.Equal(4, len(resultStr.Values))
+
+	var resultObjectID struct {
+		Values []bson.ObjectId `bson:"values"`
+	}
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "_id"},
+	}, &resultObjectID)
+	assert.Nil(err)
+	assert.Equal(1000, len(resultObjectID.Values))
+
+	var resultInt32 struct {
+		Values []int32 `bson:"values"`
+	}
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "c32"},
+	}, &resultInt32)
+	assert.Nil(err)
+	assert.Equal(11, len(resultInt32.Values))
+
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "list"},
+	}, &resultInt32)
+	assert.Nil(err)
+	assert.Equal(11, len(resultInt32.Values))
+
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "nnb"},
+	}, &resultInt32)
+	assert.Nil(err)
+	assert.Equal(1000, len(resultInt32.Values))
+
+	var resultInt64 struct {
+		Values []int64 `bson:"values"`
+	}
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "c64"},
+	}, &resultInt64)
+	assert.Nil(err)
+	assert.True(len(resultInt64.Values) > 80)
+
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "nb"},
+	}, &resultInt64)
+	assert.Nil(err)
+	assert.Equal(1000, len(resultInt64.Values))
+
+	var resultFloat64 struct {
+		Values []float64 `bson:"values"`
+	}
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "float"},
+	}, &resultFloat64)
+	assert.Nil(err)
+	assert.True(len(resultFloat64.Values) > 800)
+
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "position"},
+	}, &resultFloat64)
+	assert.Nil(err)
+	assert.True(len(resultFloat64.Values) > 1800)
+
+	var resultBool struct {
+		Values []bool `bson:"values"`
+	}
+	err = d.session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "verified"},
+	}, &resultBool)
+	assert.Nil(err)
+	assert.Equal(2, len(resultBool.Values))
 }
 
 func TestCollectionWithRef(t *testing.T) {
@@ -176,7 +262,7 @@ func TestCollectionWithRef(t *testing.T) {
 	assert.Nil(err)
 
 	// TODO : for some reason, the test fails if first collection has more documents
-	// than seconf collection
+	// than the second collection
 	refColl[0].Count = 1000
 	refColl[1].Count = 1000
 

@@ -122,21 +122,21 @@ var (
 )
 
 type expectedDoc struct {
-	ID         bson.ObjectId   `bson:"_id"`
-	Name       string          `bson:"name"`
-	C32        int32           `bson:"c32"`
-	C64        int64           `bson:"c64"`
-	Float      float64         `bson:"float"`
-	Dec        bson.Decimal128 `bson:"dec"`
-	Verified   bool            `bson:"verified"`
-	Position   []float64       `bson:"position"`
-	Dt         string          `bson:"dt"`
-	Fake       string          `bson:"faker"`
-	Cst        int32           `bson:"cst"`
-	Nb         int64           `bson:"nb"`
-	Date       time.Time       `bson:"date"`
-	BinaryData []byte          `bson:"binaryData"`
-	List       []int32         `bson:"list"`
+	ID         bson.ObjectId `bson:"_id"`
+	Name       string        `bson:"name"`
+	C32        int32         `bson:"c32"`
+	C64        int64         `bson:"c64"`
+	Float      float64       `bson:"float"`
+	Verified   bool          `bson:"verified"`
+	Position   []float64     `bson:"position"`
+	Dt         string        `bson:"dt"`
+	Fake       string        `bson:"faker"`
+	Cst        int32         `bson:"cst"`
+	Nb         int64         `bson:"nb"`
+	Nnb        int32         `bson:"nnb"`
+	Date       time.Time     `bson:"date"`
+	BinaryData []byte        `bson:"binaryData"`
+	List       []int32       `bson:"list"`
 	Object     struct {
 		K1    string `bson:"k1"`
 		K2    int32  `bson:"k2"`
@@ -144,6 +144,10 @@ type expectedDoc struct {
 			Sk int32 `bson:"s-k"`
 		} `bson:"sub-ob"`
 	} `bson:"object"`
+}
+
+type dec128Doc struct {
+	Decimal bson.Decimal128 `bson:"decimal"`
 }
 
 func TestIsDocumentCorrect(t *testing.T) {
@@ -161,6 +165,25 @@ func TestIsDocumentCorrect(t *testing.T) {
 
 	var d expectedDoc
 
+	for i := 0; i < 1000; i++ {
+		generator.Value()
+		err := bson.Unmarshal(encoder.Data, &d)
+		assert.Nil(err)
+	}
+}
+
+func TestDocumentWithDecimal128(t *testing.T) {
+	assert := require.New(t)
+	generator := &ObjectGenerator{
+		EmptyGenerator: EmptyGenerator{K: []byte(""),
+			NullPercentage: 0,
+			T:              bson.ElementDocument,
+			Out:            encoder,
+		},
+		Generators: []Generator{decimal128Generator},
+	}
+
+	var d dec128Doc
 	for i := 0; i < 1000; i++ {
 		generator.Value()
 		err := bson.Unmarshal(encoder.Data, &d)
@@ -247,7 +270,6 @@ func BenchmarkGeneratorArray(b *testing.B) {
 }
 
 func BenchmarkGeneratorAll(b *testing.B) {
-	b.StopTimer()
 	collectionList, _ := config.CollectionList("../samples/config.json")
 
 	encoder := &Encoder{
@@ -257,7 +279,7 @@ func BenchmarkGeneratorAll(b *testing.B) {
 	}
 	generator, _ := CreateGenerator(collectionList[0].Content, false, 1000, []int{3, 2}, encoder)
 
-	b.StartTimer()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		generator.Value()
 	}

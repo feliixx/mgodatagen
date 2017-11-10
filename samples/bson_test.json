@@ -25,8 +25,8 @@
       "c64": {
         "type": "long",
         "nullPercentage": 10,
-        "minLong": 10000,
-        "maxLong": 20000
+        "minLong": 100,
+        "maxLong": 200
       },
       "float": {
         "type": "double",
@@ -61,6 +61,11 @@
         "autoType": "long",
         "startLong": 0
       },
+      "nnb": {
+        "type": "autoincrement",
+        "autoType": "int",
+        "startInt": 0
+      }, 
       "date": {
         "type": "date",
         "startDate": "2010-01-10T00:00:00+00:00",
