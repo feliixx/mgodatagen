@@ -147,7 +147,7 @@ func TestCollectionContent(t *testing.T) {
 		assert.InDelta(-7, r.Object.K2, 3)
 		assert.InDelta(5, r.Object.Subob.Sk, 5)
 	}
-	// null precentage test, allow 2.5% error
+	// null percentage test, allow 2.5% error
 	assert.InDelta(100, count, 25)
 
 	var resultStr struct {
