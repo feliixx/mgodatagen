@@ -38,7 +38,7 @@ go get -u "github.com/feliixx/mgodatagen"
 Several options are available (you can see the list from `mgodatagen --help`): 
 
 ```
-mgodatagen version 0.3
+mgodatagen version 0.4.2
 
 Usage:
   mgodatagen
