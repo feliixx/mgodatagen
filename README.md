@@ -10,9 +10,11 @@ A small CLI tool to quickly generate millions of pseudo-random BSON documents an
 ## Features
 
 - Support all bson types listed in [MongoDB bson types](https://docs.mongodb.com/manual/reference/bson-types/)
-- Support for index building 
-- Support for sharded collection
-- Support for multi-database insertion
+- Generate *real* data using [faker](https://github.com/manveru/faker)
+- Create referenced fields accross collections
+- Aggregate data accross collections
+- Create sharded collection
+- Create collections in multiple databases
 - Cross-plateform. Tested on Unix / OSX / windows
 
 ![Demo](demo.gif)
@@ -215,7 +217,7 @@ List of custom `<generator>` types:
 - [position](#position)
 - [constant](#constant)
 - [autoincrement](#autoincrement)
-- [ref](#ref)
+- [reference](#ref)
 - [fromArray](#fromarray)
 - [countAggregator](#countAggregator)
 - [valueAggregator](#valueAggregator)
