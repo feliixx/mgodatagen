@@ -20,9 +20,12 @@ before_script:
   - go vet ./...
 
 script:
-  - go test -v ./... 
+  - ./test.sh
   - ./mgodatagen -f samples/config.json
   - ./mgodatagen -f samples/agg.json
+  
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 
 notifications: 
   email: false

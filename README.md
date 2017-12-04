@@ -45,6 +45,9 @@ mgodatagen version 0.4.2
 Usage:
   mgodatagen
 
+template:
+      --new=<filename>         create an empty configuration file
+
 configuration:
   -f, --file=<configfile>      JSON config file. This field is required
   -i, --indexonly              if present, mgodatagen will just try to rebuild index
@@ -53,7 +56,7 @@ configuration:
   -a, --append                 if present, append documents to the collection without
                                removing older documents or deleting the collection
   -n, --numWorker=<nb>         number of concurrent workers inserting documents
-                               in database. Default is number of CPU + 1
+                               in database. Default is number of CPU+1
 
 connection infos:
   -h, --host=<hostname>        mongodb host to connect to (default: 127.0.0.1)

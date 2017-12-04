@@ -418,6 +418,38 @@ func (d *datagen) printCollStats(coll *config.Collection) error {
 	return nil
 }
 
+func createEmptyCfgFile(filename string) error {
+	_, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+	if err != nil {
+		fmt.Printf("file %s already exists, overwrite it ?  [y/n]: ", filename)
+		response := make([]byte, 2)
+		_, err := os.Stdin.Read(response)
+		if err != nil {
+			return fmt.Errorf("couldn't read from user, aborting")
+		}
+		if string(response[0]) != "y" {
+			return nil
+		}
+	}
+
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	template := `[{
+  "database": "dbName",
+  "collection": "collectionName",
+  "count": 1000,
+  "content": {
+  	
+  }
+}]
+`
+	_, err = f.Write([]byte(template))
+	return err
+}
+
 // print the error in red and exit
 func printErrorAndExit(err error) {
 	color.Red("ERROR: %v", err)
@@ -447,8 +479,14 @@ type Config struct {
 	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU+1"`
 }
 
+// Template struct that stores info on config file to generate
+type Template struct {
+	New string `long:"new" value-name:"<filename>" description:"create an empty configuration file"`
+}
+
 // Options struct to store flags from CLI
 type Options struct {
+	Template   `group:"template"`
 	Config     `group:"configuration"`
 	Connection `group:"connection infos"`
 	General    `group:"general"`
@@ -494,6 +532,13 @@ func main() {
 	}
 	if options.Version {
 		fmt.Printf("mgodatagen version %s\n", version)
+		os.Exit(0)
+	}
+	if options.New != "" {
+		err = createEmptyCfgFile(options.New)
+		if err != nil {
+			printErrorAndExit(fmt.Errorf("could not create an empty configuration file: %v", err))
+		}
 		os.Exit(0)
 	}
 	if options.ConfigFile == "" {
