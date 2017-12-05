@@ -154,12 +154,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 	assert := require.New(t)
 	collectionList, err := config.CollectionList("../samples/bson_test.json")
 	assert.Nil(err)
-	now := time.Now().UnixNano()
-	encoder := &Encoder{
-		Data:  make([]byte, 4),
-		PCG32: pcg.NewPCG32().Seed(uint64(now), uint64(now)),
-		PCG64: pcg.NewPCG64().Seed(1, 1, 1, 1),
-	}
+
 	generator, err := CreateGenerator(collectionList[0].Content, false, 1000, []int{3, 2}, encoder)
 	assert.Nil(err)
 
@@ -170,6 +165,69 @@ func TestIsDocumentCorrect(t *testing.T) {
 		err := bson.Unmarshal(encoder.Data, &d)
 		assert.Nil(err)
 	}
+}
+
+func TestBigArray(t *testing.T) {
+	assert := require.New(t)
+	arrayGenratorBig := &ArrayGenerator{
+		EmptyGenerator: EmptyGenerator{
+			K:              append([]byte("key"), byte(0)),
+			NullPercentage: 0,
+			T:              bson.ElementArray,
+			Out:            encoder,
+		},
+		Size:      15,
+		Generator: boolGenerator,
+	}
+
+	generator := &ObjectGenerator{
+		EmptyGenerator: EmptyGenerator{K: []byte(""),
+			NullPercentage: 0,
+			T:              bson.ElementDocument,
+			Out:            encoder,
+		},
+		Generators: []Generator{arrayGenratorBig},
+	}
+
+	var a struct {
+		Key []bool `bson:"key"`
+	}
+	for i := 0; i < 100; i++ {
+		generator.Value()
+		err := bson.Unmarshal(encoder.Data, &a)
+		assert.Nil(err)
+		assert.Equal(arrayGenratorBig.Size, len(a.Key))
+	}
+}
+
+func TestGetLength(t *testing.T) {
+	assert := require.New(t)
+	emptyGenerator := EmptyGenerator{K: []byte(""),
+		NullPercentage: 0,
+		T:              bson.ElementDocument,
+		Out:            encoder,
+	}
+
+	l := emptyGenerator.getLength(5, 5)
+	assert.Equal(uint32(5), l)
+
+	l = emptyGenerator.getLength(5, 10)
+	assert.True(l <= 10)
+	assert.True(l >= 5)
+}
+
+func TestGetUniqueArray(t *testing.T) {
+	assert := require.New(t)
+	u := &UniqueGenerator{
+		CurrentIndex: int32(0),
+	}
+
+	err := u.getUniqueArray(1000, 1)
+	assert.NotNil(err)
+
+	err = u.getUniqueArray(1000, 3)
+	assert.Nil(err)
+	assert.Equal(1000, len(u.Values))
 }
 
 func TestDocumentWithDecimal128(t *testing.T) {
@@ -189,6 +247,73 @@ func TestDocumentWithDecimal128(t *testing.T) {
 		err := bson.Unmarshal(encoder.Data, &d)
 		assert.Nil(err)
 	}
+}
+
+func TestNewGenerator(t *testing.T) {
+	assert := require.New(t)
+
+	version := []int{3, 2}
+
+	genJSON := &config.GeneratorJSON{
+		NullPercentage: 120,
+	}
+	_, err := newGenerator("key", genJSON, false, 1, version, encoder)
+	assert.NotNil(err)
+
+	genJSON.NullPercentage = 10
+	genJSON.Type = "countAggregator"
+	g, err := newGenerator("key", genJSON, true, 1, version, encoder)
+	assert.Nil(g)
+	assert.Nil(err)
+
+	genJSON.Type = "unknown"
+	_, err = newGenerator("key", genJSON, true, 1, version, encoder)
+	assert.NotNil(err)
+
+	genJSON.Type = "decimal"
+	_, err = newGenerator("key", genJSON, true, 1, version, encoder)
+	assert.NotNil(err)
+
+	version = []int{3, 4}
+	_, err = newGenerator("key", genJSON, true, 1, version, encoder)
+	assert.Nil(err)
+
+}
+
+func TestNewAggregator(t *testing.T) {
+	assert := require.New(t)
+
+	genJSON := &config.GeneratorJSON{
+		Type: "countAggregator",
+	}
+
+	_, err := newAggregator("key", genJSON, true)
+	assert.NotNil(err)
+
+	genJSON.Query = bson.M{"n": 1}
+	_, err = newAggregator("key", genJSON, true)
+	assert.NotNil(err)
+
+	genJSON.Database = "db"
+	genJSON.Collection = "coll"
+
+	_, err = newAggregator("key", genJSON, true)
+	assert.Nil(err)
+
+	genJSON.Type = "unknown"
+	_, err = newAggregator("key", genJSON, true)
+	assert.Nil(err)
+
+	aggColl, err := config.CollectionList("../samples/agg.json")
+	assert.Nil(err)
+
+	aggs, err := NewAggregatorFromMap(aggColl[0].Content, false)
+	assert.Nil(err)
+	assert.Equal(0, len(aggs))
+
+	aggs, err = NewAggregatorFromMap(aggColl[1].Content, false)
+	assert.Nil(err)
+	assert.Equal(3, len(aggs))
 }
 
 func TestVersionAtLeast(t *testing.T) {

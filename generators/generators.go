@@ -215,6 +215,14 @@ func (g *EmptyGenerator) Exists() bool {
 // Type return the bson type of the element created by the generator
 func (g *EmptyGenerator) Type() byte { return g.T }
 
+// getLength return a random uint32 between min and max
+func (g *EmptyGenerator) getLength(min, max uint32) uint32 {
+	if min != max {
+		return g.Out.PCG32.Bounded(max-min) + min
+	}
+	return min
+}
+
 // StringGenerator struct that implements Generator. Used to
 // generate random string of a specific length in [`MinLength`, `MaxLength`]
 type StringGenerator struct {
@@ -225,10 +233,7 @@ type StringGenerator struct {
 
 // Value add a random String of a specific length to the encoder
 func (g *StringGenerator) Value() {
-	length := g.MinLength
-	if g.MaxLength != g.MinLength {
-		length = g.Out.PCG32.Bounded(g.MaxLength-g.MinLength) + g.MinLength
-	}
+	length := g.getLength(g.MinLength, g.MaxLength)
 	// first, put the size of the string, which is length + 1 because of
 	// the terminating byte 0x00
 	g.Out.Write(UInt32Bytes(length + 1))
@@ -436,10 +441,7 @@ type BinaryDataGenerator struct {
 // Value add a random array of bytes of length `g.length` to
 // the encoder
 func (g *BinaryDataGenerator) Value() {
-	length := g.MinLength
-	if g.MaxLength != g.MinLength {
-		length = g.Out.PCG32.Bounded(g.MaxLength-g.MinLength) + g.MinLength
-	}
+	length := g.getLength(g.MinLength, g.MaxLength)
 	g.Out.Write(UInt32Bytes(length))
 	g.Out.WriteSingleByte(bson.BinaryGeneric)
 	end := 4
@@ -627,8 +629,8 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 	if shortNames && k != "_id" && len(k) > 2 {
 		k = k[:2]
 	}
-	if v.NullPercentage < 0 {
-		return nil, fmt.Errorf("for field %s, null percentage can't be < 0", k)
+	if v.NullPercentage > 100 {
+		return nil, fmt.Errorf("for field %s, null percentage can't be > 100", k)
 	}
 	// EmptyGenerator to store general info
 	eg := EmptyGenerator{
@@ -672,7 +674,6 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 		if v.Unique {
 			// unique string can only be of fixed length, use minLength as length
 			u := &UniqueGenerator{
-				Values:       make([][]byte, docCount),
 				CurrentIndex: int32(0),
 			}
 			err := u.getUniqueArray(docCount, int(v.MinLength))

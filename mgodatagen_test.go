@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -85,6 +86,49 @@ func TestMain(m *testing.M) {
 		os.Exit(connectError)
 	}
 	os.Exit(retCode)
+}
+
+func TestConnectToDb(t *testing.T) {
+	assert := require.New(t)
+
+	conn := &Connection{
+		Host: "localhost",
+		Port: "40000", // should fail
+	}
+
+	_, v, err := connectToDB(conn)
+	assert.NotNil(err)
+
+	conn.Port = "27017"
+
+	s, v, err := connectToDB(conn)
+	assert.Nil(err)
+	assert.True(len(v) > 0)
+	s.Close()
+
+}
+
+func TestCreateEmptyFile(t *testing.T) {
+	assert := require.New(t)
+
+	filename := "testNewFile.json"
+
+	err := createEmptyCfgFile(filename)
+	assert.Nil(err)
+	defer os.Remove(filename)
+
+	expected := `[{
+"database": "dbName",
+"collection": "collectionName",
+"count": 1000,
+"content": {
+    
+  }
+}]
+`
+	content, err := ioutil.ReadFile(filename)
+	assert.Nil(err)
+	assert.Equal(expected, string(content))
 }
 
 func TestCollectionContent(t *testing.T) {

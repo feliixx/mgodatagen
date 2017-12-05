@@ -438,11 +438,11 @@ func createEmptyCfgFile(filename string) error {
 	}
 	defer f.Close()
 	template := `[{
-  "database": "dbName",
-  "collection": "collectionName",
-  "count": 1000,
-  "content": {
-  	
+"database": "dbName",
+"collection": "collectionName",
+"count": 1000,
+"content": {
+    
   }
 }]
 `
