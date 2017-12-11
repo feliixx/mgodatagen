@@ -132,12 +132,21 @@ func Float64Bytes(v float64) []byte {
 	return Int64Bytes(int64(math.Float64bits(v)))
 }
 
+// CollInfo stores global info on the colelction to generate
+type CollInfo struct {
+	Count      int32
+	ShortNames bool
+	Version    []int
+	Encoder    *Encoder
+}
+
 // Generator interface for all generator objects
 type Generator interface {
 	Key() []byte
 	Type() byte
 	Value()
 	Exists() bool
+	SetEncoder(e *Encoder)
 }
 
 // EmptyGenerator serves as base for the actual generators
@@ -199,6 +208,27 @@ func (e *Encoder) Reserve() {
 	e.Data = append(e.Data, byte(0), byte(0), byte(0), byte(0))
 }
 
+// PreGenerate generate `nb`values using `g` Generator
+func (ci *CollInfo) PreGenerate(k string, v *config.GeneratorJSON, nb int32) ([][]byte, byte, error) {
+
+	g, err := ci.newGenerator(k, v)
+	if err != nil {
+		return nil, bson.ElementNil, fmt.Errorf("for field %s, error while creating base array: %v", k, err)
+	}
+	e := NewEncoder(0)
+	g.SetEncoder(e)
+
+	arr := make([][]byte, nb)
+	for i := 0; i < int(nb); i++ {
+		g.Value()
+		tmpArr := make([]byte, len(e.Data))
+		copy(tmpArr, e.Data)
+		arr[i] = tmpArr
+		e.Truncate(0)
+	}
+	return arr, g.Type(), nil
+}
+
 // Key return the key (bson::e_name) encoded in UTF-8, followed by 0x00
 func (g *EmptyGenerator) Key() []byte { return g.K }
 
@@ -214,6 +244,9 @@ func (g *EmptyGenerator) Exists() bool {
 
 // Type return the bson type of the element created by the generator
 func (g *EmptyGenerator) Type() byte { return g.T }
+
+// SetEncoder set the EmptyGenerator encoder
+func (g *EmptyGenerator) SetEncoder(e *Encoder) { g.Out = e }
 
 // getLength return a random uint32 between min and max
 func (g *EmptyGenerator) getLength(min, max uint32) uint32 {
@@ -610,25 +643,20 @@ func (u *UniqueGenerator) getUniqueArray(docCount int32, stringSize int) error {
 
 // check if current version of mongodb is greater or at least equal
 // than a specific version
-func versionAtLeast(versionArray []int, v ...int) (result bool) {
+func (ci *CollInfo) versionAtLeast(v ...int) (result bool) {
 	for i := range v {
-		if i == len(versionArray) {
+		if i == len(ci.Version) {
 			return false
 		}
-		if versionArray[i] != v[i] {
-			return versionArray[i] >= v[i]
+		if ci.Version[i] != v[i] {
+			return ci.Version[i] >= v[i]
 		}
 	}
 	return true
 }
 
 // newGenerator returns a new Generator based on a JSON configuration
-func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount int32, version []int, encoder *Encoder) (Generator, error) {
-	// if shortNames option is specified, keep only two letters for each field. This is a basic
-	// optimisation to save space in mongodb and during db exchanges
-	if shortNames && k != "_id" && len(k) > 2 {
-		k = k[:2]
-	}
+func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, error) {
 	if v.NullPercentage > 100 {
 		return nil, fmt.Errorf("for field %s, null percentage can't be > 100", k)
 	}
@@ -636,31 +664,21 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 	eg := EmptyGenerator{
 		K:              append([]byte(k), byte(0)),
 		NullPercentage: uint32(v.NullPercentage) * 10,
-		Out:            encoder,
+		Out:            ci.Encoder,
 	}
 
 	if v.MaxDistinctValue != 0 {
 		size := v.MaxDistinctValue
 		v.MaxDistinctValue = 0
-		tmpEnc := NewEncoder(0)
-		gen, err := newGenerator(k, v, shortNames, docCount, version, tmpEnc)
+		arr, t, err := ci.PreGenerate(k, v, size)
 		if err != nil {
-			return nil, fmt.Errorf("for field %s, error while creating base array: %s", k, err.Error())
+			return nil, err
 		}
-		// generate an array with the possible distinct values
-		arr := make([][]byte, size)
-		for i := range arr {
-			gen.Value()
-			tmpArr := make([]byte, len(tmpEnc.Data))
-			copy(tmpArr, tmpEnc.Data)
-			arr[i] = tmpArr
-			tmpEnc.Truncate(0)
-		}
-		eg.T = gen.Type()
+		eg.T = t
 		return &FromArrayGenerator{
 			EmptyGenerator: eg,
 			Array:          arr,
-			Size:           int32(size),
+			Size:           size,
 			Index:          0,
 		}, nil
 	}
@@ -676,14 +694,14 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 			u := &UniqueGenerator{
 				CurrentIndex: int32(0),
 			}
-			err := u.getUniqueArray(docCount, int(v.MinLength))
+			err := u.getUniqueArray(ci.Count, int(v.MinLength))
 			if err != nil {
-				return nil, fmt.Errorf("for field %s, %v", k, err.Error())
+				return nil, fmt.Errorf("for field %s, %v", k, err)
 			}
 			return &FromArrayGenerator{
 				EmptyGenerator: eg,
 				Array:          u.Values,
-				Size:           docCount,
+				Size:           ci.Count,
 				Index:          0,
 			}, nil
 		}
@@ -725,7 +743,7 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 			StdDev:         (v.MaxFloat64 - v.MinFloat64) / 2,
 		}, nil
 	case "decimal":
-		if !versionAtLeast(version, 3, 4) {
+		if !ci.versionAtLeast(3, 4) {
 			return nil, fmt.Errorf("for field %s, decimal type (bson decimal128) requires mongodb 3.4 at least", k)
 		}
 		eg.T = bson.ElementDecimal128
@@ -747,7 +765,7 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 		if v.Size <= 0 {
 			return nil, fmt.Errorf("for field %s, make sure that size >= 0", k)
 		}
-		g, err := newGenerator("", v.ArrayContent, shortNames, docCount, version, encoder)
+		g, err := ci.newGenerator("", v.ArrayContent)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create new generator: %v", err)
 		}
@@ -758,7 +776,7 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 			Generator:      g,
 		}, nil
 	case "object":
-		g, err := newGeneratorsFromMap(v.ObjectContent, shortNames, docCount, version, encoder)
+		g, err := ci.newGeneratorsFromMap(v.ObjectContent)
 		if err != nil {
 			return nil, err
 		}
@@ -922,21 +940,12 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 	case "ref":
 		_, ok := mapRef[v.ID]
 		if !ok {
-			tmpEnc := NewEncoder(0)
-			g, err := newGenerator(k, v.RefContent, shortNames, docCount, version, tmpEnc)
+			arr, t, err := ci.PreGenerate(k, v.RefContent, ci.Count)
 			if err != nil {
-				return nil, fmt.Errorf("for field %s, %s", k, err.Error())
-			}
-			arr := make([][]byte, docCount)
-			for i := 0; i < int(docCount); i++ {
-				g.Value()
-				tmpArr := make([]byte, len(tmpEnc.Data))
-				copy(tmpArr, tmpEnc.Data)
-				arr[i] = tmpArr
-				tmpEnc.Truncate(0)
+				return nil, err
 			}
 			mapRef[v.ID] = arr
-			mapRefType[v.ID] = g.Type()
+			mapRefType[v.ID] = t
 		}
 		eg.T = mapRefType[v.ID]
 		return &FromArrayGenerator{
@@ -953,10 +962,15 @@ func newGenerator(k string, v *config.GeneratorJSON, shortNames bool, docCount i
 }
 
 // newGeneratorsFromMap creates a slice of generators based on a JSON configuration map
-func newGeneratorsFromMap(content map[string]config.GeneratorJSON, shortNames bool, docCount int32, version []int, encoder *Encoder) ([]Generator, error) {
+func (ci *CollInfo) newGeneratorsFromMap(content map[string]config.GeneratorJSON) ([]Generator, error) {
 	gArr := make([]Generator, 0)
 	for k, v := range content {
-		g, err := newGenerator(k, &v, shortNames, docCount, version, encoder)
+		// if shortNames option is specified, keep only two letters for each field. This is a basic
+		// optimisation to save space in mongodb and during db exchanges
+		if ci.ShortNames && k != "_id" && len(k) > 2 {
+			k = k[:2]
+		}
+		g, err := ci.newGenerator(k, &v)
 		if err != nil {
 			return nil, err
 		}
@@ -979,7 +993,7 @@ type Aggregator struct {
 }
 
 // newAggregator returns a new Aggregator based on a JSON configuration
-func newAggregator(k string, v *config.GeneratorJSON, shortNames bool) (*Aggregator, error) {
+func (ci *CollInfo) newAggregator(k string, v *config.GeneratorJSON) (*Aggregator, error) {
 	if v.Query == nil || len(v.Query) == 0 {
 		return nil, fmt.Errorf("for field %v, query can't be null or empty", k)
 	}
@@ -988,11 +1002,6 @@ func newAggregator(k string, v *config.GeneratorJSON, shortNames bool) (*Aggrega
 	}
 	if v.Collection == "" {
 		return nil, fmt.Errorf("for field %v, collection can't be null or empty", k)
-	}
-	// if shortNames option is specified, keep only two letters for each field. This is a basic
-	// optimisation to save space in mongodb and during db exchanges
-	if shortNames && k != "_id" && len(k) > 2 {
-		k = k[:2]
 	}
 	switch v.Type {
 	case "countAggregator":
@@ -1033,12 +1042,15 @@ func newAggregator(k string, v *config.GeneratorJSON, shortNames bool) (*Aggrega
 }
 
 //NewAggregatorFromMap creates a slice of aggregator based on a JSON configuration map
-func NewAggregatorFromMap(content map[string]config.GeneratorJSON, shortNames bool) ([]Aggregator, error) {
+func (ci *CollInfo) NewAggregatorFromMap(content map[string]config.GeneratorJSON) ([]Aggregator, error) {
 	agArr := make([]Aggregator, 0)
 	for k, v := range content {
 		switch v.Type {
 		case "countAggregator", "valueAggregator", "boundAggregator":
-			a, err := newAggregator(k, &v, shortNames)
+			if ci.ShortNames && k != "_id" && len(k) > 2 {
+				k = k[:2]
+			}
+			a, err := ci.newAggregator(k, &v)
 			if err != nil {
 				return nil, err
 			}
@@ -1050,17 +1062,17 @@ func NewAggregatorFromMap(content map[string]config.GeneratorJSON, shortNames bo
 }
 
 // CreateGenerator creates an object generator to get bson.Raw objects
-func CreateGenerator(content map[string]config.GeneratorJSON, shortNames bool, docCount int32, version []int, encoder *Encoder) (*ObjectGenerator, error) {
+func (ci *CollInfo) CreateGenerator(content map[string]config.GeneratorJSON) (*ObjectGenerator, error) {
 	// create the global generator
-	g, err := newGeneratorsFromMap(content, shortNames, docCount, version, encoder)
+	g, err := ci.newGeneratorsFromMap(content)
 	if err != nil {
-		return nil, fmt.Errorf("error while creating generators from configuration file:\n\tcause: %s", err.Error())
+		return nil, fmt.Errorf("error while creating generators from configuration file:\n\tcause: %v", err)
 	}
 	return &ObjectGenerator{
 		EmptyGenerator: EmptyGenerator{K: []byte(""),
 			NullPercentage: 0,
 			T:              bson.ElementDocument,
-			Out:            encoder,
+			Out:            ci.Encoder,
 		},
 		Generators: g,
 	}, nil

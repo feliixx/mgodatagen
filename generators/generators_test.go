@@ -155,14 +155,23 @@ func TestIsDocumentCorrect(t *testing.T) {
 	collectionList, err := config.CollectionList("../samples/bson_test.json")
 	assert.Nil(err)
 
-	generator, err := CreateGenerator(collectionList[0].Content, false, 1000, []int{3, 2}, encoder)
+	e := NewEncoder(4)
+
+	ci := &CollInfo{
+		Encoder:    e,
+		Version:    []int{3, 2},
+		ShortNames: false,
+		Count:      1000,
+	}
+
+	generator, err := ci.CreateGenerator(collectionList[0].Content)
 	assert.Nil(err)
 
 	var d expectedDoc
 
 	for i := 0; i < 1000; i++ {
 		generator.Value()
-		err := bson.Unmarshal(encoder.Data, &d)
+		err := bson.Unmarshal(ci.Encoder.Data, &d)
 		assert.Nil(err)
 	}
 }
@@ -257,25 +266,34 @@ func TestNewGenerator(t *testing.T) {
 	genJSON := &config.GeneratorJSON{
 		NullPercentage: 120,
 	}
-	_, err := newGenerator("key", genJSON, false, 1, version, encoder)
+	ci := &CollInfo{
+		Encoder:    encoder,
+		ShortNames: false,
+		Count:      1,
+		Version:    version,
+	}
+
+	_, err := ci.newGenerator("key", genJSON)
 	assert.NotNil(err)
+
+	ci.ShortNames = true
 
 	genJSON.NullPercentage = 10
 	genJSON.Type = "countAggregator"
-	g, err := newGenerator("key", genJSON, true, 1, version, encoder)
+	g, err := ci.newGenerator("key", genJSON)
 	assert.Nil(g)
 	assert.Nil(err)
 
 	genJSON.Type = "unknown"
-	_, err = newGenerator("key", genJSON, true, 1, version, encoder)
+	_, err = ci.newGenerator("key", genJSON)
 	assert.NotNil(err)
 
 	genJSON.Type = "decimal"
-	_, err = newGenerator("key", genJSON, true, 1, version, encoder)
+	_, err = ci.newGenerator("key", genJSON)
 	assert.NotNil(err)
 
-	version = []int{3, 4}
-	_, err = newGenerator("key", genJSON, true, 1, version, encoder)
+	ci.Version = []int{3, 4}
+	_, err = ci.newGenerator("key", genJSON)
 	assert.Nil(err)
 
 }
@@ -287,40 +305,52 @@ func TestNewAggregator(t *testing.T) {
 		Type: "countAggregator",
 	}
 
-	_, err := newAggregator("key", genJSON, true)
+	ci := &CollInfo{
+		ShortNames: true,
+	}
+
+	_, err := ci.newAggregator("key", genJSON)
 	assert.NotNil(err)
 
 	genJSON.Query = bson.M{"n": 1}
-	_, err = newAggregator("key", genJSON, true)
+	_, err = ci.newAggregator("key", genJSON)
 	assert.NotNil(err)
 
 	genJSON.Database = "db"
 	genJSON.Collection = "coll"
 
-	_, err = newAggregator("key", genJSON, true)
+	_, err = ci.newAggregator("key", genJSON)
 	assert.Nil(err)
 
 	genJSON.Type = "unknown"
-	_, err = newAggregator("key", genJSON, true)
+	_, err = ci.newAggregator("key", genJSON)
 	assert.Nil(err)
 
 	aggColl, err := config.CollectionList("../samples/agg.json")
 	assert.Nil(err)
 
-	aggs, err := NewAggregatorFromMap(aggColl[0].Content, false)
+	ci.ShortNames = false
+
+	aggs, err := ci.NewAggregatorFromMap(aggColl[0].Content)
 	assert.Nil(err)
 	assert.Equal(0, len(aggs))
 
-	aggs, err = NewAggregatorFromMap(aggColl[1].Content, false)
+	aggs, err = ci.NewAggregatorFromMap(aggColl[1].Content)
 	assert.Nil(err)
 	assert.Equal(3, len(aggs))
 }
 
 func TestVersionAtLeast(t *testing.T) {
 	assert := require.New(t)
-	assert.Equal(versionAtLeast([]int{2, 6}, 3, 4), false)
-	assert.Equal(versionAtLeast([]int{3, 4}, 3, 2), true)
-	assert.Equal(versionAtLeast([]int{3, 4}, 3, 4), true)
+
+	ci := &CollInfo{
+		Version: []int{2, 6},
+	}
+	assert.Equal(ci.versionAtLeast(3, 4), false)
+	ci.Version = []int{3, 4}
+	assert.Equal(ci.versionAtLeast(3, 2), true)
+	ci.Version = []int{3, 4}
+	assert.Equal(ci.versionAtLeast(3, 4), true)
 }
 
 func BenchmarkGeneratorString(b *testing.B) {
@@ -402,7 +432,14 @@ func BenchmarkGeneratorAll(b *testing.B) {
 		PCG32: pcg.NewPCG32().Seed(1, 1),
 		PCG64: pcg.NewPCG64().Seed(1, 1, 1, 1),
 	}
-	generator, _ := CreateGenerator(collectionList[0].Content, false, 1000, []int{3, 2}, encoder)
+
+	ci := &CollInfo{
+		Encoder:    encoder,
+		ShortNames: false,
+		Count:      1000,
+		Version:    []int{3, 2},
+	}
+	generator, _ := ci.CreateGenerator(collectionList[0].Content)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

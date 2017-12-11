@@ -66,7 +66,7 @@ type GeneratorJSON struct {
 	// Percentage of documents that won't contains this field
 	NullPercentage int32 `json:"nullPercentage"`
 	// Maximum number of distinct value for this field
-	MaxDistinctValue int `json:"maxDistinctValue"`
+	MaxDistinctValue int32 `json:"maxDistinctValue"`
 	// For `string` type only. If set to 'true', string will be unique
 	Unique bool `json:"unique"`
 	// For `string` and `binary` type only. Specify the Min length of the object to generate
@@ -129,12 +129,12 @@ type GeneratorJSON struct {
 func CollectionList(filename string) ([]Collection, error) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("File error: %s", err.Error())
+		return nil, fmt.Errorf("File error: %v", err)
 	}
 	var collectionList []Collection
 	err = json.Unmarshal(content, &collectionList)
 	if err != nil {
-		return nil, fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%s", err.Error())
+		return nil, fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%v", err)
 	}
 	for _, v := range collectionList {
 		if v.Name == "" || v.DB == "" {

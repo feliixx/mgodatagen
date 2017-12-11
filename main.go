@@ -37,11 +37,11 @@ func connectToDB(conn *Connection) (*mgo.Session, []int, error) {
 	}
 	session, err := mgo.Dial(url + conn.Host + ":" + conn.Port)
 	if err != nil {
-		return nil, nil, fmt.Errorf("connection failed:\n\tcause: %s", err.Error())
+		return nil, nil, fmt.Errorf("connection failed:\n\tcause: %v", err)
 	}
 	infos, err := session.BuildInfo()
 	if err != nil {
-		return nil, nil, fmt.Errorf("couldn't get mongodb version:\n\tcause: %s", err.Error())
+		return nil, nil, fmt.Errorf("couldn't get mongodb version:\n\tcause: %v", err)
 	}
 	fmt.Printf("mongodb server version %s\ngit version %s\nOpenSSL version %s\n\n", infos.Version, infos.GitVersion, infos.OpenSSLVersion)
 	version := strings.Split(infos.Version, ".")
@@ -83,7 +83,7 @@ func (d *datagen) createCollection(coll *config.Collection) error {
 	if coll.CompressionLevel != "" {
 		err := c.Create(&mgo.CollectionInfo{StorageEngine: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
 		if err != nil {
-			return fmt.Errorf("coulnd't create collection with compression level %s:\n\tcause: %s", coll.CompressionLevel, err.Error())
+			return fmt.Errorf("coulnd't create collection with compression level %s:\n\tcause: %v", coll.CompressionLevel, err)
 		}
 	}
 	if coll.ShardConfig.ShardCollection != "" {
@@ -106,14 +106,14 @@ func (d *datagen) createCollection(coll *config.Collection) error {
 		}
 		err := c.Database.Run(bson.D{{Name: "createIndexes", Value: c.Name}, {Name: "indexes", Value: [1]config.Index{index}}}, &result)
 		if err != nil {
-			return fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %s", index.Key, err.Error())
+			return fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %v", index.Key, err)
 		}
 		if !result.Ok {
 			return fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %s", index.Key, result.ErrMsg)
 		}
 		err = d.session.Run(coll.ShardConfig, &result)
 		if err != nil {
-			return fmt.Errorf("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details\n\tcause: %s", err.Error())
+			return fmt.Errorf("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details\n\tcause: %v", err)
 		}
 		if !result.Ok {
 			return fmt.Errorf("couldn't create sharded collection \n\tcause: %s", result.ErrMsg)
@@ -129,8 +129,13 @@ type rawChunk struct {
 
 func (d *datagen) fillCollection(coll *config.Collection) error {
 
-	encoder := generators.NewEncoder(4)
-	generator, err := generators.CreateGenerator(coll.Content, d.ShortName, coll.Count, d.version, encoder)
+	ci := &generators.CollInfo{
+		Encoder:    generators.NewEncoder(4),
+		Version:    d.version,
+		ShortNames: d.ShortName,
+		Count:      coll.Count,
+	}
+	generator, err := ci.CreateGenerator(coll.Content)
 	if err != nil {
 		return err
 	}
@@ -231,14 +236,14 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 		}
 		for i := 0; i < rc.nbToInsert; i++ {
 			generator.Value()
-			if len(rc.documents[i].Data) < len(encoder.Data) {
-				for j := len(rc.documents[i].Data); j < len(encoder.Data); j++ {
+			if len(rc.documents[i].Data) < len(ci.Encoder.Data) {
+				for j := len(rc.documents[i].Data); j < len(ci.Encoder.Data); j++ {
 					rc.documents[i].Data = append(rc.documents[i].Data, byte(0))
 				}
 			} else {
-				rc.documents[i].Data = rc.documents[i].Data[0:len(encoder.Data)]
+				rc.documents[i].Data = rc.documents[i].Data[0:len(ci.Encoder.Data)]
 			}
-			copy(rc.documents[i].Data, encoder.Data)
+			copy(rc.documents[i].Data, ci.Encoder.Data)
 		}
 		count += int32(rc.nbToInsert)
 		bar.Add(rc.nbToInsert)
@@ -263,7 +268,10 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 
 // Update documents with pre-computed aggregations
 func (d *datagen) updateWithAggregators(coll *config.Collection) error {
-	aggArr, err := generators.NewAggregatorFromMap(coll.Content, d.ShortName)
+	ci := &generators.CollInfo{
+		ShortNames: d.ShortName,
+	}
+	aggArr, err := ci.NewAggregatorFromMap(coll.Content)
 	if err != nil {
 		return err
 	}
@@ -379,7 +387,7 @@ func (d *datagen) ensureIndex(coll *config.Collection) error {
 	c := d.session.DB(coll.DB).C(coll.Name)
 	err := c.DropAllIndexes()
 	if err != nil {
-		return fmt.Errorf("error while dropping index for collection %s:\n\tcause: %s", coll.Name, err.Error())
+		return fmt.Errorf("error while dropping index for collection %s:\n\tcause: %v", coll.Name, err)
 	}
 	// avoid timeout when building indexes
 	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
@@ -390,7 +398,7 @@ func (d *datagen) ensureIndex(coll *config.Collection) error {
 	}{}
 	err = c.Database.Run(bson.D{{Name: "createIndexes", Value: c.Name}, {Name: "indexes", Value: coll.Indexes}}, &result)
 	if err != nil {
-		return fmt.Errorf("error while building indexes for collection %s:\n\tcause: %s", coll.Name, err.Error())
+		return fmt.Errorf("error while building indexes for collection %s:\n\tcause: %v", coll.Name, err)
 	}
 	if !result.Ok {
 		return fmt.Errorf("error while building indexes for collection %s:\n\tcause: %s", coll.Name, result.ErrMsg)
@@ -408,7 +416,7 @@ func (d *datagen) printCollStats(coll *config.Collection) error {
 	}{}
 	err := c.Database.Run(bson.D{{Name: "collStats", Value: c.Name}, {Name: "scale", Value: 1024}}, &stats)
 	if err != nil {
-		return fmt.Errorf("couldn't get stats for collection %s \n\tcause: %s ", c.Name, err.Error())
+		return fmt.Errorf("couldn't get stats for collection %s \n\tcause: %v ", c.Name, err)
 	}
 	indexString := ""
 	for k, v := range stats.IndexSizes {
@@ -431,7 +439,6 @@ func createEmptyCfgFile(filename string) error {
 			return nil
 		}
 	}
-
 	f, err := os.Create(filename)
 	if err != nil {
 		return err

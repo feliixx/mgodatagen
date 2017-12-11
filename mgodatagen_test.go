@@ -131,6 +131,21 @@ func TestCreateEmptyFile(t *testing.T) {
 	assert.Equal(expected, string(content))
 }
 
+type distinctResult struct {
+	Values []interface{} `bson:"values"`
+}
+
+func distinct(dbName, collName, keyName string, result distinctResult) (int, error) {
+	err := d.session.DB(dbName).Run(bson.D{
+		{Name: "distinct", Value: collName},
+		{Name: "key", Value: keyName},
+	}, &result)
+	if err != nil {
+		return 0, err
+	}
+	return len(result.Values), nil
+}
+
 func TestCollectionContent(t *testing.T) {
 	assert := require.New(t)
 
@@ -194,109 +209,44 @@ func TestCollectionContent(t *testing.T) {
 	// null percentage test, allow 2.5% error
 	assert.InDelta(100, count, 25)
 
-	var resultStr struct {
-		Values []string `bson:"values"`
+	dbName := collections[0].DB
+	collName := collections[0].Name
+	var result distinctResult
+
+	// we expect fixed values for those keys
+	testMatrix1 := map[string]int{
+		// test maxDistinctValues option
+		"name": int(collections[0].Content["name"].MaxDistinctValue),
+		// test unique option
+		"object.k1": 1000,
+		// test value distribution
+		"dt":       4,
+		"_id":      1000,
+		"c32":      11,
+		"list":     11,
+		"nnb":      1000,
+		"nb":       1000,
+		"verified": 2,
+		"float":    1000,
+		"position": 2000,
 	}
-	// test maxDistinctValues option
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "name"},
-	}, &resultStr)
-	assert.Nil(err)
-	assert.Equal(collections[0].Content["name"].MaxDistinctValue, len(resultStr.Values))
-	// test unique option
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "object.k1"},
-	}, &resultStr)
-	assert.Nil(err)
-	assert.Equal(1000, len(resultStr.Values))
 
-	// test value distribution
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "dt"},
-	}, &resultStr)
-	assert.Nil(err)
-	assert.Equal(4, len(resultStr.Values))
-
-	var resultObjectID struct {
-		Values []bson.ObjectId `bson:"values"`
+	for k, v := range testMatrix1 {
+		l, err := distinct(dbName, collName, k, result)
+		assert.Nil(err)
+		assert.Equal(v, l)
 	}
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "_id"},
-	}, &resultObjectID)
-	assert.Nil(err)
-	assert.Equal(1000, len(resultObjectID.Values))
-
-	var resultInt32 struct {
-		Values []int32 `bson:"values"`
+	// distinc count may be different from one run to another due
+	// to nullPercentage != 0
+	testMatrix2 := map[string]int{
+		"c64": 80,
 	}
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "c32"},
-	}, &resultInt32)
-	assert.Nil(err)
-	assert.Equal(11, len(resultInt32.Values))
 
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "list"},
-	}, &resultInt32)
-	assert.Nil(err)
-	assert.Equal(11, len(resultInt32.Values))
-
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "nnb"},
-	}, &resultInt32)
-	assert.Nil(err)
-	assert.Equal(1000, len(resultInt32.Values))
-
-	var resultInt64 struct {
-		Values []int64 `bson:"values"`
+	for k, v := range testMatrix2 {
+		l, err := distinct(dbName, collName, k, result)
+		assert.Nil(err)
+		assert.True(l > v)
 	}
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "c64"},
-	}, &resultInt64)
-	assert.Nil(err)
-	assert.True(len(resultInt64.Values) > 80)
-
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "nb"},
-	}, &resultInt64)
-	assert.Nil(err)
-	assert.Equal(1000, len(resultInt64.Values))
-
-	var resultFloat64 struct {
-		Values []float64 `bson:"values"`
-	}
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "float"},
-	}, &resultFloat64)
-	assert.Nil(err)
-	assert.True(len(resultFloat64.Values) > 800)
-
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "position"},
-	}, &resultFloat64)
-	assert.Nil(err)
-	assert.True(len(resultFloat64.Values) > 1800)
-
-	var resultBool struct {
-		Values []bool `bson:"values"`
-	}
-	err = d.session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "verified"},
-	}, &resultBool)
-	assert.Nil(err)
-	assert.Equal(2, len(resultBool.Values))
 }
 
 func TestCollectionWithRef(t *testing.T) {
