@@ -17,7 +17,7 @@ type Collection struct {
 	// Collection name in the database
 	Name string `json:"collection"`
 	// Number of documents to insert in the collection
-	Count int32 `json:"count"`
+	Count int `json:"count"`
 	// Schema of the documents for this collection
 	Content map[string]GeneratorJSON `json:"content"`
 	// Compression level for a collection. Available for `WiredTiger` only.
@@ -64,15 +64,15 @@ type GeneratorJSON struct {
 	// Type of object to genereate.
 	Type string `json:"type"`
 	// Percentage of documents that won't contains this field
-	NullPercentage int32 `json:"nullPercentage"`
+	NullPercentage int `json:"nullPercentage"`
 	// Maximum number of distinct value for this field
-	MaxDistinctValue int32 `json:"maxDistinctValue"`
+	MaxDistinctValue int `json:"maxDistinctValue"`
 	// For `string` type only. If set to 'true', string will be unique
 	Unique bool `json:"unique"`
 	// For `string` and `binary` type only. Specify the Min length of the object to generate
-	MinLength int32 `json:"MinLength"`
+	MinLength int `json:"MinLength"`
 	// For `string` and `binary` type only. Specify the Max length of the object to generate
-	MaxLength int32 `json:"MaxLength"`
+	MaxLength int `json:"MaxLength"`
 	// For `int` type only. Lower bound for the int32 to generate
 	MinInt32 int32 `json:"MinInt"`
 	// For `int` type only. Higher bound for the int32 to generate

@@ -228,7 +228,7 @@ func TestGetLength(t *testing.T) {
 func TestGetUniqueArray(t *testing.T) {
 	assert := require.New(t)
 	u := &UniqueGenerator{
-		CurrentIndex: int32(0),
+		CurrentIndex: 0,
 	}
 
 	err := u.getUniqueArray(1000, 1)

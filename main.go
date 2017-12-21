@@ -218,7 +218,7 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 		}()
 	}
 	// counter for already generated documents
-	count := int32(0)
+	count := 0
 	// start bson.Raw generation to feed the task channel
 	for count < coll.Count {
 		select {
@@ -243,7 +243,7 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 			}
 			copy(rc.documents[i].Data, ci.Encoder.Data)
 		}
-		count += int32(rc.nbToInsert)
+		count += rc.nbToInsert
 		bar.Add(rc.nbToInsert)
 		task <- rc
 	}

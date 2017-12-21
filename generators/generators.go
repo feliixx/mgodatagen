@@ -134,7 +134,7 @@ func Float64Bytes(v float64) []byte {
 
 // CollInfo stores global info on the colelction to generate
 type CollInfo struct {
-	Count      int32
+	Count      int
 	ShortNames bool
 	Version    []int
 	Encoder    *Encoder
@@ -209,7 +209,7 @@ func (e *Encoder) Reserve() {
 }
 
 // PreGenerate generate `nb`values using `g` Generator
-func (ci *CollInfo) PreGenerate(k string, v *config.GeneratorJSON, nb int32) ([][]byte, byte, error) {
+func (ci *CollInfo) PreGenerate(k string, v *config.GeneratorJSON, nb int) ([][]byte, byte, error) {
 
 	g, err := ci.newGenerator(k, v)
 	if err != nil {
@@ -219,7 +219,7 @@ func (ci *CollInfo) PreGenerate(k string, v *config.GeneratorJSON, nb int32) ([]
 	g.SetEncoder(e)
 
 	arr := make([][]byte, nb)
-	for i := 0; i < int(nb); i++ {
+	for i := 0; i < nb; i++ {
 		g.Value()
 		tmpArr := make([]byte, len(e.Data))
 		copy(tmpArr, e.Data)
@@ -567,9 +567,9 @@ func (g *AutoIncrementGenerator64) Value() {
 // generate a random value from an array of user-defined values
 type FromArrayGenerator struct {
 	EmptyGenerator
-	Size  int32
+	Size  int
 	Array [][]byte
-	Index int32
+	Index int
 }
 
 // Value add an item of the input array to the encoder
@@ -601,11 +601,11 @@ func (g *FakerGenerator) Value() {
 // UniqueGenerator used to create an array containing unique strings
 type UniqueGenerator struct {
 	Values       [][]byte
-	CurrentIndex int32
+	CurrentIndex int
 }
 
 // recursively generate all possible combinations with repeat
-func (u *UniqueGenerator) recur(data []byte, stringSize int, index int, docCount int32) {
+func (u *UniqueGenerator) recur(data []byte, stringSize int, index int, docCount int) {
 	for i := 0; i < len(letterBytes); i++ {
 		if u.CurrentIndex < docCount {
 			data[index+4] = letterBytes[i]
@@ -624,10 +624,10 @@ func (u *UniqueGenerator) recur(data []byte, stringSize int, index int, docCount
 // generate an array of length 'docCount' containing unique string
 // array will look like (for stringSize=3)
 // [ "aaa", "aab", "aac", ...]
-func (u *UniqueGenerator) getUniqueArray(docCount int32, stringSize int) error {
+func (u *UniqueGenerator) getUniqueArray(docCount int, stringSize int) error {
 	// if string size >= 5, there is at least 1073741824 possible string, so don't bother checking collection count
 	if stringSize < 5 {
-		maxNumber := int32(math.Pow(float64(len(letterBytes)), float64(stringSize)))
+		maxNumber := int(math.Pow(float64(len(letterBytes)), float64(stringSize)))
 		if docCount > maxNumber {
 			return fmt.Errorf("doc count is greater than possible value for string of size %v, max is %v ( %v^%v) ", stringSize, maxNumber, len(letterBytes), stringSize)
 		}
@@ -692,7 +692,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		if v.Unique {
 			// unique string can only be of fixed length, use minLength as length
 			u := &UniqueGenerator{
-				CurrentIndex: int32(0),
+				CurrentIndex: 0,
 			}
 			err := u.getUniqueArray(ci.Count, int(v.MinLength))
 			if err != nil {
@@ -802,8 +802,8 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		return &FromArrayGenerator{
 			EmptyGenerator: eg,
 			Array:          array,
-			Size:           int32(len(v.In)),
-			Index:          int32(0),
+			Size:           len(v.In),
+			Index:          0,
 		}, nil
 	case "binary":
 		if v.MinLength < 0 || v.MinLength > v.MaxLength {
@@ -951,7 +951,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		return &FromArrayGenerator{
 			EmptyGenerator: eg,
 			Array:          mapRef[v.ID],
-			Size:           int32(len(mapRef[v.ID])),
+			Size:           len(mapRef[v.ID]),
 			Index:          0,
 		}, nil
 	case "countAggregator", "valueAggregator", "boundAggregator":
