@@ -125,6 +125,23 @@ type rawChunk struct {
 	nbToInsert int
 }
 
+// use a sync.Pool to reduce memory consumption
+// also reduce the nb of items to send to the channel
+var pool = sync.Pool{
+	New: func() interface{} {
+		list := make([]bson.Raw, 1000)
+		for i := range list {
+			list[i] = bson.Raw{
+				Data: make([]byte, 0),
+				Kind: bson.ElementDocument,
+			}
+		}
+		return &rawChunk{
+			documents: list,
+		}
+	},
+}
+
 func (d *datagen) fillCollection(coll *config.Collection) error {
 
 	ci := &generators.CollInfo{
@@ -146,23 +163,6 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 	if coll.Count <= 10000 {
 		nbInsertingGoRoutines = 1
 		taskBufferSize = 1
-	}
-
-	// use a sync.Pool to reduce memory consumption
-	// also reduce the nb of items to send to the channel
-	var pool = sync.Pool{
-		New: func() interface{} {
-			list := make([]bson.Raw, 1000)
-			for i := range list {
-				list[i] = bson.Raw{
-					Data: make([]byte, 0),
-					Kind: bson.ElementDocument,
-				}
-			}
-			return &rawChunk{
-				documents: list,
-			}
-		},
 	}
 
 	task := make(chan *rawChunk, taskBufferSize)
@@ -466,12 +466,6 @@ func handleCommandError(msg string, err error, r *result) error {
 	return fmt.Errorf("%s\n\t cause: %s", msg, m)
 }
 
-// print the error in red and exit
-func printErrorAndExit(err error) {
-	color.Red("ERROR: %v", err)
-	os.Exit(1)
-}
-
 // General struct that stores global options from command line args
 type General struct {
 	Help    bool `long:"help" description:"show this help message"`
@@ -534,12 +528,55 @@ func (d *datagen) generate(v *config.Collection) error {
 	return d.printCollStats(v)
 }
 
+func run(options *Options) error {
+	if options.New != "" {
+		err := createEmptyCfgFile(options.New)
+		if err != nil {
+			return fmt.Errorf("could not create an empty configuration file: %v", err)
+		}
+	}
+	if options.ConfigFile == "" {
+		return fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations ")
+	}
+	var out io.Writer = os.Stderr
+	if options.Quiet {
+		out = ioutil.Discard
+	}
+
+	fmt.Fprintln(out, "Parsing configuration file...")
+	collectionList, err := config.CollectionList(options.ConfigFile)
+	if err != nil {
+		return err
+	}
+	session, version, err := connectToDB(&options.Connection, out)
+	if err != nil {
+		return err
+	}
+	defer session.Close()
+
+	datagen := &datagen{
+		out:     out,
+		session: session,
+		Options: *options,
+		version: version,
+	}
+
+	for _, v := range collectionList {
+		err = datagen.generate(&v)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func main() {
 	var options Options
 	p := flags.NewParser(&options, flags.Default&^flags.HelpFlag)
 	_, err := p.Parse()
 	if err != nil {
-		printErrorAndExit(fmt.Errorf("invalid flags, try mgodatagen --help for more informations: %v", err))
+		color.Red("invalid flags, try mgodatagen --help for more informations: %v", err)
+		os.Exit(1)
 	}
 	if options.Help {
 		fmt.Printf("mgodatagen version %s\n\n", version)
@@ -550,44 +587,10 @@ func main() {
 		fmt.Printf("mgodatagen version %s\n", version)
 		os.Exit(0)
 	}
-	if options.New != "" {
-		err = createEmptyCfgFile(options.New)
-		if err != nil {
-			printErrorAndExit(fmt.Errorf("could not create an empty configuration file: %v", err))
-		}
-		os.Exit(0)
-	}
-	if options.ConfigFile == "" {
-		printErrorAndExit(fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations "))
-	}
-	var out io.Writer = os.Stderr
-	if options.Quiet {
-		out = ioutil.Discard
-	}
-
-	fmt.Fprintln(out, "Parsing configuration file...")
-	collectionList, err := config.CollectionList(options.ConfigFile)
+	err = run(&options)
 	if err != nil {
-		printErrorAndExit(err)
-	}
-	session, version, err := connectToDB(&options.Connection, out)
-	if err != nil {
-		printErrorAndExit(err)
-	}
-	defer session.Close()
-
-	datagen := &datagen{
-		out:     out,
-		session: session,
-		Options: options,
-		version: version,
-	}
-
-	for _, v := range collectionList {
-		err = datagen.generate(&v)
-		if err != nil {
-			printErrorAndExit(err)
-		}
+		color.Red("ERROR: %v", err)
+		os.Exit(1)
 	}
 	color.Green("Done")
 }

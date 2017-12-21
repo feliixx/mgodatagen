@@ -26,8 +26,7 @@ before_script:
 
 script:
   - ./test.sh
-  - ./mgodatagen -f samples/config.json
-  - ./mgodatagen -f samples/agg.json
+  - ./mgodatagen -f samples/bson_test.json
   
 after_success:
   - bash <(curl -s https://codecov.io/bash)

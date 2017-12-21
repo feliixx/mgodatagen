@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/feliixx/mgodatagen/config"
+	"github.com/feliixx/mgodatagen/generators"
 )
 
 const (
@@ -58,6 +59,7 @@ func TestMain(m *testing.M) {
 		os.Exit(connectError)
 	}
 	defer s.Close()
+	generators.ClearRef()
 	datagen := &datagen{
 		session: s,
 		Options: Options{},
@@ -384,4 +386,69 @@ func TestCollectionWithIndexes(t *testing.T) {
 	assert.Equal(len(idx), len(indexes)+1)
 	assert.Equal(indexes[0].Name, idx[1].Name)
 	assert.Equal(indexes[1].Name, idx[2].Name)
+}
+
+func TestRealRun(t *testing.T) {
+	assert := require.New(t)
+	generators.ClearRef()
+	connOpts := Connection{
+		Host: "127.0.0.1",
+		Port: "27017",
+	}
+
+	options := &Options{
+		Connection: connOpts,
+		Config: Config{
+			ConfigFile:      "samples/config.json",
+			NumInsertWorker: 1,
+		},
+	}
+	err := run(options)
+	assert.Nil(err)
+
+	options = &Options{
+		Connection: connOpts,
+		Config: Config{
+			ConfigFile:      "samples/agg.json",
+			NumInsertWorker: 1,
+		},
+	}
+	err = run(options)
+	assert.Nil(err)
+
+	generators.ClearRef()
+	// insert 1000 docs
+	options = &Options{
+		Connection: connOpts,
+		Config: Config{
+			ConfigFile:      "samples/bson_test.json",
+			NumInsertWorker: 1,
+			ShortName:       true,
+		},
+		General: General{
+			Quiet: true,
+		},
+	}
+	err = run(options)
+	assert.Nil(err)
+	// append another 1000 to the same collection
+	generators.ClearRef()
+	options.Append = true
+	err = run(options)
+	assert.Nil(err)
+	// index only, ie collection is not rebuilt
+	options.IndexOnly = true
+	err = run(options)
+	assert.Nil(err)
+
+	db := d.session.DB("datagen_it_test")
+
+	var r struct {
+		N int `bson:"n"`
+	}
+	command := bson.D{{Name: "count", Value: db.C("test_bson").Name}}
+	err = db.Run(command, &r)
+	assert.Nil(err)
+	assert.Equal(2000, r.N)
+
 }

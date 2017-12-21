@@ -35,6 +35,7 @@ import (
 	"math"
 	"os"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/MichaelTJones/pcg"
@@ -66,6 +67,8 @@ var (
 	machineID = readMachineID()
 	// process ID to generate unique object ID
 	processID = os.Getpid()
+	// objectIdCounter is atomically incremented when generating a new ObjectId
+	objectIDCounter = getRandomUint32()
 	// precomputed index. Most of the array
 	// will be of short length, so precompute
 	// the first indexes values to avoid calls
@@ -102,6 +105,21 @@ func readMachineID() []byte {
 	hw.Write([]byte(hostname))
 	copy(id, hw.Sum(nil))
 	return id
+}
+
+func getRandomUint32() uint32 {
+	var b [4]byte
+	_, err := io.ReadFull(rand.Reader, b[:])
+	if err != nil {
+		panic(fmt.Errorf("cannot read random object id: %v", err))
+	}
+	return uint32((uint32(b[0]) << 0) | (uint32(b[1]) << 8) | (uint32(b[2]) << 16) | (uint32(b[3]) << 24))
+}
+
+// ClearRef empty references map for tests run
+func ClearRef() {
+	mapRef = make(map[int][][]byte, 0)
+	mapRefType = make(map[int]byte, 0)
 }
 
 // Int32Bytes convert an int32 into an array of bytes
@@ -352,13 +370,13 @@ func (g *BoolGenerator) Value() {
 // generate bson.ObjectId
 type ObjectIDGenerator struct {
 	EmptyGenerator
-	Increment uint32
 }
 
 // Value add a bson.ObjectId to the encoder. As object generation
 // is done in a single goroutine, ne need for sync/atomic
 func (g *ObjectIDGenerator) Value() {
 	t := uint32(time.Now().Unix())
+	i := atomic.AddUint32(&objectIDCounter, 1)
 	g.Out.Write(
 		[]byte{
 			byte(t >> 24),
@@ -370,12 +388,11 @@ func (g *ObjectIDGenerator) Value() {
 			machineID[2],
 			byte(processID >> 8), // Pid, 2 bytes, specs don't specify endianness, but we use big endian.
 			byte(processID),
-			byte(g.Increment >> 16), // Increment, 3 bytes, big endian
-			byte(g.Increment >> 8),
-			byte(g.Increment),
+			byte(i >> 16), // Increment, 3 bytes, big endian
+			byte(i >> 8),
+			byte(i),
 		},
 	)
-	g.Increment++
 }
 
 // ObjectGenerator struct that implements Generator. Used to
@@ -759,7 +776,6 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		eg.T = bson.ElementObjectId
 		return &ObjectIDGenerator{
 			EmptyGenerator: eg,
-			Increment:      0,
 		}, nil
 	case "array":
 		if v.Size <= 0 {
