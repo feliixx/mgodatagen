@@ -51,13 +51,6 @@ type expectedDoc struct {
 	} `bson:"object"`
 }
 
-type logger struct{}
-
-// redirect progress bar and non useful info to avoid polluting stderr
-func (l logger) Write(b []byte) (int, error) {
-	return 0, nil
-}
-
 func TestMain(m *testing.M) {
 	s, err := mgo.Dial(URL)
 	if err != nil {
@@ -68,7 +61,7 @@ func TestMain(m *testing.M) {
 	datagen := &datagen{
 		session: s,
 		Options: Options{},
-		out:     logger{},
+		out:     ioutil.Discard,
 	}
 	d = datagen
 
@@ -96,12 +89,12 @@ func TestConnectToDb(t *testing.T) {
 		Port: "40000", // should fail
 	}
 
-	_, v, err := connectToDB(conn)
+	_, v, err := connectToDB(conn, ioutil.Discard)
 	assert.NotNil(err)
 
 	conn.Port = "27017"
 
-	s, v, err := connectToDB(conn)
+	s, v, err := connectToDB(conn, ioutil.Discard)
 	assert.Nil(err)
 	assert.True(len(v) > 0)
 	s.Close()

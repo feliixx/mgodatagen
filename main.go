@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"runtime"
 	"strconv"
@@ -29,8 +30,8 @@ const (
 )
 
 // get a connection from Connection args
-func connectToDB(conn *Connection) (*mgo.Session, []int, error) {
-	fmt.Printf("Connecting to mongodb://%s:%s\n\n", conn.Host, conn.Port)
+func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
+	fmt.Fprintf(out, "Connecting to mongodb://%s:%s\n\n", conn.Host, conn.Port)
 	url := "mongodb://"
 	if conn.UserName != "" && conn.Password != "" {
 		url += conn.UserName + ":" + conn.Password + "@"
@@ -43,7 +44,7 @@ func connectToDB(conn *Connection) (*mgo.Session, []int, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("couldn't get mongodb version:\n\tcause: %v", err)
 	}
-	fmt.Printf("mongodb server version %s\ngit version %s\nOpenSSL version %s\n\n", infos.Version, infos.GitVersion, infos.OpenSSLVersion)
+	fmt.Fprintf(out, "mongodb server version %s\ngit version %s\nOpenSSL version %s\n\n", infos.Version, infos.GitVersion, infos.OpenSSLVersion)
 	version := strings.Split(infos.Version, ".")
 	versionInt := make([]int, len(version))
 
@@ -62,7 +63,7 @@ func connectToDB(conn *Connection) (*mgo.Session, []int, error) {
 	if err == nil && result.ErrMsg == "" {
 		json, err := json.MarshalIndent(result.Shards, "", "  ")
 		if err == nil {
-			fmt.Printf("shard list: %v\n", string(json))
+			fmt.Fprintf(out, "shard list: %v\n", string(json))
 		}
 	}
 	return session, versionInt, nil
@@ -379,7 +380,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 // create index on generated collections
 func (d *datagen) ensureIndex(coll *config.Collection) error {
 	if len(coll.Indexes) == 0 {
-		fmt.Printf("No index to build for collection %s\n\n", coll.Name)
+		fmt.Fprintf(d.out, "No index to build for collection %s\n\n", coll.Name)
 		return nil
 	}
 	fmt.Fprintf(d.out, "Building indexes for collection %s...\n", coll.Name)
@@ -467,6 +468,7 @@ func printErrorAndExit(err error) {
 type General struct {
 	Help    bool `long:"help" description:"show this help message"`
 	Version bool `short:"v" long:"version" description:"print the tool version and exit"`
+	Quiet   bool `short:"q" long:"quiet" description:"quieter output"`
 }
 
 // Connection struct that stores info on connection from command line args
@@ -529,8 +531,7 @@ func main() {
 	p := flags.NewParser(&options, flags.Default&^flags.HelpFlag)
 	_, err := p.Parse()
 	if err != nil {
-		fmt.Println("try mgodatagen --help for more informations")
-		os.Exit(1)
+		printErrorAndExit(fmt.Errorf("invalid flags, try mgodatagen --help for more informations: %v", err))
 	}
 	if options.Help {
 		fmt.Printf("mgodatagen version %s\n\n", version)
@@ -551,20 +552,24 @@ func main() {
 	if options.ConfigFile == "" {
 		printErrorAndExit(fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations "))
 	}
+	var out io.Writer = os.Stderr
+	if options.Quiet {
+		out = ioutil.Discard
+	}
 
-	fmt.Println("Parsing configuration file...")
+	fmt.Fprintln(out, "Parsing configuration file...")
 	collectionList, err := config.CollectionList(options.ConfigFile)
 	if err != nil {
 		printErrorAndExit(err)
 	}
-	session, version, err := connectToDB(&options.Connection)
+	session, version, err := connectToDB(&options.Connection, out)
 	if err != nil {
 		printErrorAndExit(err)
 	}
 	defer session.Close()
 
 	datagen := &datagen{
-		out:     os.Stderr,
+		out:     out,
 		session: session,
 		Options: options,
 		version: version,

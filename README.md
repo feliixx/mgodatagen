@@ -68,6 +68,7 @@ connection infos:
 general:
       --help                   show this help message
   -v, --version                print the tool version and exit
+  -q, --quiet                  quieter output
 
 ```
 
