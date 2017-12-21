@@ -14,8 +14,8 @@
       "name": {
         "type": "string",
         "maxDistinctValue": 500,
-        "minLength": 4,
-        "maxLength": 8
+        "minLength": 15,
+        "maxLength": 20
       },
       "c32": {
         "type": "int",

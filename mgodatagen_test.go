@@ -168,10 +168,11 @@ func TestCollectionContent(t *testing.T) {
 	expectedDate, _ := time.Parse(dateFormat, "2014-Jan-01")
 
 	for i, r := range results {
+		// string
+		assert.InDelta(3, len(r.Name), 17)
 		// int32
-		assert.InDelta(6, len(r.Name), 2)
-		// int64
 		assert.InDelta(15, r.C32, 5)
+		// int64
 		if r.C64 == 0 {
 			count++
 		} else {
