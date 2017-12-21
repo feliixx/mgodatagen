@@ -29,6 +29,12 @@ const (
 	version = "0.4.2" // current version of mgodatagen
 )
 
+type result struct {
+	Ok     bool
+	ErrMsg string
+	Shards []bson.M
+}
+
 // get a connection from Connection args
 func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 	fmt.Fprintf(out, "Connecting to mongodb://%s:%s\n\n", conn.Host, conn.Port)
@@ -53,15 +59,12 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 		versionInt[i] = v
 	}
 
-	result := struct {
-		ErrMsg string
-		Shards []bson.M
-	}{}
+	var r result
 	// if it's a sharded cluster, print the list of shards. Don't bother with the error
 	// if cluster is not sharded / user not allowed to run command against admin db
-	err = session.Run(bson.M{"listShards": 1}, &result)
-	if err == nil && result.ErrMsg == "" {
-		json, err := json.MarshalIndent(result.Shards, "", "  ")
+	err = session.Run(bson.M{"listShards": 1}, &r)
+	if err == nil && r.ErrMsg == "" {
+		json, err := json.MarshalIndent(r.Shards, "", "  ")
 		if err == nil {
 			fmt.Fprintf(out, "shard list: %v\n", string(json))
 		}
@@ -88,10 +91,6 @@ func (d *datagen) createCollection(coll *config.Collection) error {
 		}
 	}
 	if coll.ShardConfig.ShardCollection != "" {
-		result := struct {
-			ErrMsg string
-			Ok     bool
-		}{}
 		// check that the config is correct
 		nm := c.Database.Name + "." + c.Name
 		if coll.ShardConfig.ShardCollection != nm {
@@ -105,19 +104,17 @@ func (d *datagen) createCollection(coll *config.Collection) error {
 			Name: "shardKey",
 			Key:  coll.ShardConfig.Key,
 		}
-		err := c.Database.Run(bson.D{{Name: "createIndexes", Value: c.Name}, {Name: "indexes", Value: [1]config.Index{index}}}, &result)
-		if err != nil {
-			return fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %v", index.Key, err)
+		var r result
+		err := c.Database.Run(bson.D{
+			{Name: "createIndexes", Value: c.Name},
+			{Name: "indexes", Value: [1]config.Index{index}},
+		}, &r)
+		if err != nil || !r.Ok {
+			return handleCommandError(fmt.Sprintf("couldn't create shard key with index config %v", index.Key), err, &r)
 		}
-		if !result.Ok {
-			return fmt.Errorf("couldn't create shard key with index config %v\n\tcause: %s", index.Key, result.ErrMsg)
-		}
-		err = d.session.Run(coll.ShardConfig, &result)
-		if err != nil {
-			return fmt.Errorf("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details\n\tcause: %v", err)
-		}
-		if !result.Ok {
-			return fmt.Errorf("couldn't create sharded collection \n\tcause: %s", result.ErrMsg)
+		err = d.session.Run(coll.ShardConfig, &r)
+		if err != nil || !r.Ok {
+			return handleCommandError("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details", err, &r)
 		}
 	}
 	return nil
@@ -302,7 +299,10 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 		var result struct {
 			Values []interface{} `bson:"values"`
 		}
-		err := c.Database.Run(bson.D{{Name: "distinct", Value: c.Name}, {Name: "key", Value: localVar}}, &result)
+		err := c.Database.Run(bson.D{
+			{Name: "distinct", Value: c.Name},
+			{Name: "key", Value: localVar},
+		}, &result)
 		if err != nil {
 			return fmt.Errorf("fail to get distinct values for local field %v: %v", localVar, err)
 		}
@@ -393,16 +393,13 @@ func (d *datagen) ensureIndex(coll *config.Collection) error {
 	// avoid timeout when building indexes
 	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
 	// create the new indexes
-	result := struct {
-		ErrMsg string
-		Ok     bool
-	}{}
-	err = c.Database.Run(bson.D{{Name: "createIndexes", Value: c.Name}, {Name: "indexes", Value: coll.Indexes}}, &result)
-	if err != nil {
-		return fmt.Errorf("error while building indexes for collection %s:\n\tcause: %v", coll.Name, err)
-	}
-	if !result.Ok {
-		return fmt.Errorf("error while building indexes for collection %s:\n\tcause: %s", coll.Name, result.ErrMsg)
+	var r result
+	err = c.Database.Run(bson.D{
+		{Name: "createIndexes", Value: c.Name},
+		{Name: "indexes", Value: coll.Indexes},
+	}, &r)
+	if err != nil || !r.Ok {
+		return handleCommandError(fmt.Sprintf("error while building indexes for collection %s", coll.Name), err, &r)
 	}
 	color.New(color.FgGreen).Fprintf(d.out, "Building indexes for collection %s done\n\n", coll.Name)
 	return nil
@@ -415,7 +412,10 @@ func (d *datagen) printCollStats(coll *config.Collection) error {
 		AvgObjSize int64  `bson:"avgObjSize"`
 		IndexSizes bson.M `bson:"indexSizes"`
 	}{}
-	err := c.Database.Run(bson.D{{Name: "collStats", Value: c.Name}, {Name: "scale", Value: 1024}}, &stats)
+	err := c.Database.Run(bson.D{
+		{Name: "collStats", Value: c.Name},
+		{Name: "scale", Value: 1024},
+	}, &stats)
 	if err != nil {
 		return fmt.Errorf("couldn't get stats for collection %s \n\tcause: %v ", c.Name, err)
 	}
@@ -456,6 +456,14 @@ func createEmptyCfgFile(filename string) error {
 `
 	_, err = f.Write([]byte(template))
 	return err
+}
+
+func handleCommandError(msg string, err error, r *result) error {
+	m := err.Error()
+	if !r.Ok {
+		m = r.ErrMsg
+	}
+	return fmt.Errorf("%s\n\t cause: %s", msg, m)
 }
 
 // print the error in red and exit
