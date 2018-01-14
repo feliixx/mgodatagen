@@ -534,6 +534,7 @@ func run(options *Options) error {
 		if err != nil {
 			return fmt.Errorf("could not create an empty configuration file: %v", err)
 		}
+		return nil
 	}
 	if options.ConfigFile == "" {
 		return fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations ")
