@@ -226,7 +226,7 @@ func (e *Encoder) Reserve() {
 	e.Data = append(e.Data, byte(0), byte(0), byte(0), byte(0))
 }
 
-// PreGenerate generate `nb`values using `g` Generator
+// PreGenerate generate `nb`values using a generator created from config
 func (ci *CollInfo) PreGenerate(k string, v *config.GeneratorJSON, nb int) ([][]byte, byte, error) {
 
 	g, err := ci.newGenerator(k, v)
@@ -584,9 +584,10 @@ func (g *AutoIncrementGenerator64) Value() {
 // generate a random value from an array of user-defined values
 type FromArrayGenerator struct {
 	EmptyGenerator
-	Size  int
-	Array [][]byte
-	Index int
+	Size          int
+	Array         [][]byte
+	Index         int
+	DoNotTruncate bool
 }
 
 // Value add an item of the input array to the encoder
@@ -676,6 +677,11 @@ func (ci *CollInfo) versionAtLeast(v ...int) (result bool) {
 func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, error) {
 	if v.NullPercentage > 100 {
 		return nil, fmt.Errorf("for field %s, null percentage can't be > 100", k)
+	}
+	// use a default key of length 1. This can happend for a generator of type fromArray
+	// used as generator of an ArrayGenerator
+	if len(k) == 0 {
+		k = "k"
 	}
 	// EmptyGenerator to store general info
 	eg := EmptyGenerator{
@@ -785,6 +791,32 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create new generator: %v", err)
 		}
+
+		// if the generator is of type FromArrayGenerator,
+		// use the type of the first Element as global type
+		// for the generator
+		// => fromArrayGenerator currently has to contain object of
+		// the same type, otherwise bson object will be incorrect
+		switch g.(type) {
+		case *FromArrayGenerator:
+			g := g.(*FromArrayGenerator)
+			// if array is generated with preGenerate(), this step is not needed
+			if !g.DoNotTruncate {
+				g.T = g.Array[0][0]
+				// do not write first 3 bytes, ie
+				// bson type, byte("k"), byte(0) to avoid conflict with
+				// array index, because index is the key
+				for i := range g.Array {
+					g.Array[i] = g.Array[i][3:]
+				}
+			}
+		case *ConstGenerator:
+			g := g.(*ConstGenerator)
+			g.T = g.Val[0]
+			g.Val = g.Val[1+len(g.K):]
+		default:
+		}
+
 		eg.T = bson.ElementArray
 		return &ArrayGenerator{
 			EmptyGenerator: eg,
@@ -969,6 +1001,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 			Array:          mapRef[v.ID],
 			Size:           len(mapRef[v.ID]),
 			Index:          0,
+			DoNotTruncate:  true,
 		}, nil
 	case "countAggregator", "valueAggregator", "boundAggregator":
 		return nil, nil

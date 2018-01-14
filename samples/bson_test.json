@@ -48,6 +48,22 @@
           "2016-05-05"
         ]
       },
+      "afa": {
+        "type": "array",
+        "size": 6,
+        "arrayContent": {
+          "type": "fromArray",
+          "in": ["A", "C", "T", "G"]
+        }
+      },
+      "ac": {
+        "type": "array",
+        "size": 2,
+        "arrayContent": {
+          "type": "constant",
+          "constVal": "const"
+        }
+      },
       "faker": {
         "type": "faker",
         "method": "City"

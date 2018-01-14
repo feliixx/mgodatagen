@@ -513,7 +513,8 @@ generator in other collections:
 
 ### FromArray
 
-Randomly pick value from an array as value for the field
+Randomly pick value from an array as value for the field. Currently, object in the 
+array have to be of the same type 
 
 
 ```JSON5

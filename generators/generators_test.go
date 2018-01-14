@@ -122,21 +122,23 @@ var (
 )
 
 type expectedDoc struct {
-	ID         bson.ObjectId `bson:"_id"`
-	Name       string        `bson:"name"`
-	C32        int32         `bson:"c32"`
-	C64        int64         `bson:"c64"`
-	Float      float64       `bson:"float"`
-	Verified   bool          `bson:"verified"`
-	Position   []float64     `bson:"position"`
-	Dt         string        `bson:"dt"`
-	Fake       string        `bson:"faker"`
-	Cst        int32         `bson:"cst"`
-	Nb         int64         `bson:"nb"`
-	Nnb        int32         `bson:"nnb"`
-	Date       time.Time     `bson:"date"`
-	BinaryData []byte        `bson:"binaryData"`
-	List       []int32       `bson:"list"`
+	ID       bson.ObjectId `bson:"_id"`
+	Name     string        `bson:"name"`
+	C32      int32         `bson:"c32"`
+	C64      int64         `bson:"c64"`
+	Float    float64       `bson:"float"`
+	Verified bool          `bson:"verified"`
+	Position []float64     `bson:"position"`
+	Dt       string        `bson:"dt"`
+	Afa      []string      `bson:"afa"`
+	//	Ac         []string      `bson:"ac"`
+	Fake       string    `bson:"faker"`
+	Cst        int32     `bson:"cst"`
+	Nb         int64     `bson:"nb"`
+	Nnb        int32     `bson:"nnb"`
+	Date       time.Time `bson:"date"`
+	BinaryData []byte    `bson:"binaryData"`
+	List       []int32   `bson:"list"`
 	Object     struct {
 		K1    string `bson:"k1"`
 		K2    int32  `bson:"k2"`

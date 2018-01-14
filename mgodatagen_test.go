@@ -36,6 +36,8 @@ type expectedDoc struct {
 	Verified   bool          `bson:"verified"`
 	Position   []float64     `bson:"position"`
 	Dt         string        `bson:"dt"`
+	Afa        []string      `bson:"afa"`
+	Ac         []string      `bson:"ac"`
 	Fake       string        `bson:"faker"`
 	Cst        int32         `bson:"cst"`
 	Nb         int64         `bson:"nb"`
@@ -62,8 +64,12 @@ func TestMain(m *testing.M) {
 	generators.ClearRef()
 	datagen := &datagen{
 		session: s,
-		Options: Options{},
-		out:     ioutil.Discard,
+		Options: Options{
+			Config: Config{
+				BatchSize: 1000,
+			},
+		},
+		out: ioutil.Discard,
 	}
 	d = datagen
 
@@ -197,6 +203,10 @@ func TestCollectionContent(t *testing.T) {
 		assert.Equal(24, len(r.BinaryData))
 		// array
 		assert.Equal(3, len(r.List))
+		// array of fromArray
+		assert.Equal(6, len(r.Afa))
+		// array of const
+		assert.Equal(2, len(r.Ac))
 		// object
 		assert.Equal(3, len(r.Object.K1))
 		assert.InDelta(-7, r.Object.K2, 3)
@@ -401,21 +411,10 @@ func TestRealRun(t *testing.T) {
 		Config: Config{
 			ConfigFile:      "samples/config.json",
 			NumInsertWorker: 1,
-		},
-	}
-	err := run(options)
-	assert.Nil(err)
-	generators.ClearRef()
-
-	options = &Options{
-		Connection: connOpts,
-		Config: Config{
-			ConfigFile:      "samples/config.json",
-			NumInsertWorker: 1,
 			BatchSize:       100,
 		},
 	}
-	err = run(options)
+	err := run(options)
 	assert.Nil(err)
 
 	options = &Options{
@@ -423,6 +422,7 @@ func TestRealRun(t *testing.T) {
 		Config: Config{
 			ConfigFile:      "samples/agg.json",
 			NumInsertWorker: 1,
+			BatchSize:       1000,
 		},
 	}
 	err = run(options)
@@ -436,6 +436,7 @@ func TestRealRun(t *testing.T) {
 			ConfigFile:      "samples/bson_test.json",
 			NumInsertWorker: 1,
 			ShortName:       true,
+			BatchSize:       1000,
 		},
 		General: General{
 			Quiet: true,

@@ -107,6 +107,14 @@
       "ref": {  
          "type": "ref",
          "id": 1
+      },
+      "arrRef": {
+        "type": "array",
+        "size": 3, 
+        "arrayContent": {
+          "type": "ref",
+          "id": 1
+        }
       }
    }
 }]
