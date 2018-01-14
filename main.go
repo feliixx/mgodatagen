@@ -204,7 +204,7 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 					// if the bulk insert fails, push the error to the error channel
 					// so that we can use it from the main thread
 					select {
-					case errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %v", err):
+					case errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %v\n Try to set a smaller batch size with -b | --batchsize option", err):
 					default:
 					}
 					// cancel the context to terminate goroutine and stop the feeding of the
@@ -220,16 +220,18 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 	// counter for already generated documents
 	count := 0
 	// start bson.Raw generation to feed the task channel
+Loop:
 	for count < coll.Count {
 		select {
 		case <-ctx.Done(): // if an error occurred in one of the 'inserting' goroutines, close the channel
-			close(task)
-			bar.Finish()
+			// close(task)
+			// bar.Finish()
+			break Loop
 		default:
 		}
 		rc := pool.Get().(*rawChunk)
-		rc.nbToInsert = 1000
-		if coll.Count-count < 1000 {
+		rc.nbToInsert = d.BatchSize
+		if coll.Count-count < d.BatchSize {
 			rc.nbToInsert = int(coll.Count - count)
 		}
 		for i := 0; i < rc.nbToInsert; i++ {
@@ -488,6 +490,7 @@ type Config struct {
 	ShortName       bool   `short:"s" long:"shortname" description:"if present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
 	Append          bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents or deleting the collection"`
 	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU+1"`
+	BatchSize       int    `short:"b" long:"batchsize" value-name:"<size>" description:"bulk insert batch size" default:"1000"`
 }
 
 // Template struct that stores info on config file to generate

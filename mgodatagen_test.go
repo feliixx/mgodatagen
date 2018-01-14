@@ -405,6 +405,18 @@ func TestRealRun(t *testing.T) {
 	}
 	err := run(options)
 	assert.Nil(err)
+	generators.ClearRef()
+
+	options = &Options{
+		Connection: connOpts,
+		Config: Config{
+			ConfigFile:      "samples/config.json",
+			NumInsertWorker: 1,
+			BatchSize:       100,
+		},
+	}
+	err = run(options)
+	assert.Nil(err)
 
 	options = &Options{
 		Connection: connOpts,

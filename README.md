@@ -58,6 +58,7 @@ configuration:
                                removing older documents or deleting the collection
   -n, --numWorker=<nb>         number of concurrent workers inserting documents
                                in database. Default is number of CPU+1
+  -b, --batchsize=<size>       bulk insert batch size (default: 1000)
 
 connection infos:
   -h, --host=<hostname>        mongodb host to connect to (default: 127.0.0.1)
