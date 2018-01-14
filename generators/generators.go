@@ -678,7 +678,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 	if v.NullPercentage > 100 {
 		return nil, fmt.Errorf("for field %s, null percentage can't be > 100", k)
 	}
-	// use a default key of length 1. This can happend for a generator of type fromArray
+	// use a default key of length 1. This can happen for a generator of type fromArray
 	// used as generator of an ArrayGenerator
 	if len(k) == 0 {
 		k = "k"

@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	version = "0.4.2" // current version of mgodatagen
+	version = "0.5.0" // current version of mgodatagen
 )
 
 type result struct {
@@ -541,6 +541,9 @@ func run(options *Options) error {
 	}
 	if options.ConfigFile == "" {
 		return fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations ")
+	}
+	if options.BatchSize > 1000 || options.BatchSize <= 0 {
+		return fmt.Errorf("invalid value for -b | --batchsize: %v. BatchSize has to be between 1 and 1000", options.BatchSize)
 	}
 	var out io.Writer = os.Stderr
 	if options.Quiet {
