@@ -298,6 +298,66 @@ func TestNewGenerator(t *testing.T) {
 	_, err = ci.newGenerator("key", genJSON)
 	assert.Nil(err)
 
+	fakerVal := []string{
+		"CellPhoneNumber",
+		"City",
+		"CityPrefix",
+		"CitySuffix",
+		"CompanyBs",
+		"CompanyCatchPhrase",
+		"CompanyName",
+		"CompanySuffix",
+		"Country",
+		"DomainName",
+		"DomainSuffix",
+		"DomainWord",
+		"Email",
+		"FirstName",
+		"FreeEmail",
+		"JobTitle",
+		"LastName",
+		"Name",
+		"NamePrefix",
+		"NameSuffix",
+		"PhoneNumber",
+		"PostCode",
+		"SafeEmail",
+		"SecondaryAddress",
+		"State",
+		"StateAbbr",
+		"StreetAddress",
+		"StreetName",
+		"StreetSuffix",
+		"URL",
+		"UserName",
+	}
+
+	for _, f := range fakerVal {
+		genJSON = &config.GeneratorJSON{
+			Type:   "faker",
+			Method: f,
+		}
+		g, err = ci.newGenerator("key", genJSON)
+		assert.Nil(err)
+	}
+
+	genJSON = &config.GeneratorJSON{
+		Type:   "faker",
+		Method: "unknown",
+	}
+	_, err = ci.newGenerator("key", genJSON)
+	assert.NotNil(err)
+}
+
+func TestClearMap(t *testing.T) {
+	assert := require.New(t)
+
+	l := len(mapRef)
+	if l > 0 {
+		ClearRef()
+	}
+	assert.Equal(len(mapRef), 0)
+	assert.Equal(len(mapRefType), 0)
 }
 
 func TestNewAggregator(t *testing.T) {

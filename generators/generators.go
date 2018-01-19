@@ -220,8 +220,9 @@ func (e *Encoder) WriteAt(startPos int, b []byte) {
 	copy(e.Data[startPos:startPos+len(b)], b)
 }
 
-// Reserve add 4 bytes to the buffer. Thoses bytes will be set
-// once the bson value size is known
+// Reserve add 4 bytes to the buffer. Thoses bytes are reserved to
+// store the size of the bson document/array/object ( the size is
+// an int32)
 func (e *Encoder) Reserve() {
 	e.Data = append(e.Data, byte(0), byte(0), byte(0), byte(0))
 }
@@ -285,10 +286,8 @@ type StringGenerator struct {
 // Value add a random String of a specific length to the encoder
 func (g *StringGenerator) Value() {
 	length := g.getLength(g.MinLength, g.MaxLength)
-	// first, put the size of the string, which is length + 1 because of
-	// the terminating byte 0x00
+	// +1 for terminating byte 0x00
 	g.Out.Write(UInt32Bytes(length + 1))
-	// create the random string
 	cache, remain := g.Out.PCG32.Random(), letterIdxMax
 	for i := 0; i < int(length); i++ {
 		if remain == 0 {
@@ -298,7 +297,6 @@ func (g *StringGenerator) Value() {
 		cache >>= letterIdxBits
 		remain--
 	}
-	// end the string
 	g.Out.WriteSingleByte(byte(0))
 }
 
@@ -404,10 +402,7 @@ type ObjectGenerator struct {
 
 // Value add a random object to the encoder
 func (g *ObjectGenerator) Value() {
-	// reset the buffer. 4 first bytes are used to store
-	// the size of the document
 	g.Out.Truncate(4)
-	// generate each element of the document
 	for _, gen := range g.Generators {
 		if gen.Exists() {
 			if gen.Type() != bson.ElementNil {
@@ -417,9 +412,7 @@ func (g *ObjectGenerator) Value() {
 			gen.Value()
 		}
 	}
-	// end the document
 	g.Out.WriteSingleByte(byte(0))
-	// set the document size
 	g.Out.WriteAt(0, Int32Bytes(int32(len(g.Out.Data))))
 }
 
@@ -429,10 +422,7 @@ type EmbeddedObjectGenerator ObjectGenerator
 
 // Value add a random document to the encoder
 func (g *EmbeddedObjectGenerator) Value() {
-	// keep trace of current position so we can update the size of the
-	// document once it's been generated
 	current := len(g.Out.Data)
-	// reserve 4 bytes to store the size of the embedded document
 	g.Out.Reserve()
 	for _, gen := range g.Generators {
 		if gen.Exists() {
@@ -443,9 +433,7 @@ func (g *EmbeddedObjectGenerator) Value() {
 			gen.Value()
 		}
 	}
-	// end sub document
 	g.Out.WriteSingleByte(byte(0))
-	// update sub document size
 	g.Out.WriteAt(current, Int32Bytes(int32(len(g.Out.Data)-current)))
 }
 
@@ -461,7 +449,6 @@ type ArrayGenerator struct {
 // provided generator
 func (g *ArrayGenerator) Value() {
 	current := len(g.Out.Data)
-	// reserve 4 bytes to write the size of the array
 	g.Out.Reserve()
 	// array looks like this:
 	// size (byte(index) byte(0) value)... byte(0)
@@ -925,7 +912,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 			method = (*faker.Faker).CitySuffix
 		case "CompanyBs":
 			method = (*faker.Faker).CompanyBs
-		case "CompagnyCatchPhrase":
+		case "CompanyCatchPhrase":
 			method = (*faker.Faker).CompanyCatchPhrase
 		case "CompanyName":
 			method = (*faker.Faker).CompanyName
@@ -957,17 +944,17 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 			method = (*faker.Faker).NameSuffix
 		case "PhoneNumber":
 			method = (*faker.Faker).PhoneNumber
-		case "postCode":
+		case "PostCode":
 			method = (*faker.Faker).PostCode
 		case "SafeEmail":
 			method = (*faker.Faker).SafeEmail
-		case "SecondaryAdress":
+		case "SecondaryAddress":
 			method = (*faker.Faker).SecondaryAddress
 		case "State":
 			method = (*faker.Faker).State
 		case "StateAbbr":
 			method = (*faker.Faker).StateAbbr
-		case "StreetAdress":
+		case "StreetAddress":
 			method = (*faker.Faker).StreetAddress
 		case "StreetName":
 			method = (*faker.Faker).StreetName
