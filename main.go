@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	version = "0.5.0" // current version of mgodatagen
+	version = "0.5.0"
 )
 
 type result struct {
@@ -75,12 +75,11 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 // create a collection with specific options
 func (d *datagen) createCollection(coll *config.Collection) error {
 	c := d.session.DB(coll.DB).C(coll.Name)
-	// if indexOnly or append mode, just return the collection as it already exists
+
 	if d.Append || d.IndexOnly {
 		return nil
 	}
-	// drop the collection before inserting new document. Ignore the error
-	// if the collection does not exists
+
 	c.DropCollection()
 	fmt.Fprintf(d.out, "Creating collection %s...\n", coll.Name)
 
@@ -91,7 +90,6 @@ func (d *datagen) createCollection(coll *config.Collection) error {
 		}
 	}
 	if coll.ShardConfig.ShardCollection != "" {
-		// check that the config is correct
 		nm := c.Database.Name + "." + c.Name
 		if coll.ShardConfig.ShardCollection != nm {
 			return fmt.Errorf("wrong value for 'shardConfig.shardCollection', should be <database>.<collection>: found %s, expected %s", coll.ShardConfig.ShardCollection, nm)
@@ -173,14 +171,14 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 
 	var wg sync.WaitGroup
 	wg.Add(nbInsertingGoRoutines)
-	// start a new progressbar to display progress in terminal
+
 	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}          `).Start(int(coll.Count))
 	bar.SetWriter(d.out)
-	// start goroutines to bulk insert documents in MongoDB
+
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
 			defer wg.Done()
-			// get a session with a distinct socket for each worker
+			//use session.Copy() so each connection use a distinct socket
 			s := d.session.Copy()
 			defer s.Close()
 			c := s.DB(coll.DB).C(coll.Name)
@@ -217,15 +215,12 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 			}
 		}()
 	}
-	// counter for already generated documents
 	count := 0
 	// start bson.Raw generation to feed the task channel
 Loop:
 	for count < coll.Count {
 		select {
 		case <-ctx.Done(): // if an error occurred in one of the 'inserting' goroutines, close the channel
-			// close(task)
-			// bar.Finish()
 			break Loop
 		default:
 		}
@@ -253,8 +248,7 @@ Loop:
 
 	wg.Wait()
 	bar.Finish()
-	// if an error occurs in one of the goroutines, return this error,
-	// otherwise return nil
+
 	if ctx.Err() != nil {
 		return <-errs
 	}
@@ -394,7 +388,7 @@ func (d *datagen) ensureIndex(coll *config.Collection) error {
 	}
 	// avoid timeout when building indexes
 	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
-	// create the new indexes
+
 	var r result
 	err = c.Database.Run(bson.D{
 		{Name: "createIndexes", Value: c.Name},

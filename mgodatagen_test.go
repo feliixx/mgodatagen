@@ -89,6 +89,22 @@ func TestMain(m *testing.M) {
 	os.Exit(retCode)
 }
 
+func TestHandleCommandError(t *testing.T) {
+	assert := require.New(t)
+	r := result{
+		Ok: true,
+	}
+	err := handleCommandError("fail", fmt.Errorf("some reason"), &r)
+	assert.Equal("fail\n\t cause: some reason", err.Error())
+
+	r = result{
+		Ok:     false,
+		ErrMsg: "errmsg",
+	}
+	err = handleCommandError("fail", fmt.Errorf("some reason"), &r)
+	assert.Equal("fail\n\t cause: errmsg", err.Error())
+}
+
 func TestConnectToDb(t *testing.T) {
 	assert := require.New(t)
 
@@ -114,7 +130,12 @@ func TestCreateEmptyFile(t *testing.T) {
 
 	filename := "testNewFile.json"
 
-	err := createEmptyCfgFile(filename)
+	options := &Options{
+		Template: Template{
+			New: filename,
+		},
+	}
+	err := run(options)
 	assert.Nil(err)
 	defer os.Remove(filename)
 
@@ -416,6 +437,28 @@ func TestRealRun(t *testing.T) {
 	}
 	err := run(options)
 	assert.Nil(err)
+
+	// should fail because no config file
+	options = &Options{
+		Connection: connOpts,
+		Config: Config{
+			NumInsertWorker: 1,
+			BatchSize:       1000,
+		},
+	}
+	err = run(options)
+	assert.NotNil(err)
+	// should fail because batch size to high
+	options = &Options{
+		Connection: connOpts,
+		Config: Config{
+			ConfigFile:      "samples/agg.json",
+			NumInsertWorker: 1,
+			BatchSize:       10000,
+		},
+	}
+	err = run(options)
+	assert.NotNil(err)
 
 	options = &Options{
 		Connection: connOpts,
