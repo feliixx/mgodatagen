@@ -38,7 +38,7 @@ go get -u "github.com/feliixx/mgodatagen"
 
 ## Options
 
-Several options are available (you can see the list from `mgodatagen --help`): 
+Several options are available (use `mgodatagen --help` to print this): 
 
 ```
 mgodatagen version 0.5.0
@@ -186,7 +186,7 @@ and run
 ```
 
 This will insert 1000000 random documents in collections `test` and `link` of database 
-`test` with the structure defined in the config file. 
+`datagen_it_test` with the structure defined in the config file. 
 
 
 # Generator types  
