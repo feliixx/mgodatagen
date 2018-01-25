@@ -28,10 +28,9 @@
 package generators
 
 import (
+	"bytes"
 	"crypto/md5"
-	"crypto/rand"
 	"fmt"
-	"io"
 	"math"
 	"os"
 	"strconv"
@@ -95,11 +94,8 @@ func readMachineID() []byte {
 	id := sum[:]
 	hostname, err1 := os.Hostname()
 	if err1 != nil {
-		_, err2 := io.ReadFull(rand.Reader, id)
-		if err2 != nil {
-			panic(fmt.Errorf("cannot get hostname: %v; %v", err1, err2))
-		}
-		return id
+		e := NewEncoder(0)
+		return UInt32Bytes(e.PCG32.Random())[0:3]
 	}
 	hw := md5.New()
 	hw.Write([]byte(hostname))
@@ -108,12 +104,8 @@ func readMachineID() []byte {
 }
 
 func getRandomUint32() uint32 {
-	var b [4]byte
-	_, err := io.ReadFull(rand.Reader, b[:])
-	if err != nil {
-		panic(fmt.Errorf("cannot read random object id: %v", err))
-	}
-	return uint32((uint32(b[0]) << 0) | (uint32(b[1]) << 8) | (uint32(b[2]) << 16) | (uint32(b[3]) << 24))
+	e := NewEncoder(0)
+	return e.PCG32.Random()
 }
 
 // ClearRef empty references map for tests run
@@ -245,6 +237,12 @@ func (ci *CollInfo) PreGenerate(k string, v *config.GeneratorJSON, nb int) ([][]
 		arr[i] = tmpArr
 		e.Truncate(0)
 	}
+	if nb > 1 {
+		if bytes.Equal(arr[0], arr[1]) {
+			return nil, bson.ElementNil, fmt.Errorf("for field %s, couldn't generate enough unique values", k)
+		}
+	}
+
 	return arr, g.Type(), nil
 }
 
@@ -631,6 +629,9 @@ func (u *UniqueGenerator) recur(data []byte, stringSize int, index int, docCount
 // [ "aaa", "aab", "aac", ...]
 func (u *UniqueGenerator) getUniqueArray(docCount int, stringSize int) error {
 	// if string size >= 5, there is at least 1073741824 possible string, so don't bother checking collection count
+	if stringSize == 0 {
+		return fmt.Errorf("with unique generator, MinLength has to be > 0")
+	}
 	if stringSize < 5 {
 		maxNumber := int(math.Pow(float64(len(letterBytes)), float64(stringSize)))
 		if docCount > maxNumber {

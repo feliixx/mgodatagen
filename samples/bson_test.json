@@ -90,7 +90,7 @@
       "binaryData": {
         "type": "binary",
         "minLength": 24,
-        "maxLength": 24
+        "maxLength": 40
       },
       "list": {
         "type": "array",

@@ -221,7 +221,7 @@ func TestCollectionContent(t *testing.T) {
 		// Date
 		assert.WithinDuration(expectedDate, r.Date, time.Second*60*60*24*365*4)
 		// binary data
-		assert.Equal(24, len(r.BinaryData))
+		assert.InDelta(32, len(r.BinaryData), 8)
 		// array
 		assert.Equal(3, len(r.List))
 		// array of fromArray
@@ -507,4 +507,19 @@ func TestRealRun(t *testing.T) {
 	assert.Nil(err)
 	assert.Equal(2000, r.N)
 
+}
+
+func TestBulkInsertFail(t *testing.T) {
+	assert := require.New(t)
+
+	err := d.createCollection(&collections[0])
+	assert.Nil(err)
+
+	collections[0].Content["_id"] = config.GeneratorJSON{
+		Type:     "constant",
+		ConstVal: 0,
+	}
+
+	err = d.fillCollection(&collections[0])
+	assert.NotNil(err)
 }

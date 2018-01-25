@@ -349,6 +349,183 @@ func TestNewGenerator(t *testing.T) {
 	assert.NotNil(err)
 }
 
+func TestNewGeneratorCond(t *testing.T) {
+	assert := require.New(t)
+
+	ci := &CollInfo{
+		Encoder:    encoder,
+		ShortNames: false,
+		Count:      1,
+		Version:    []int{3, 4},
+	}
+
+	list := []config.GeneratorJSON{
+		{
+			Type:      "string",
+			MinLength: -1,
+		},
+		{
+			Type:      "string",
+			MinLength: 5,
+			MaxLength: 2,
+		},
+		{
+			Type:      "string",
+			MinLength: 0,
+			Unique:    true,
+		},
+		{
+			Type:             "string",
+			MinLength:        0,
+			MaxDistinctValue: 10,
+		},
+		{
+			Type:     "int",
+			MinInt32: -1,
+		},
+		{
+			Type:     "int",
+			MinInt32: 10,
+			MaxInt32: 4,
+		},
+		{
+			Type:     "long",
+			MinInt64: -1,
+		},
+		{
+			Type:     "long",
+			MinInt64: 10,
+			MaxInt64: 4,
+		},
+		{
+			Type:       "double",
+			MinFloat64: -1,
+		},
+		{
+			Type:       "double",
+			MinFloat64: 10,
+			MaxFloat64: 4,
+		},
+		{
+			Type: "array",
+			Size: -1,
+		},
+		{
+			Type: "array",
+			Size: 3,
+			ArrayContent: &config.GeneratorJSON{
+				Type:      "string",
+				MinLength: -1,
+			},
+		},
+		{
+			Type: "fromArray",
+		},
+		{
+			Type: "fromArray",
+			In: []interface{}{
+				bson.M{
+					"_id": bson.ObjectId("aaaa"),
+				},
+			},
+		},
+		{
+			Type:      "binary",
+			MinLength: -1,
+		},
+		{
+			Type:      "binary",
+			MinLength: 5,
+			MaxLength: 2,
+		},
+		{
+			Type:      "date",
+			StartDate: time.Now(),
+			EndDate:   time.Unix(10, 10),
+		},
+		{
+			Type: "constant",
+			ConstVal: bson.M{
+				"_id": bson.ObjectId("aaaa"),
+			},
+		},
+		{
+			Type:     "autoincrement",
+			AutoType: "",
+		},
+		{
+			Type: "ref",
+			RefContent: &config.GeneratorJSON{
+				Type:      "string",
+				MinLength: -1,
+			},
+		},
+		{
+			Type: "object",
+			ObjectContent: map[string]config.GeneratorJSON{
+				"key": {
+					Type:      "string",
+					MinLength: -1,
+				},
+			},
+		},
+	}
+
+	for _, g := range list {
+		_, err := ci.newGenerator("k", &g)
+		assert.NotNil(err)
+	}
+
+	ci.ShortNames = true
+
+	m := map[string]config.GeneratorJSON{
+		"key": {
+			Type:      "string",
+			MinLength: -1,
+		},
+	}
+
+	_, err := ci.newGeneratorsFromMap(m)
+	assert.NotNil(err)
+
+	_, err = ci.CreateGenerator(m)
+	assert.NotNil(err)
+
+	list = []config.GeneratorJSON{
+		{
+			Type:       "countAggregator",
+			Query:      bson.M{"n": 1},
+			Database:   "db",
+			Collection: "",
+		}, {
+			Type:       "valueAggregator",
+			Collection: "coll",
+			Query:      bson.M{"n": 1},
+			Database:   "db",
+			Field:      "",
+		}, {
+			Type:       "boundAggregator",
+			Collection: "coll",
+			Query:      bson.M{"n": 1},
+			Database:   "db",
+			Field:      "",
+		},
+	}
+	for _, g := range list {
+		_, err := ci.newAggregator("k", &g)
+		assert.NotNil(err)
+	}
+
+	m = map[string]config.GeneratorJSON{
+		"key": {
+			Type:       "valueAggregator",
+			Collection: "",
+		},
+	}
+	_, err = ci.NewAggregatorFromMap(m)
+	assert.NotNil(err)
+}
+
 func TestClearMap(t *testing.T) {
 	assert := require.New(t)
 
@@ -413,6 +590,8 @@ func TestVersionAtLeast(t *testing.T) {
 	assert.Equal(ci.versionAtLeast(3, 2), true)
 	ci.Version = []int{3, 4}
 	assert.Equal(ci.versionAtLeast(3, 4), true)
+	ci.Version = []int{}
+	assert.Equal(ci.versionAtLeast(3, 4), false)
 }
 
 func BenchmarkGeneratorString(b *testing.B) {
