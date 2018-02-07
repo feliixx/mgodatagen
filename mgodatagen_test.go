@@ -123,6 +123,13 @@ func TestConnectToDb(t *testing.T) {
 	assert.True(len(v) > 0)
 	s.Close()
 
+	conn = &Connection{
+		UserName: "user",
+		Password: "pwd",
+	}
+
+	_, _, err = connectToDB(conn, ioutil.Discard)
+	assert.NotNil(err)
 }
 
 func TestCreateEmptyFile(t *testing.T) {
@@ -384,6 +391,28 @@ func TestCreateCollection(t *testing.T) {
 	err = d.session.DB(collections[0].DB).Run(bson.D{{Name: "collStats", Value: collections[0].Name}}, &result)
 	assert.Nil(err)
 	assert.Contains(result.WiredTiger.CreationString, "block_compressor=zlib")
+	// invalid compression level
+	collConfig.CompressionLevel = "unknown"
+	err = d.createCollection(collConfig)
+	assert.NotNil(err)
+
+	// invalid sharded config
+	collConfig.CompressionLevel = ""
+	collConfig.ShardConfig = config.ShardingConfig{
+		ShardCollection: "test.test",
+		Key:             bson.M{"_id": 1},
+	}
+
+	err = d.createCollection(collConfig)
+	assert.NotNil(err)
+
+	collConfig.ShardConfig.ShardCollection = collections[0].DB + "." + collections[0].Name
+	err = d.createCollection(collConfig)
+	assert.NotNil(err)
+
+	collConfig.ShardConfig.Key = bson.M{"n": 1}
+	err = d.createCollection(collConfig)
+	assert.NotNil(err)
 }
 
 func TestCollectionWithIndexes(t *testing.T) {
@@ -417,6 +446,10 @@ func TestCollectionWithIndexes(t *testing.T) {
 	assert.Equal(len(idx), len(indexes)+1)
 	assert.Equal(indexes[0].Name, idx[1].Name)
 	assert.Equal(indexes[1].Name, idx[2].Name)
+
+	indexes[0].Key["c32"] = "invalid"
+	err = d.ensureIndex(&collections[0])
+	assert.NotNil(err)
 }
 
 func TestRealRun(t *testing.T) {
@@ -467,6 +500,9 @@ func TestRealRun(t *testing.T) {
 			NumInsertWorker: 1,
 			BatchSize:       1000,
 		},
+		General: General{
+			Quiet: true,
+		},
 	}
 	err = run(options)
 	assert.Nil(err)
@@ -514,7 +550,7 @@ func TestBulkInsertFail(t *testing.T) {
 
 	err := d.createCollection(&collections[0])
 	assert.Nil(err)
-
+	collections[0].Count = 11000
 	collections[0].Content["_id"] = config.GeneratorJSON{
 		Type:     "constant",
 		ConstVal: 0,

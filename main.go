@@ -97,20 +97,23 @@ func (d *datagen) createCollection(coll *config.Collection) error {
 		if len(coll.ShardConfig.Key) == 0 {
 			return fmt.Errorf("wrong value for 'shardConfig.key', can't be null and must be an object like {'_id': 'hashed'}, found: %v", coll.ShardConfig.Key)
 		}
-		// index to shard the collection
-		index := config.Index{
-			Name: "shardKey",
-			Key:  coll.ShardConfig.Key,
-		}
 		var r result
-		err := c.Database.Run(bson.D{
-			{Name: "createIndexes", Value: c.Name},
-			{Name: "indexes", Value: [1]config.Index{index}},
-		}, &r)
-		if err != nil || !r.Ok {
-			return handleCommandError(fmt.Sprintf("couldn't create shard key with index config %v", index.Key), err, &r)
+		// index to shard the collection
+		// if shard key is '_id', no need to rebuild the index
+		if coll.ShardConfig.Key["_id"] == 1 {
+			index := config.Index{
+				Name: "shardKey",
+				Key:  coll.ShardConfig.Key,
+			}
+			err := c.Database.Run(bson.D{
+				{Name: "createIndexes", Value: c.Name},
+				{Name: "indexes", Value: [1]config.Index{index}},
+			}, &r)
+			if err != nil || !r.Ok {
+				return handleCommandError(fmt.Sprintf("couldn't create shard key with index config %v", index.Key), err, &r)
+			}
 		}
-		err = d.session.Run(coll.ShardConfig, &r)
+		err := d.session.Run(coll.ShardConfig, &r)
 		if err != nil || !r.Ok {
 			return handleCommandError("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details", err, &r)
 		}
