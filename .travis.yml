@@ -1,21 +1,25 @@
 language: go
 
 go:
-  - 1.8.x
   - 1.9.x
+
+os: 
+  - linux
+  - osx
 
 env:
   global:
-    - FASTDL=http://downloads.mongodb.org/linux
+    - FASTDL=http://downloads.mongodb.org
   matrix:
-    - MONGODB=x86_64-ubuntu1404-3.2.19
-    - MONGODB=x86_64-ubuntu1404-3.4.11
-    - MONGODB=x86_64-ubuntu1404-3.6.2
+    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.2.19 
+    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.4.11
+    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.6.2
 
 before_script: 
-  - wget $FASTDL/mongodb-linux-$MONGODB.tgz
-  - tar xzvf mongodb-linux-$MONGODB.tgz
-  - export PATH=$PWD/mongodb-linux-$MONGODB/bin:$PATH
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then DIST=""; SSL="-ssl" ; fi
+  - wget $FASTDL/$TRAVIS_OS_NAME/mongodb-$TRAVIS_OS_NAME$SSL-$ARCH$DIST-$VERSION.tgz
+  - tar xzvf mongodb-$TRAVIS_OS_NAME$SSL-$ARCH$DIST-$VERSION.tgz
+  - export PATH=$PWD/mongodb-$TRAVIS_OS_NAME-$ARCH$DIST-$VERSION/bin:$PATH
   - mkdir $PWD/db
   - mongod --dbpath $PWD/db > /dev/null &
 
