@@ -6,7 +6,7 @@ go:
 
 env:
   global:
-    - FASTDL=https://fastdl.mongodb.org/linux
+    - FASTDL=http://downloads.mongodb.org/linux
   matrix:
     - MONGODB=x86_64-ubuntu1404-3.2.19
     - MONGODB=x86_64-ubuntu1404-3.4.11
