@@ -320,7 +320,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 
 				err := c.Database.Session.DB(agg.Database).Run(command, &r)
 				if err != nil {
-					return fmt.Errorf("couldn't count documents: %v", err)
+					return fmt.Errorf("couldn't count documents for key%v: %v", agg.K, err)
 				}
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: r.N}})
 			}
@@ -334,7 +334,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 					{Name: "query", Value: agg.Query}}, &result)
 
 				if err != nil {
-					return fmt.Errorf("aggregation failed for distinct values: %v", err)
+					return fmt.Errorf("aggregation failed (distinct values) for field %v: %v", agg.K, err)
 				}
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: result.Values}})
 			}
@@ -351,7 +351,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 					{"$project": bson.M{"min": "$" + agg.Field}}}
 				err = c.Database.C(agg.Collection).Pipe(pipeline).One(&res)
 				if err != nil {
-					return fmt.Errorf("aggregation failed for lower bound: %v", err)
+					return fmt.Errorf("aggregation failed (lower bound) for field %v: %v", agg.K, err)
 				}
 				bound["m"] = res["min"]
 				pipeline = []bson.M{{"$match": agg.Query},
@@ -360,7 +360,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 					{"$project": bson.M{"max": "$" + agg.Field}}}
 				err = c.Database.C(agg.Collection).Pipe(pipeline).One(&res)
 				if err != nil {
-					return fmt.Errorf("aggregation failed for higher bound: %v", err)
+					return fmt.Errorf("aggregation failed (higher bound) for field %v: %v", agg.K, err)
 				}
 				bound["M"] = res["max"]
 				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: bound}})
