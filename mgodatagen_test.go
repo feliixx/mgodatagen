@@ -95,14 +95,14 @@ func TestHandleCommandError(t *testing.T) {
 		Ok: true,
 	}
 	err := handleCommandError("fail", fmt.Errorf("some reason"), &r)
-	assert.Equal("fail\n\t cause: some reason", err.Error())
+	assert.Equal("fail\n  cause: some reason", err.Error())
 
 	r = result{
 		Ok:     false,
 		ErrMsg: "errmsg",
 	}
 	err = handleCommandError("fail", fmt.Errorf("some reason"), &r)
-	assert.Equal("fail\n\t cause: errmsg", err.Error())
+	assert.Equal("fail\n  cause: errmsg", err.Error())
 }
 
 func TestConnectToDb(t *testing.T) {
@@ -115,6 +115,7 @@ func TestConnectToDb(t *testing.T) {
 
 	_, v, err := connectToDB(conn, ioutil.Discard)
 	assert.NotNil(err)
+	assert.Regexp("^connection failed\n  cause.*", err.Error())
 
 	conn.Port = "27017"
 
@@ -130,6 +131,7 @@ func TestConnectToDb(t *testing.T) {
 
 	_, _, err = connectToDB(conn, ioutil.Discard)
 	assert.NotNil(err)
+	assert.Regexp("^connection failed\n  cause.*", err.Error())
 }
 
 func TestCreateEmptyFile(t *testing.T) {
@@ -395,6 +397,7 @@ func TestCreateCollection(t *testing.T) {
 	collConfig.CompressionLevel = "unknown"
 	err = d.createCollection(collConfig)
 	assert.NotNil(err)
+	assert.Regexp("^coulnd't create collection with compression level.*\n  cause.*", err.Error())
 
 	// invalid sharded config
 	collConfig.CompressionLevel = ""
@@ -405,14 +408,21 @@ func TestCreateCollection(t *testing.T) {
 
 	err = d.createCollection(collConfig)
 	assert.NotNil(err)
+	assert.Regexp("^wrong value for 'shardConfig.shardCollection'.*", err.Error())
 
 	collConfig.ShardConfig.ShardCollection = collections[0].DB + "." + collections[0].Name
 	err = d.createCollection(collConfig)
 	assert.NotNil(err)
+	assert.Regexp("^couldn't create sharded collection.*", err.Error())
 
 	collConfig.ShardConfig.Key = bson.M{"n": 1}
 	err = d.createCollection(collConfig)
+	assert.Regexp("^couldn't create sharded collection.*", err.Error())
+
+	collConfig.ShardConfig.Key = bson.M{}
+	err = d.createCollection(collConfig)
 	assert.NotNil(err)
+	assert.Regexp("^wrong value for 'shardConfig.key'.*", err.Error())
 }
 
 func TestCollectionWithIndexes(t *testing.T) {
@@ -450,6 +460,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 	indexes[0].Key["c32"] = "invalid"
 	err = d.ensureIndex(&collections[0])
 	assert.NotNil(err)
+	assert.Regexp("^error while building indexes for collection.*\n  cause.*", err.Error())
 }
 
 func TestRealRun(t *testing.T) {
@@ -481,6 +492,7 @@ func TestRealRun(t *testing.T) {
 	}
 	err = run(options)
 	assert.NotNil(err)
+	assert.Regexp("^No configuration file provided*", err.Error())
 	// should fail because batch size to high
 	options = &Options{
 		Connection: connOpts,
@@ -492,6 +504,7 @@ func TestRealRun(t *testing.T) {
 	}
 	err = run(options)
 	assert.NotNil(err)
+	assert.Regexp("^invalid value for -b | --batchsize:*", err.Error())
 
 	options = &Options{
 		Connection: connOpts,
@@ -558,4 +571,6 @@ func TestBulkInsertFail(t *testing.T) {
 
 	err = d.fillCollection(&collections[0])
 	assert.NotNil(err)
+	assert.Regexp("^exception occurred during bulk insert.*\n  cause.*\n Try.*", err.Error())
+
 }

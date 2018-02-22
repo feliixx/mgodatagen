@@ -44,7 +44,7 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 	}
 	session, err := mgo.Dial(url + conn.Host + ":" + conn.Port)
 	if err != nil {
-		return nil, nil, fmt.Errorf("connection failed:\n\tcause: %v", err)
+		return nil, nil, fmt.Errorf("connection failed\n  cause: %v", err)
 	}
 	infos, _ := session.BuildInfo()
 	fmt.Fprintf(out, "mongodb server version %s\n\n", infos.Version)
@@ -84,7 +84,7 @@ func (d *datagen) createCollection(coll *config.Collection) error {
 	if coll.CompressionLevel != "" {
 		err := c.Create(&mgo.CollectionInfo{StorageEngine: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
 		if err != nil {
-			return fmt.Errorf("coulnd't create collection with compression level %s:\n\tcause: %v", coll.CompressionLevel, err)
+			return fmt.Errorf("coulnd't create collection with compression level %s:\n  cause: %v", coll.CompressionLevel, err)
 		}
 	}
 	if coll.ShardConfig.ShardCollection != "" {
@@ -203,7 +203,7 @@ func (d *datagen) fillCollection(coll *config.Collection) error {
 					// if the bulk insert fails, push the error to the error channel
 					// so that we can use it from the main thread
 					select {
-					case errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %v\n Try to set a smaller batch size with -b | --batchsize option", err):
+					case errs <- fmt.Errorf("exception occurred during bulk insert:\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err):
 					default:
 					}
 					// cancel the context to terminate goroutine and stop the feeding of the
@@ -300,7 +300,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 			if count%d.BatchSize == 0 {
 				_, err := bulk.Run()
 				if err != nil {
-					errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %v\n Try to set a smaller batch size with -b | --batchsize option", err)
+					errs <- fmt.Errorf("exception occurred during bulk insert:\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err)
 					return
 				}
 				bulk := coll.Bulk()
@@ -311,7 +311,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 		if count > 0 {
 			_, err := bulk.Run()
 			if err != nil {
-				errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %v\n Try to set a smaller batch size with -b | --batchsize option", err)
+				errs <- fmt.Errorf("exception occurred during bulk insert:\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err)
 			}
 		}
 	}()
@@ -425,7 +425,7 @@ func (d *datagen) ensureIndex(coll *config.Collection) error {
 	c := d.session.DB(coll.DB).C(coll.Name)
 	err := c.DropAllIndexes()
 	if err != nil {
-		return fmt.Errorf("error while dropping index for collection %s:\n\tcause: %v", coll.Name, err)
+		return fmt.Errorf("error while dropping index for collection %s:\n  cause: %v", coll.Name, err)
 	}
 	// avoid timeout when building indexes
 	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
@@ -454,7 +454,7 @@ func (d *datagen) printCollStats(coll *config.Collection) error {
 		{Name: "scale", Value: 1024},
 	}, &stats)
 	if err != nil {
-		return fmt.Errorf("couldn't get stats for collection %s \n\tcause: %v ", c.Name, err)
+		return fmt.Errorf("couldn't get stats for collection %s \n  cause: %v ", c.Name, err)
 	}
 	indexString := ""
 	for k, v := range stats.IndexSizes {
@@ -500,7 +500,7 @@ func handleCommandError(msg string, err error, r *result) error {
 	if !r.Ok {
 		m = r.ErrMsg
 	}
-	return fmt.Errorf("%s\n\t cause: %s", msg, m)
+	return fmt.Errorf("%s\n  cause: %s", msg, m)
 }
 
 // General struct that stores global options from command line args
