@@ -278,13 +278,56 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 	fmt.Fprintf(d.out, "Generating aggregated data for collection %v\n", coll.Name)
 	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}                          `).Start(int(coll.Count))
 	bar.SetWriter(d.out)
+	defer bar.Finish()
 	// aggregation might be very long, so make sure the connection won't timeout
 	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
-	c := d.session.DB(coll.DB).C(coll.Name)
 
-	for _, agg := range aggArr {
-		bulk := c.Bulk()
+	tasks := make(chan [2]bson.M, d.BatchSize)
+	errs := make(chan error)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		s := d.session.Copy()
+		defer s.Close()
+		coll := s.DB(coll.DB).C(coll.Name)
+		bulk := coll.Bulk()
 		bulk.Unordered()
+		count := 0
+		for t := range tasks {
+			count++
+			bulk.Update(t[0], t[1])
+			if count%d.BatchSize == 0 {
+				_, err := bulk.Run()
+				if err != nil {
+					errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %v\n Try to set a smaller batch size with -b | --batchsize option", err)
+					return
+				}
+				bulk := coll.Bulk()
+				bulk.Unordered()
+				count = 0
+			}
+		}
+		if count > 0 {
+			_, err := bulk.Run()
+			if err != nil {
+				errs <- fmt.Errorf("exception occurred during bulk insert:\n\tcause: %v\n Try to set a smaller batch size with -b | --batchsize option", err)
+			}
+		}
+	}()
+
+	c := d.session.DB(coll.DB).C(coll.Name)
+	for _, agg := range aggArr {
+
+		select {
+		case err := <-errs:
+			close(tasks)
+			return err
+		default:
+		}
+
 		localVar := "_id"
 		localKey := "_id"
 		for k, v := range agg.Query {
@@ -322,7 +365,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 				if err != nil {
 					return fmt.Errorf("couldn't count documents for key%v: %v", agg.K, err)
 				}
-				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: r.N}})
+				tasks <- [2]bson.M{{localVar: v}, {"$set": bson.M{agg.K: r.N}}}
 			}
 		case generators.ValueAggregator:
 			for _, v := range result.Values {
@@ -336,7 +379,7 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 				if err != nil {
 					return fmt.Errorf("aggregation failed (distinct values) for field %v: %v", agg.K, err)
 				}
-				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: result.Values}})
+				tasks <- [2]bson.M{{localVar: v}, {"$set": bson.M{agg.K: result.Values}}}
 			}
 		case generators.BoundAggregator:
 			res := bson.M{}
@@ -363,16 +406,13 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 					return fmt.Errorf("aggregation failed (higher bound) for field %v: %v", agg.K, err)
 				}
 				bound["M"] = res["max"]
-				bulk.Update(bson.M{localVar: v}, bson.M{"$set": bson.M{agg.K: bound}})
+				tasks <- [2]bson.M{{localVar: v}, {"$set": bson.M{agg.K: bound}}}
 			}
 		}
 		bar.Add(int(coll.Count) / len(aggArr))
-		_, err = bulk.Run()
-		if err != nil {
-			return fmt.Errorf("bulk update failed for aggregator %v : %v", agg.K, err)
-		}
 	}
-	bar.Finish()
+	close(tasks)
+	wg.Wait()
 	return nil
 }
 
