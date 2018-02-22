@@ -46,11 +46,9 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("connection failed:\n\tcause: %v", err)
 	}
-	infos, err := session.BuildInfo()
-	if err != nil {
-		return nil, nil, fmt.Errorf("couldn't get mongodb version:\n\tcause: %v", err)
-	}
-	fmt.Fprintf(out, "mongodb server version %s\ngit version %s\nOpenSSL version %s\n\n", infos.Version, infos.GitVersion, infos.OpenSSLVersion)
+	infos, _ := session.BuildInfo()
+	fmt.Fprintf(out, "mongodb server version %s\n\n", infos.Version)
+
 	version := strings.Split(infos.Version, ".")
 	versionInt := make([]int, len(version))
 
