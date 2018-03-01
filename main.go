@@ -586,7 +586,11 @@ func run(options *Options) error {
 	}
 
 	fmt.Fprintln(out, "Parsing configuration file...")
-	collectionList, err := config.CollectionList(options.ConfigFile)
+	content, err := ioutil.ReadFile(options.ConfigFile)
+	if err != nil {
+		return fmt.Errorf("File error: %v", err)
+	}
+	collectionList, err := config.ParseConfig(content)
 	if err != nil {
 		return err
 	}

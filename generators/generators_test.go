@@ -1,6 +1,7 @@
 package generators
 
 import (
+	"io/ioutil"
 	"testing"
 	"time"
 
@@ -154,7 +155,11 @@ type dec128Doc struct {
 
 func TestIsDocumentCorrect(t *testing.T) {
 	assert := require.New(t)
-	collectionList, err := config.CollectionList("../samples/bson_test.json")
+	content, err := ioutil.ReadFile("../samples/bson_test.json")
+	if err != nil {
+		t.Fail()
+	}
+	collectionList, err := config.ParseConfig(content)
 	assert.Nil(err)
 
 	e := NewEncoder(4)
@@ -564,8 +569,11 @@ func TestNewAggregator(t *testing.T) {
 	genJSON.Type = "unknown"
 	_, err = ci.newAggregator("key", genJSON)
 	assert.Nil(err)
-
-	aggColl, err := config.CollectionList("../samples/agg.json")
+	content, err := ioutil.ReadFile("../samples/agg.json")
+	if err != nil {
+		t.Fail()
+	}
+	aggColl, err := config.ParseConfig(content)
 	assert.Nil(err)
 
 	ci.ShortNames = false
@@ -666,7 +674,11 @@ func BenchmarkGeneratorArray(b *testing.B) {
 }
 
 func BenchmarkGeneratorAll(b *testing.B) {
-	collectionList, _ := config.CollectionList("../samples/config.json")
+	content, err := ioutil.ReadFile("../samples/config.json")
+	if err != nil {
+		b.Fail()
+	}
+	collectionList, _ := config.ParseConfig(content)
 
 	encoder := &Encoder{
 		Data:  make([]byte, 4),
