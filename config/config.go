@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"time"
 
 	"github.com/globalsign/mgo"
@@ -124,15 +123,11 @@ type GeneratorJSON struct {
 	Query bson.M `json:"query"`
 }
 
-// CollectionList returns a list of Collection to create from a
+// ParseConfig returns a list of Collection to create from a
 // json configuration file
-func CollectionList(filename string) ([]Collection, error) {
-	content, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, fmt.Errorf("File error: %v", err)
-	}
+func ParseConfig(content []byte) ([]Collection, error) {
 	var collectionList []Collection
-	err = json.Unmarshal(content, &collectionList)
+	err := json.Unmarshal(content, &collectionList)
 	if err != nil {
 		return nil, fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%v", err)
 	}

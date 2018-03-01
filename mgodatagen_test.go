@@ -72,8 +72,12 @@ func TestMain(m *testing.M) {
 		out: ioutil.Discard,
 	}
 	d = datagen
-
-	c, err := config.CollectionList("samples/bson_test.json")
+	content, err := ioutil.ReadFile("samples/bson_test.json")
+	if err != nil {
+		fmt.Printf("failed: %v\n", err)
+		os.Exit(1)
+	}
+	c, err := config.ParseConfig(content)
 	if err != nil {
 		fmt.Printf("error in config file: %v\n", err)
 		os.Exit(configError)
@@ -287,8 +291,11 @@ func TestCollectionContent(t *testing.T) {
 
 func TestCollectionWithRef(t *testing.T) {
 	assert := require.New(t)
-
-	refColl, err := config.CollectionList("samples/config.json")
+	content, err := ioutil.ReadFile("samples/config.json")
+	if err != nil {
+		t.Fail()
+	}
+	refColl, err := config.ParseConfig(content)
 	assert.Nil(err)
 
 	// TODO : for some reason, the test fails if first collection has more documents
@@ -333,8 +340,11 @@ func TestCollectionWithRef(t *testing.T) {
 
 func TestCollectionContentWithAggregation(t *testing.T) {
 	assert := require.New(t)
-
-	aggColl, err := config.CollectionList("samples/agg.json")
+	content, err := ioutil.ReadFile("samples/agg.json")
+	if err != nil {
+		t.Fail()
+	}
+	aggColl, err := config.ParseConfig(content)
 	assert.Nil(err)
 
 	err = d.createCollection(&aggColl[0])
