@@ -94,8 +94,7 @@ func readMachineID() []byte {
 	id := sum[:]
 	hostname, err1 := os.Hostname()
 	if err1 != nil {
-		e := NewEncoder(0)
-		return UInt32Bytes(e.PCG32.Random())[0:3]
+		return UInt32Bytes(getRandomUint32())[0:3]
 	}
 	hw := md5.New()
 	hw.Write([]byte(hostname))
@@ -104,7 +103,8 @@ func readMachineID() []byte {
 }
 
 func getRandomUint32() uint32 {
-	e := NewEncoder(0)
+	now := uint64(time.Now().Unix())
+	e := NewEncoder(0, now)
 	return e.PCG32.Random()
 }
 
@@ -147,6 +147,7 @@ type CollInfo struct {
 	Count      int
 	ShortNames bool
 	Version    []int
+	Seed       uint64
 	Encoder    *Encoder
 }
 
@@ -182,12 +183,11 @@ type Encoder struct {
 
 // NewEncoder returns a new encoder with PCG seeded with
 // time.Now()
-func NewEncoder(size int) *Encoder {
-	now := uint64(time.Now().Unix())
+func NewEncoder(size int, seed uint64) *Encoder {
 	return &Encoder{
 		Data:  make([]byte, size),
-		PCG32: pcg.NewPCG32().Seed(now, now),
-		PCG64: pcg.NewPCG64().Seed(now, now, now, now),
+		PCG32: pcg.NewPCG32().Seed(seed, seed),
+		PCG64: pcg.NewPCG64().Seed(seed, seed, seed, seed),
 	}
 }
 
@@ -226,7 +226,7 @@ func (ci *CollInfo) PreGenerate(k string, v *config.GeneratorJSON, nb int) ([][]
 	if err != nil {
 		return nil, bson.ElementNil, fmt.Errorf("for field %s, error while creating base array: %v", k, err)
 	}
-	e := NewEncoder(0)
+	e := NewEncoder(0, ci.Seed)
 	g.SetEncoder(e)
 
 	arr := make([][]byte, nb)
