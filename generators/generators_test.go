@@ -162,7 +162,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 	collectionList, err := config.ParseConfig(content)
 	assert.Nil(err)
 
-	e := NewEncoder(4)
+	e := NewEncoder(4, uint64(time.Now().Unix()))
 
 	ci := &CollInfo{
 		Encoder:    e,
