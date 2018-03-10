@@ -697,7 +697,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 	switch v.Type {
 	case "string":
 		if v.MinLength < 0 || v.MinLength > v.MaxLength {
-			return nil, fmt.Errorf("for field %s, make sure that MinLength >= 0 and MinLength <= MaxLength", k)
+			return nil, fmt.Errorf("for field %s, make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'", k)
 		}
 		eg.T = bson.ElementString
 		if v.Unique {
@@ -723,7 +723,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		}, nil
 	case "int":
 		if v.MaxInt32 == 0 || v.MaxInt32 <= v.MinInt32 {
-			return nil, fmt.Errorf("for field %s, make sure that MaxInt32 > MinInt32", k)
+			return nil, fmt.Errorf("for field %s, make sure that 'maxInt' > 'minInt'", k)
 		}
 		eg.T = bson.ElementInt32
 		// Max = MaxInt32 + 1 so bound are inclusive
@@ -734,7 +734,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		}, nil
 	case "long":
 		if v.MaxInt64 == 0 || v.MaxInt64 <= v.MinInt64 {
-			return nil, fmt.Errorf("for field %s, make sure that MaxInt64 > MinInt64", k)
+			return nil, fmt.Errorf("for field %s, make sure that 'maxLong' > 'minLong'", k)
 		}
 		eg.T = bson.ElementInt64
 		// Max = MaxInt64 + 1 so bound are inclusive
@@ -745,7 +745,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		}, nil
 	case "double":
 		if v.MaxFloat64 == 0 || v.MaxFloat64 <= v.MinFloat64 {
-			return nil, fmt.Errorf("for field %s, make sure that MaxFloat64 > MinFloat64", k)
+			return nil, fmt.Errorf("for field %s, make sure that 'maxDouble' > 'minDouble'", k)
 		}
 		eg.T = bson.ElementFloat64
 		return &Float64Generator{
@@ -773,7 +773,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		}, nil
 	case "array":
 		if v.Size <= 0 {
-			return nil, fmt.Errorf("for field %s, make sure that size >= 0", k)
+			return nil, fmt.Errorf("for field %s, make sure that 'size' >= 0", k)
 		}
 		g, err := ci.newGenerator("", v.ArrayContent)
 		if err != nil {
@@ -823,7 +823,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		}, nil
 	case "fromArray":
 		if len(v.In) == 0 {
-			return nil, fmt.Errorf("for field %s, in array can't be null or empty", k)
+			return nil, fmt.Errorf("for field %s, 'in' array can't be null or empty", k)
 		}
 		array := make([][]byte, len(v.In))
 		for i, v := range v.In {
@@ -843,7 +843,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		}, nil
 	case "binary":
 		if v.MinLength < 0 || v.MinLength > v.MaxLength {
-			return nil, fmt.Errorf("for field %s, make sure that MinLength >= 0 and MinLength < MaxLength", k)
+			return nil, fmt.Errorf("for field %s, make sure that 'minLength' >= 0 and 'minLength' < 'maxLength'", k)
 		}
 		eg.T = bson.ElementBinary
 		return &BinaryDataGenerator{
@@ -853,7 +853,7 @@ func (ci *CollInfo) newGenerator(k string, v *config.GeneratorJSON) (Generator, 
 		}, nil
 	case "date":
 		if v.StartDate.Unix() > v.EndDate.Unix() {
-			return nil, fmt.Errorf("for field %s, make sure StartDate < endDate", k)
+			return nil, fmt.Errorf("for field %s, make sure that 'startDate' < 'endDate'", k)
 		}
 		eg.T = bson.ElementDatetime
 		return &DateGenerator{
@@ -1032,13 +1032,13 @@ type Aggregator struct {
 // newAggregator returns a new Aggregator based on a JSON configuration
 func (ci *CollInfo) newAggregator(k string, v *config.GeneratorJSON) (*Aggregator, error) {
 	if v.Query == nil || len(v.Query) == 0 {
-		return nil, fmt.Errorf("for field %v, query can't be null or empty", k)
+		return nil, fmt.Errorf("for field %v, 'query' can't be null or empty", k)
 	}
 	if v.Database == "" {
-		return nil, fmt.Errorf("for field %v, database can't be null or empty", k)
+		return nil, fmt.Errorf("for field %v, 'database' can't be null or empty", k)
 	}
 	if v.Collection == "" {
-		return nil, fmt.Errorf("for field %v, collection can't be null or empty", k)
+		return nil, fmt.Errorf("for field %v, 'collection' can't be null or empty", k)
 	}
 	switch v.Type {
 	case "countAggregator":
@@ -1051,7 +1051,7 @@ func (ci *CollInfo) newAggregator(k string, v *config.GeneratorJSON) (*Aggregato
 		}, nil
 	case "valueAggregator":
 		if v.Field == "" {
-			return nil, fmt.Errorf("for field %v, field can't be null or empty", k)
+			return nil, fmt.Errorf("for field %v, 'field' can't be null or empty", k)
 		}
 		return &Aggregator{
 			K:          k,
@@ -1063,7 +1063,7 @@ func (ci *CollInfo) newAggregator(k string, v *config.GeneratorJSON) (*Aggregato
 		}, nil
 	case "boundAggregator":
 		if v.Field == "" {
-			return nil, fmt.Errorf("for field %v, field can't be null or empty", k)
+			return nil, fmt.Errorf("for field %v, 'field' can't be null or empty", k)
 		}
 		return &Aggregator{
 			K:          k,
