@@ -37,7 +37,7 @@ type result struct {
 
 // get a connection from Connection args
 func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
-	fmt.Fprintf(out, "Connecting to mongodb://%s:%s\n\n", conn.Host, conn.Port)
+	fmt.Fprintf(out, "Connecting to mongodb://%s:%s\n", conn.Host, conn.Port)
 	url := "mongodb://"
 	if conn.UserName != "" && conn.Password != "" {
 		url += conn.UserName + ":" + conn.Password + "@"
@@ -142,12 +142,12 @@ var pool = sync.Pool{
 }
 
 func (d *datagen) fillCollection(coll *config.Collection) error {
-
+	seed := uint64(time.Now().Unix())
 	ci := &generators.CollInfo{
-		Encoder:    generators.NewEncoder(4, uint64(d.Seed)),
+		Encoder:    generators.NewEncoder(4, seed),
 		Version:    d.version,
 		ShortNames: d.ShortName,
-		Seed:       uint64(d.Seed),
+		Seed:       seed,
 		Count:      coll.Count,
 	}
 	generator, err := ci.CreateGenerator(coll.Content)
@@ -527,7 +527,6 @@ type Config struct {
 	Append          bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents or deleting the collection"`
 	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU+1"`
 	BatchSize       int    `short:"b" long:"batchsize" value-name:"<size>" description:"bulk insert batch size" default:"1000"`
-	Seed            int64  `short:"S" long:"seed" value-name:"<seed>" description:"Use a specific seed for the random generator. Same config file with same seed will always produce the same output" default:"0"`
 }
 
 // Template struct that stores info on config file to generate
@@ -586,11 +585,6 @@ func run(options *Options) error {
 	if options.Quiet {
 		out = ioutil.Discard
 	}
-	if options.Seed == 0 {
-		options.Seed = time.Now().Unix()
-	}
-	fmt.Fprintf(out, "using seed: %v", options.Seed)
-
 	fmt.Fprintln(out, "Parsing configuration file...")
 	content, err := ioutil.ReadFile(options.ConfigFile)
 	if err != nil {
