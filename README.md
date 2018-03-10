@@ -105,8 +105,8 @@ See **MongodB documentation** for details on parameters:
    "collection": <string>,            // required, collection name
    "count": <int>,                    // required, number of document to insert in the collection 
    "content": {                       // required, the actual schema to generate documents   
-     "fieldName1": <generator>,       // required
-     "fieldName2": <generator>,       // required, see Generator below
+     "fieldName1": <generator>,       // optional, see Generator below
+     "fieldName2": <generator>,       
      ...
    },
    // OPTIONAL FIELDS
