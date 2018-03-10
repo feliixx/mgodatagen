@@ -268,7 +268,7 @@ func (g *EmptyGenerator) SetEncoder(e *Encoder) { g.Out = e }
 // getLength return a random uint32 between min and max
 func (g *EmptyGenerator) getLength(min, max uint32) uint32 {
 	if min != max {
-		return g.Out.PCG32.Bounded(max-min) + min
+		return g.Out.PCG32.Bounded(max-min+1) + min
 	}
 	return min
 }
