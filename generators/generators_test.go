@@ -159,7 +159,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
-	collectionList, err := config.ParseConfig(content)
+	collectionList, err := config.ParseConfig(content, false)
 	assert.Nil(err)
 
 	e := NewEncoder(4, uint64(time.Now().Unix()))
@@ -573,7 +573,7 @@ func TestNewAggregator(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
-	aggColl, err := config.ParseConfig(content)
+	aggColl, err := config.ParseConfig(content, false)
 	assert.Nil(err)
 
 	ci.ShortNames = false
@@ -678,7 +678,7 @@ func BenchmarkGeneratorAll(b *testing.B) {
 	if err != nil {
 		b.Fail()
 	}
-	collectionList, _ := config.ParseConfig(content)
+	collectionList, _ := config.ParseConfig(content, false)
 
 	encoder := &Encoder{
 		Data:  make([]byte, 4),

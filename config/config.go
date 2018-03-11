@@ -125,14 +125,14 @@ type GeneratorJSON struct {
 
 // ParseConfig returns a list of Collection to create from a
 // json configuration file
-func ParseConfig(content []byte) ([]Collection, error) {
+func ParseConfig(content []byte, ignoreMissingDb bool) ([]Collection, error) {
 	var collectionList []Collection
 	err := json.Unmarshal(content, &collectionList)
 	if err != nil {
 		return nil, fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%v", err)
 	}
 	for _, v := range collectionList {
-		if v.Name == "" || v.DB == "" {
+		if v.Name == "" || (v.DB == "" && !ignoreMissingDb) {
 			return nil, fmt.Errorf("Error in configuration file: \n\t'collection' and 'database' fields can't be empty")
 		}
 		if v.Count <= 0 {
