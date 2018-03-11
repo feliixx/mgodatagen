@@ -77,7 +77,7 @@ func TestMain(m *testing.M) {
 		fmt.Printf("failed: %v\n", err)
 		os.Exit(1)
 	}
-	c, err := config.ParseConfig(content)
+	c, err := config.ParseConfig(content, false)
 	if err != nil {
 		fmt.Printf("error in config file: %v\n", err)
 		os.Exit(configError)
@@ -295,7 +295,7 @@ func TestCollectionWithRef(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
-	refColl, err := config.ParseConfig(content)
+	refColl, err := config.ParseConfig(content, false)
 	assert.Nil(err)
 
 	// TODO : for some reason, the test fails if first collection has more documents
@@ -344,7 +344,7 @@ func TestCollectionContentWithAggregation(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
-	aggColl, err := config.ParseConfig(content)
+	aggColl, err := config.ParseConfig(content, false)
 	assert.Nil(err)
 
 	err = d.createCollection(&aggColl[0])

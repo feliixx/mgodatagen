@@ -590,7 +590,7 @@ func run(options *Options) error {
 	if err != nil {
 		return fmt.Errorf("File error: %v", err)
 	}
-	collectionList, err := config.ParseConfig(content)
+	collectionList, err := config.ParseConfig(content, false)
 	if err != nil {
 		return err
 	}
