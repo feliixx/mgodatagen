@@ -7,6 +7,7 @@
 # mgodatagen 
 
 A small CLI tool to quickly generate millions of pseudo-random BSON documents and insert them into a Mongodb instance. Quickly test new data structure or how your application responds when your database grows! 
+
 Try it online: [**mongoplayground**](https://mongoplayground.net/)
 
 ## Features
