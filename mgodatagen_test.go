@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"sort"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
-	"github.com/stretchr/testify/require"
 
 	"github.com/feliixx/mgodatagen/config"
 	"github.com/feliixx/mgodatagen/generators"
@@ -23,8 +25,20 @@ const (
 )
 
 var (
-	collections []config.Collection
-	d           *datagen
+	session        *mgo.Session
+	currentVersion []int
+	defaultOpts    = Options{
+		Config: Config{
+			BatchSize: 1000,
+		},
+	}
+	defaultConnOpts = Connection{
+		Host: "localhost",
+		Port: "27017",
+	}
+	defaultGeneralOpts = General{
+		Quiet: true,
+	}
 )
 
 type expectedDoc struct {
@@ -54,38 +68,58 @@ type expectedDoc struct {
 	} `bson:"object"`
 }
 
+type distinctResult struct {
+	Values []interface{} `bson:"values"`
+}
+
+func distinct(t *testing.T, dbName, collName, keyName string, result distinctResult) int {
+	err := session.DB(dbName).Run(bson.D{
+		{Name: "distinct", Value: collName},
+		{Name: "key", Value: keyName},
+	}, &result)
+	if err != nil {
+		t.Error(err)
+	}
+	return len(result.Values)
+}
+
+func parseConfig(t *testing.T, fileName string) []config.Collection {
+	generators.ClearRef()
+	content, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		t.Error(err)
+	}
+	c, err := config.ParseConfig(content, false)
+	if err != nil {
+		t.Error(err)
+	}
+	return c
+}
+
+func generateColl(t *testing.T, d *datagen, c *config.Collection) {
+	err := d.createCollection(c)
+	if err != nil {
+		t.Error(err)
+	}
+	err = d.fillCollection(c)
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestMain(m *testing.M) {
-	s, err := mgo.Dial(URL)
+	s, v, err := connectToDB(&defaultConnOpts, ioutil.Discard)
 	if err != nil {
 		fmt.Printf("couldn't connect to db: %v\n", err)
 		os.Exit(connectError)
 	}
 	defer s.Close()
-	generators.ClearRef()
-	datagen := &datagen{
-		session: s,
-		Options: Options{
-			Config: Config{
-				BatchSize: 1000,
-			},
-		},
-		out: ioutil.Discard,
-	}
-	d = datagen
-	content, err := ioutil.ReadFile("samples/bson_test.json")
-	if err != nil {
-		fmt.Printf("failed: %v\n", err)
-		os.Exit(1)
-	}
-	c, err := config.ParseConfig(content, false)
-	if err != nil {
-		fmt.Printf("error in config file: %v\n", err)
-		os.Exit(configError)
-	}
-	collections = c
+	currentVersion = v
+	session = s
+
 	retCode := m.Run()
 
-	err = s.DB(collections[0].DB).DropDatabase()
+	err = s.DB("datagen_it_test").DropDatabase()
 	if err != nil {
 		fmt.Printf("couldn't drop db: %v\n", err)
 		os.Exit(connectError)
@@ -94,52 +128,92 @@ func TestMain(m *testing.M) {
 }
 
 func TestHandleCommandError(t *testing.T) {
-	assert := require.New(t)
 	r := result{
 		Ok: true,
 	}
 	err := handleCommandError("fail", fmt.Errorf("some reason"), &r)
-	assert.Equal("fail\n  cause: some reason", err.Error())
-
+	if err.Error() != "fail\n  cause: some reason" {
+		t.Errorf("handleCommand error returned incorrect message: %s", err.Error())
+	}
 	r = result{
 		Ok:     false,
 		ErrMsg: "errmsg",
 	}
 	err = handleCommandError("fail", fmt.Errorf("some reason"), &r)
-	assert.Equal("fail\n  cause: errmsg", err.Error())
+	if err.Error() != "fail\n  cause: errmsg" {
+		t.Errorf("handleCommand error returned incorrect message: %s", err.Error())
+	}
 }
 
 func TestConnectToDb(t *testing.T) {
-	assert := require.New(t)
 
-	conn := &Connection{
-		Host: "localhost",
-		Port: "40000", // should fail
+	listConnTests := []struct {
+		name        string
+		conn        Connection
+		correct     bool
+		errMsgRegex *regexp.Regexp
+		versionLen  int
+	}{
+		{
+			name: "non-listenning port",
+			conn: Connection{
+				Host:    "localhost",
+				Port:    "40000",
+				timeout: 1 * time.Second,
+			},
+			correct:     false,
+			errMsgRegex: regexp.MustCompile("^connection failed\n  cause.*"),
+			versionLen:  0,
+		},
+		{
+			name: "listenning port",
+			conn: Connection{
+				Host:    "localhost",
+				Port:    "27017",
+				timeout: defaultTimeout,
+			},
+			correct:     true,
+			errMsgRegex: nil,
+			versionLen:  3,
+		},
+		{
+			name: "auth not enabled on db",
+			conn: Connection{
+				UserName: "user",
+				Password: "pwd",
+				timeout:  1 * time.Second,
+			},
+			correct:     false,
+			errMsgRegex: regexp.MustCompile("^connection failed\n  cause.*"),
+			versionLen:  0,
+		},
 	}
 
-	_, v, err := connectToDB(conn, ioutil.Discard)
-	assert.NotNil(err)
-	assert.Regexp("^connection failed\n  cause.*", err.Error())
-
-	conn.Port = "27017"
-
-	s, v, err := connectToDB(conn, ioutil.Discard)
-	assert.Nil(err)
-	assert.True(len(v) > 0)
-	s.Close()
-
-	conn = &Connection{
-		UserName: "user",
-		Password: "pwd",
+	for _, tt := range listConnTests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			s, v, err := connectToDB(&tt.conn, ioutil.Discard)
+			if tt.correct {
+				if err != nil {
+					t.Errorf("expected no error for config %v: \n%v", tt.conn, err)
+				}
+				s.Close()
+			} else {
+				if err == nil {
+					t.Errorf("expected an error for param %v", tt.conn)
+				}
+				if !tt.errMsgRegex.MatchString(err.Error()) {
+					t.Errorf("error should match regex %s but was %v", tt.errMsgRegex.String(), err)
+				}
+			}
+			if len(v) != tt.versionLen {
+				t.Errorf("expected len(v) == %d, but got %d", tt.versionLen, len(v))
+			}
+		})
 	}
-
-	_, _, err = connectToDB(conn, ioutil.Discard)
-	assert.NotNil(err)
-	assert.Regexp("^connection failed\n  cause.*", err.Error())
 }
 
 func TestCreateEmptyFile(t *testing.T) {
-	assert := require.New(t)
 
 	filename := "testNewFile.json"
 
@@ -149,7 +223,9 @@ func TestCreateEmptyFile(t *testing.T) {
 		},
 	}
 	err := run(options)
-	assert.Nil(err)
+	if err != nil {
+		t.Errorf("expected no error for creating empty file but got %v", err)
+	}
 	defer os.Remove(filename)
 
 	expected := `[{
@@ -162,99 +238,122 @@ func TestCreateEmptyFile(t *testing.T) {
 }]
 `
 	content, err := ioutil.ReadFile(filename)
-	assert.Nil(err)
-	assert.Equal(expected, string(content))
-}
-
-type distinctResult struct {
-	Values []interface{} `bson:"values"`
-}
-
-func distinct(dbName, collName, keyName string, result distinctResult) (int, error) {
-	err := d.session.DB(dbName).Run(bson.D{
-		{Name: "distinct", Value: collName},
-		{Name: "key", Value: keyName},
-	}, &result)
 	if err != nil {
-		return 0, err
+		t.Error(err)
 	}
-	return len(result.Values), nil
+	if expected != string(content) {
+		t.Errorf("expected %s\nbut got\n%s", expected, content)
+	}
 }
 
 func TestCollectionContent(t *testing.T) {
-	assert := require.New(t)
 
-	err := d.createCollection(&collections[0])
-	assert.Nil(err)
+	datagen := newDatagen(session, currentVersion, defaultOpts, ioutil.Discard)
+	collections := parseConfig(t, "samples/bson_test.json")
+	generateColl(t, datagen, &collections[0])
 
-	err = d.fillCollection(&collections[0])
-	assert.Nil(err)
-
-	c := d.session.DB(collections[0].DB).C(collections[0].Name)
+	c := datagen.session.DB(collections[0].DB).C(collections[0].Name)
 	docCount, err := c.Count()
-	assert.Nil(err)
-	assert.Equal(docCount, int(collections[0].Count))
+	if err != nil {
+		t.Error(err)
+	}
+	if docCount != int(collections[0].Count) {
+		t.Errorf("expected %d documents but got %d", docCount, int(collections[0].Count))
+	}
 
 	var results []expectedDoc
 	err = c.Find(nil).All(&results)
-	assert.Nil(err)
-	count := 0
-
-	fromArr := []string{
-		"2012-10-10",
-		"2012-12-12",
-		"2014-01-01",
-		"2016-05-05",
+	if err != nil {
+		t.Error(err)
 	}
 
-	expectedDate, _ := time.Parse(dateFormat, "2014-Jan-01")
-
+	fromArr := sort.StringSlice{"2012-10-10", "2012-12-12", "2014-01-01", "2016-05-05"}
+	expectedDate, err := time.Parse(dateFormat, "2014-Jan-01")
+	if err != nil {
+		t.Error(err)
+	}
+	count := 0
 	for i, r := range results {
 		// string
-		assert.InDelta(3, len(r.Name), 17)
+		if len(r.Name) < 15 || len(r.Name) > 20 {
+			t.Errorf("'name' should be 15 < name < 20 but was %d", len(r.Name))
+		}
 		// int32
-		assert.InDelta(15, r.C32, 5)
+		if r.C32 < 10 || r.C32 > 20 {
+			t.Errorf("'c32' should be 10 < c32 < 20 but was %d", r.C64)
+		}
 		// int64
 		if r.C64 == 0 {
 			count++
 		} else {
-			assert.InDelta(150, r.C64, 50)
+			if r.C64 < 100 || r.C64 > 200 {
+				t.Errorf("'c64' should be 100 < c64 < 200 but was %d", r.C64)
+			}
 		}
 		// float
-		assert.InDelta(5, r.Float, 5)
+		if r.Float < 0 || r.Float > 10 {
+			t.Errorf("'float' should be 0 < float < 10, but was %f", r.Float)
+		}
 		// position testing
-		assert.InDelta(0, r.Position[0], 90)
-		assert.InDelta(0, r.Position[1], 180)
+		if r.Position[0] < -90 || r.Position[0] > 90 {
+			t.Errorf("'pos[0]' should be -90 < pos[0] < 90, but was %f", r.Position[0])
+		}
+		if r.Position[1] < -180 || r.Position[1] > 180 {
+			t.Errorf("'pos[1]' should be -180 < pos[1] < 180, but was %f", r.Position[1])
+		}
 		// fromArray
-		assert.Contains(fromArr, r.Dt)
+		idx := fromArr.Search(r.Dt)
+		if idx == len(fromArr) || fromArr[idx] != r.Dt {
+			t.Errorf("'dt' should be on of the values of fromArray, but was %s", r.Dt)
+		}
 		// cst
-		assert.Equal(int32(2), r.Cst)
+		if r.Cst != int32(2) {
+			t.Errorf("'cst' field should be int32(2), but was %v", r.Cst)
+		}
 		// autoincrement
-		assert.Equal(int64(i), r.Nb)
+		if r.Nb != int64(i) {
+			t.Errorf("'nb' field should be %d, but was %d", int64(i), r.Nb)
+		}
 		// Date
-		assert.WithinDuration(expectedDate, r.Date, time.Second*60*60*24*365*4)
+		dt := expectedDate.Sub(r.Date)
+		delta := time.Second * 60 * 60 * 24 * 365 * 4
+		if dt < -delta || dt > delta {
+			t.Errorf("'date' should be within %v, but was %v", delta, r.Date)
+		}
 		// binary data
-		assert.InDelta(32, len(r.BinaryData), 8)
+		if len(r.BinaryData) < 24 || len(r.BinaryData) > 40 {
+			t.Errorf("'binaryData' len should be 4 < len < 40, but was %d", len(r.BinaryData))
+		}
 		// array
-		assert.Equal(3, len(r.List))
+		if len(r.List) != 3 {
+			t.Errorf("'list' should have 3 items but got only %d", len(r.List))
+		}
 		// array of fromArray
-		assert.Equal(6, len(r.Afa))
+		if len(r.Afa) != 6 {
+			t.Errorf("'afa' should have 6 items but got only %d", len(r.Afa))
+		}
 		// array of const
-		assert.Equal(2, len(r.Ac))
+		if len(r.Ac) != 2 {
+			t.Errorf("'ac' should have 2 items but got only %d", len(r.Ac))
+		}
 		// object
-		assert.Equal(3, len(r.Object.K1))
-		assert.InDelta(-7, r.Object.K2, 3)
-		assert.InDelta(5, r.Object.Subob.Sk, 5)
+		if len(r.Object.K1) != 3 {
+			t.Errorf("'object.k1' should have 3 items but got only %d", len(r.Object.K1))
+		}
+		if r.Object.K2 < -10 || r.Object.K2 > -5 {
+			t.Errorf("'object.k2' should be -10 < object.k2 < -5, but was %d", r.Object.K2)
+		}
+		if r.Object.Subob.Sk < 0 || r.Object.Subob.Sk > 10 {
+			t.Errorf("'object.subob.sk' should be 0 < object.subob < 10, but was %d", r.Object.Subob.Sk)
+		}
 	}
 	// null percentage test, allow 2.5% error
-	assert.InDelta(100, count, 25)
-
-	dbName := collections[0].DB
-	collName := collections[0].Name
-	var result distinctResult
+	if count < 75 || count > 125 {
+		t.Errorf("doc nb with c64 == null should be 75 < count < 125 (2.5percent) but was %d", count)
+	}
 
 	// we expect fixed values for those keys
-	testMatrix1 := map[string]int{
+	maxDistinctValuesTests := map[string]int{
 		// test maxDistinctValues option
 		"name": int(collections[0].Content["name"].MaxDistinctValue),
 		// test unique option
@@ -270,317 +369,471 @@ func TestCollectionContent(t *testing.T) {
 		"float":    1000,
 		"position": 2000,
 	}
-
-	for k, v := range testMatrix1 {
-		l, err := distinct(dbName, collName, k, result)
-		assert.Nil(err)
-		assert.Equal(v, l)
+	var result distinctResult
+	for key, value := range maxDistinctValuesTests {
+		nb := distinct(t, collections[0].DB, collections[0].Name, key, result)
+		if value != nb {
+			t.Errorf("for field %s, expected %d distinct values but got %d", key, value, nb)
+		}
 	}
-	// distinc count may be different from one run to another due
+	// distinct count may be different from one run to another due
 	// to nullPercentage != 0
-	testMatrix2 := map[string]int{
+	maxDistinctValuesNullPercentageTests := map[string]int{
 		"c64": 80,
 	}
 
-	for k, v := range testMatrix2 {
-		l, err := distinct(dbName, collName, k, result)
-		assert.Nil(err)
-		assert.True(l > v)
+	for key, value := range maxDistinctValuesNullPercentageTests {
+		nb := distinct(t, collections[0].DB, collections[0].Name, key, result)
+		if value > nb {
+			t.Errorf("for field %s, expected %d max distinct values but got %d", key, value, nb)
+		}
 	}
 }
 
 func TestCollectionWithRef(t *testing.T) {
-	assert := require.New(t)
-	content, err := ioutil.ReadFile("samples/config.json")
-	if err != nil {
-		t.Fail()
-	}
-	refColl, err := config.ParseConfig(content, false)
-	assert.Nil(err)
+	collections := parseConfig(t, "samples/config.json")
 
 	// TODO : for some reason, the test fails if first collection has more documents
 	// than the second collection
-	refColl[0].Count = 1000
-	refColl[1].Count = 1000
+	collections[0].Count = 1000
+	collections[1].Count = 1000
 
-	err = d.createCollection(&refColl[0])
-	assert.Nil(err)
+	datagen := newDatagen(session, currentVersion, defaultOpts, ioutil.Discard)
 
-	err = d.fillCollection(&refColl[0])
-	assert.Nil(err)
+	generateColl(t, datagen, &collections[0])
+	generateColl(t, datagen, &collections[1])
 
-	err = d.createCollection(&refColl[1])
-	assert.Nil(err)
-
-	err = d.fillCollection(&refColl[1])
-	assert.Nil(err)
-
-	var result struct {
+	var distinct struct {
 		Values []bson.ObjectId `bson:"values"`
 		Ok     bool            `bson:"ok"`
 	}
-	err = d.session.DB(refColl[0].DB).Run(bson.D{
-		{Name: "distinct", Value: refColl[0].Name},
-		{Name: "key", Value: "_id"},
-	}, &result)
-	assert.Nil(err)
 
-	c := d.session.DB(refColl[1].DB).C(refColl[1].Name)
-	var results []struct {
+	err := session.DB(collections[0].DB).Run(bson.D{
+		{Name: "distinct", Value: collections[0].Name},
+		{Name: "key", Value: "_id"},
+	}, &distinct)
+	if err != nil {
+		t.Error(err)
+	}
+
+	c := session.DB(collections[1].DB).C(collections[1].Name)
+	var result []struct {
 		ID  bson.ObjectId `bson:"_id"`
 		Ref bson.ObjectId `bson:"ref"`
 	}
-	err = c.Find(nil).All(&results)
-	assert.Nil(err)
+	err = c.Find(nil).Sort("_id").All(&result)
+	if err != nil {
+		t.Error(err)
+	}
 
-	for _, doc := range results {
-		assert.Contains(result.Values, doc.Ref)
+	for _, r := range distinct.Values {
+		i := sort.Search(len(result), func(i int) bool { return result[i].Ref.String() >= r.String() })
+		if i == len(result) || result[i].Ref.String() != r.String() {
+			t.Errorf("%v not found in result", r.String())
+		}
 	}
 }
 
 func TestCollectionContentWithAggregation(t *testing.T) {
-	assert := require.New(t)
-	content, err := ioutil.ReadFile("samples/agg.json")
-	if err != nil {
-		t.Fail()
-	}
-	aggColl, err := config.ParseConfig(content, false)
-	assert.Nil(err)
+	collections := parseConfig(t, "samples/agg.json")
 
-	err = d.createCollection(&aggColl[0])
-	assert.Nil(err)
+	datagen := newDatagen(session, currentVersion, defaultOpts, ioutil.Discard)
 
-	err = d.fillCollection(&aggColl[0])
-	assert.Nil(err)
+	generateColl(t, datagen, &collections[0])
+	generateColl(t, datagen, &collections[1])
 
-	err = d.createCollection(&aggColl[1])
-	assert.Nil(err)
-
-	err = d.fillCollection(&aggColl[1])
-	assert.Nil(err)
-
-	c := d.session.DB(aggColl[1].DB).C(aggColl[1].Name)
+	c := datagen.session.DB(collections[1].DB).C(collections[1].Name)
 	var results []bson.M
-	err = c.Find(nil).All(&results)
-	assert.Nil(err)
+	err := c.Find(nil).All(&results)
+	if err != nil {
+		t.Error(err)
+	}
 
-	possibleValues := []string{"a", "b", "e", "d", "c", "h", "f", "g", "i"}
+	possibleValues := sort.StringSlice{"a", "b", "c", "d", "e", "f", "g", "h", "i"}
 
 	for _, r := range results {
 		b := r["AG-CI"].(bson.M)
-		assert.InDelta(50, b["m"], 50)
-		assert.InDelta(9950, b["M"], 50)
+		m := b["m"].(int)
+		if m < 0 || m > 100 {
+			t.Errorf("'m' field sould be 0 < m < 100, but was %d", m)
+		}
+		mM := b["M"].(int)
+		if mM < 9900 || mM > 10000 {
+			t.Errorf("'M' field sould be 900 < M < 1000, but was %d", mM)
+		}
+		agFI := r["AG-FI"].(int)
+		if agFI < 1450 || agFI > 1850 {
+			t.Errorf("'AG-FI' field sould be 1450 < AG-FI < 1850, but was %d", agFI)
+		}
 
-		assert.InDelta(1650, r["AG-FI"], 200)
-
-		a := r["AG-VA"].([]interface{})
-		assert.True(len(a) > 0)
-
-		for _, v := range a {
-			assert.Contains(possibleValues, v)
+		vv := r["AG-VA"].([]interface{})
+		if len(vv) == 0 {
+			t.Errorf("'AG-VA' field should be a non empty array, but was %v", vv)
+		}
+		for _, v := range vv {
+			v := v.(string)
+			i := possibleValues.Search(v)
+			if i == len(possibleValues) || possibleValues[i] != v {
+				t.Errorf("got an unexpected value: %s", v)
+			}
 		}
 	}
 }
 
 func TestCreateCollection(t *testing.T) {
-	assert := require.New(t)
 
-	collConfig := &config.Collection{
-		DB:               collections[0].DB,
-		Name:             collections[0].Name,
-		Count:            1,
-		CompressionLevel: "zlib",
+	collections := parseConfig(t, "samples/bson_test.json")
+
+	createCollectionTests := []struct {
+		name         string
+		config       config.Collection
+		errMsgRegexp *regexp.Regexp
+		correct      bool
+	}{
+		{
+			name: "zlib compressor",
+			config: config.Collection{
+				DB:               collections[0].DB,
+				Name:             collections[0].Name,
+				Count:            1,
+				CompressionLevel: "zlib",
+			},
+			errMsgRegexp: nil,
+			correct:      true,
+		},
+		{
+			name: "invalid compressor",
+			config: config.Collection{
+				DB:               collections[0].DB,
+				Name:             collections[0].Name,
+				Count:            1,
+				CompressionLevel: "unknown",
+			},
+			errMsgRegexp: regexp.MustCompile("^coulnd't create collection with compression level.*\n  cause.*"),
+			correct:      false,
+		},
+		{
+			name: "wrong shardconfig",
+			config: config.Collection{
+				DB:    collections[0].DB,
+				Name:  collections[0].Name,
+				Count: 1,
+				ShardConfig: config.ShardingConfig{
+					ShardCollection: "test.test",
+					Key:             bson.M{"_id": 1},
+				},
+			},
+			errMsgRegexp: regexp.MustCompile("^wrong value for 'shardConfig.shardCollection'.*"),
+			correct:      false,
+		},
+		{
+			name: "fail to shard on single mongod",
+			config: config.Collection{
+				DB:    collections[0].DB,
+				Name:  collections[0].Name,
+				Count: 1,
+				ShardConfig: config.ShardingConfig{
+					ShardCollection: collections[0].DB + "." + collections[0].Name,
+					Key:             bson.M{"_id": 1},
+				},
+			},
+			errMsgRegexp: regexp.MustCompile("^couldn't create sharded collection.*"),
+			correct:      false,
+		},
+		{
+			name: "fail to shard with non _id key",
+			config: config.Collection{
+				DB:    collections[0].DB,
+				Name:  collections[0].Name,
+				Count: 1,
+				ShardConfig: config.ShardingConfig{
+					ShardCollection: collections[0].DB + "." + collections[0].Name,
+					Key:             bson.M{"n": 1},
+				},
+			},
+			errMsgRegexp: regexp.MustCompile("^couldn't create sharded collection.*"),
+			correct:      false,
+		},
+		{
+			name: "empty shard key",
+			config: config.Collection{
+				DB:    collections[0].DB,
+				Name:  collections[0].Name,
+				Count: 1,
+				ShardConfig: config.ShardingConfig{
+					ShardCollection: collections[0].DB + "." + collections[0].Name,
+					Key:             bson.M{},
+				},
+			},
+			errMsgRegexp: regexp.MustCompile("^wrong value for 'shardConfig.key'.*"),
+			correct:      false,
+		},
 	}
 
-	err := d.createCollection(collConfig)
-	assert.Nil(err)
+	datagen := newDatagen(session, currentVersion, defaultOpts, ioutil.Discard)
 
 	var result struct {
 		WiredTiger struct {
 			CreationString string `bson:"creationString"`
 		} `bson:"wiredTiger"`
 	}
-	err = d.session.DB(collections[0].DB).Run(bson.D{{Name: "collStats", Value: collections[0].Name}}, &result)
-	assert.Nil(err)
-	assert.Contains(result.WiredTiger.CreationString, "block_compressor=zlib")
-	// invalid compression level
-	collConfig.CompressionLevel = "unknown"
-	err = d.createCollection(collConfig)
-	assert.NotNil(err)
-	assert.Regexp("^coulnd't create collection with compression level.*\n  cause.*", err.Error())
 
-	// invalid sharded config
-	collConfig.CompressionLevel = ""
-	collConfig.ShardConfig = config.ShardingConfig{
-		ShardCollection: "test.test",
-		Key:             bson.M{"_id": 1},
+	for _, tt := range createCollectionTests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := datagen.createCollection(&tt.config)
+			if tt.correct {
+				if err != nil {
+					t.Errorf("expected no error for config %v: \n%v", tt.config, err)
+				}
+				err = datagen.session.DB(collections[0].DB).Run(bson.D{{Name: "collStats", Value: collections[0].Name}}, &result)
+				if err != nil {
+					t.Error(err)
+				}
+				if !strings.Contains(result.WiredTiger.CreationString, "block_compressor=zlib") {
+					t.Errorf("block_compressor should be %s, but result was %s", tt.config.CompressionLevel, result.WiredTiger.CreationString)
+				}
+			} else {
+				if err == nil {
+					t.Errorf("expected an error for config %v", tt.config)
+				}
+				if !tt.errMsgRegexp.MatchString(err.Error()) {
+					t.Errorf("error should match regex %s, but was %v", tt.errMsgRegexp.String(), err)
+				}
+			}
+		})
 	}
-
-	err = d.createCollection(collConfig)
-	assert.NotNil(err)
-	assert.Regexp("^wrong value for 'shardConfig.shardCollection'.*", err.Error())
-
-	collConfig.ShardConfig.ShardCollection = collections[0].DB + "." + collections[0].Name
-	err = d.createCollection(collConfig)
-	assert.NotNil(err)
-	assert.Regexp("^couldn't create sharded collection.*", err.Error())
-
-	collConfig.ShardConfig.Key = bson.M{"n": 1}
-	err = d.createCollection(collConfig)
-	assert.Regexp("^couldn't create sharded collection.*", err.Error())
-
-	collConfig.ShardConfig.Key = bson.M{}
-	err = d.createCollection(collConfig)
-	assert.NotNil(err)
-	assert.Regexp("^wrong value for 'shardConfig.key'.*", err.Error())
 }
 
 func TestCollectionWithIndexes(t *testing.T) {
-	assert := require.New(t)
 
-	err := d.createCollection(&collections[0])
-	assert.Nil(err)
+	datagen := newDatagen(session, currentVersion, defaultOpts, ioutil.Discard)
 
-	err = d.fillCollection(&collections[0])
-	assert.Nil(err)
+	collections := parseConfig(t, "samples/bson_test.json")
 
-	indexes := []config.Index{
+	generateColl(t, datagen, &collections[0])
+
+	createCollectionWithIndexesTests := []struct {
+		indexes      []config.Index
+		correct      bool
+		errMsgRegexp *regexp.Regexp
+	}{
 		{
-			Name: "idx_1",
-			Key:  bson.M{"c32": 1},
+			[]config.Index{
+				{
+					Name: "idx_1",
+					Key:  bson.M{"c32": 1},
+				},
+				{
+					Name: "idx_2",
+					Key:  bson.M{"c64": -1},
+				},
+			},
+			true,
+			nil,
 		},
 		{
-			Name: "idx_2",
-			Key:  bson.M{"c64": -1},
+			[]config.Index{
+				{
+					Name: "idx_1",
+					Key:  bson.M{"c32": 1},
+				},
+				{
+					Name: "idx_2",
+					Key:  bson.M{"invalid": "invalid"},
+				},
+			},
+			false,
+			regexp.MustCompile("^error while building indexes for collection.*\n  cause.*"),
 		},
 	}
 
-	collections[0].Indexes = indexes
-	err = d.ensureIndex(&collections[0])
-	assert.Nil(err)
-
-	c := d.session.DB(collections[0].DB).C(collections[0].Name)
-	idx, err := c.Indexes()
-	assert.Nil(err)
-
-	assert.Equal(len(idx), len(indexes)+1)
-	assert.Equal(indexes[0].Name, idx[1].Name)
-	assert.Equal(indexes[1].Name, idx[2].Name)
-
-	indexes[0].Key["c32"] = "invalid"
-	err = d.ensureIndex(&collections[0])
-	assert.NotNil(err)
-	assert.Regexp("^error while building indexes for collection.*\n  cause.*", err.Error())
+	for _, tt := range createCollectionWithIndexesTests {
+		collections[0].Indexes = tt.indexes
+		err := datagen.ensureIndex(&collections[0])
+		if tt.correct {
+			if err != nil {
+				t.Errorf("ensureIndex with indexes %v should not fail: \n%v", tt.indexes, err)
+			}
+			c := datagen.session.DB(collections[0].DB).C(collections[0].Name)
+			idx, err := c.Indexes()
+			if err != nil {
+				t.Errorf("fail to get indexes: %v", err)
+			}
+			for i := range tt.indexes {
+				// idx[0] is index on '_id' field
+				if tt.indexes[i].Name != idx[i+1].Name {
+					t.Errorf("index does not match: expected %s, got %s", tt.indexes[i].Name, idx[i].Name)
+				}
+			}
+		} else {
+			if err == nil {
+				t.Errorf("expected an error for indexes %v", tt.indexes)
+			}
+			if !tt.errMsgRegexp.MatchString(err.Error()) {
+				t.Errorf("error message should match %s, but was %v", tt.errMsgRegexp.String(), err)
+			}
+		}
+	}
 }
 
 func TestRealRun(t *testing.T) {
-	assert := require.New(t)
-	generators.ClearRef()
-	connOpts := Connection{
-		Host: "127.0.0.1",
-		Port: "27017",
-	}
 
-	options := &Options{
-		Connection: connOpts,
-		Config: Config{
-			ConfigFile:      "samples/config.json",
-			NumInsertWorker: 1,
-			BatchSize:       100,
+	realRunTests := []struct {
+		name          string
+		options       Options
+		correct       bool
+		errMsgRegex   *regexp.Regexp
+		expectedNbDoc int
+	}{
+		{
+			name: "samples/bson_test.json",
+			options: Options{
+				Connection: defaultConnOpts,
+				Config: Config{
+					ConfigFile:      "samples/bson_test.json",
+					NumInsertWorker: 1,
+					BatchSize:       1000,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       true,
+			errMsgRegex:   nil,
+			expectedNbDoc: 1000,
+		},
+		{
+			name: "append mode",
+			options: Options{
+				Connection: defaultConnOpts,
+				Config: Config{
+					ConfigFile:      "samples/bson_test.json",
+					NumInsertWorker: 1,
+					BatchSize:       1000,
+					Append:          true,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       true,
+			errMsgRegex:   nil,
+			expectedNbDoc: 2000,
+		},
+		{
+			name: "index only",
+			options: Options{
+				Connection: defaultConnOpts,
+				Config: Config{
+					ConfigFile:      "samples/bson_test.json",
+					NumInsertWorker: 1,
+					BatchSize:       1000,
+					IndexOnly:       true,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       true,
+			errMsgRegex:   nil,
+			expectedNbDoc: 2000,
+		},
+		{
+			name: "no config file",
+			options: Options{
+				Connection: defaultConnOpts,
+				Config: Config{
+					NumInsertWorker: 1,
+					BatchSize:       1000,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       false,
+			errMsgRegex:   regexp.MustCompile("^No configuration file provided*"),
+			expectedNbDoc: 0,
+		},
+		{
+			name: "invalid batch size",
+			options: Options{
+				Connection: defaultConnOpts,
+				Config: Config{
+					ConfigFile:      "samples/agg.json",
+					NumInsertWorker: 1,
+					BatchSize:       1001,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       false,
+			errMsgRegex:   regexp.MustCompile("^invalid value for -b | --batchsize:*"),
+			expectedNbDoc: 0,
+		},
+		{
+			name: "samples/agg.json",
+			options: Options{
+				Connection: defaultConnOpts,
+				Config: Config{
+					ConfigFile:      "samples/agg.json",
+					NumInsertWorker: 1,
+					BatchSize:       1000,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       true,
+			errMsgRegex:   nil,
+			expectedNbDoc: 0,
 		},
 	}
-	err := run(options)
-	assert.Nil(err)
-
-	// should fail because no config file
-	options = &Options{
-		Connection: connOpts,
-		Config: Config{
-			NumInsertWorker: 1,
-			BatchSize:       1000,
-		},
-	}
-	err = run(options)
-	assert.NotNil(err)
-	assert.Regexp("^No configuration file provided*", err.Error())
-	// should fail because batch size to high
-	options = &Options{
-		Connection: connOpts,
-		Config: Config{
-			ConfigFile:      "samples/agg.json",
-			NumInsertWorker: 1,
-			BatchSize:       10000,
-		},
-	}
-	err = run(options)
-	assert.NotNil(err)
-	assert.Regexp("^invalid value for -b | --batchsize:*", err.Error())
-
-	options = &Options{
-		Connection: connOpts,
-		Config: Config{
-			ConfigFile:      "samples/agg.json",
-			NumInsertWorker: 1,
-			BatchSize:       1000,
-		},
-		General: General{
-			Quiet: true,
-		},
-	}
-	err = run(options)
-	assert.Nil(err)
-
-	generators.ClearRef()
-	// insert 1000 docs
-	options = &Options{
-		Connection: connOpts,
-		Config: Config{
-			ConfigFile:      "samples/bson_test.json",
-			NumInsertWorker: 1,
-			ShortName:       true,
-			BatchSize:       1000,
-		},
-		General: General{
-			Quiet: true,
-		},
-	}
-	err = run(options)
-	assert.Nil(err)
-	// append another 1000 to the same collection
-	generators.ClearRef()
-	options.Append = true
-	err = run(options)
-	assert.Nil(err)
-	// index only, ie collection is not rebuilt
-	options.IndexOnly = true
-	err = run(options)
-	assert.Nil(err)
-
-	db := d.session.DB("datagen_it_test")
 
 	var r struct {
 		N int `bson:"n"`
 	}
-	command := bson.D{{Name: "count", Value: db.C("test_bson").Name}}
-	err = db.Run(command, &r)
-	assert.Nil(err)
-	assert.Equal(2000, r.N)
 
+	for _, tt := range realRunTests {
+		t.Run(tt.name, func(t *testing.T) {
+			generators.ClearRef()
+			err := Mgodatagen(&tt.options)
+			if tt.correct {
+				if err != nil {
+					t.Errorf("expected no error for options %v, but got %v", tt.options, err)
+				}
+				if tt.expectedNbDoc > 0 {
+					db := session.DB("datagen_it_test")
+					command := bson.D{{Name: "count", Value: db.C("test_bson").Name}}
+					err = db.Run(command, &r)
+					if err != nil {
+						t.Errorf("fail to run count command: %v", err)
+					}
+					if r.N != tt.expectedNbDoc {
+						t.Errorf("expected %d docs but got %d", tt.expectedNbDoc, r.N)
+					}
+				}
+			} else {
+				if err == nil {
+					t.Errorf("expected an error for options %v", tt.options)
+				}
+				if !tt.errMsgRegex.MatchString(err.Error()) {
+					t.Errorf("error msg should match regex %v, but was %v", tt.errMsgRegex.String(), err)
+				}
+			}
+		})
+	}
 }
 
 func TestBulkInsertFail(t *testing.T) {
-	assert := require.New(t)
 
-	err := d.createCollection(&collections[0])
-	assert.Nil(err)
+	collections := parseConfig(t, "samples/bson_test.json")
 	collections[0].Count = 11000
 	collections[0].Content["_id"] = config.GeneratorJSON{
 		Type:     "constant",
 		ConstVal: 0,
 	}
 
-	err = d.fillCollection(&collections[0])
-	assert.NotNil(err)
-	assert.Regexp("^exception occurred during bulk insert.*\n  cause.*\n Try.*", err.Error())
+	datagen := newDatagen(session, currentVersion, defaultOpts, ioutil.Discard)
 
+	err := datagen.createCollection(&collections[0])
+	if err != nil {
+		t.Error(err)
+	}
+	err = datagen.fillCollection(&collections[0])
+	if err == nil {
+		t.Error("expected an error when creating the collection")
+	}
+	errMsgRegexp := regexp.MustCompile("^exception occurred during bulk insert.*\n  cause.*\n Try.*")
+	if !errMsgRegexp.MatchString(err.Error()) {
+		t.Errorf("error message should match %s but was %v", errMsgRegexp.String(), err)
+	}
 }
