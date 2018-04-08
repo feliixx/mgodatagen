@@ -43,7 +43,7 @@ go get -u "github.com/feliixx/mgodatagen"
 Several options are available (use `mgodatagen --help` to print this): 
 
 ```
-mgodatagen version 0.5.1
+mgodatagen version 0.6.0
 
 Usage:
   mgodatagen

@@ -1,6 +1,6 @@
-// A small CLI tool to quickly generate millions of pseudo-random BSON documents
+// Package datagen used to generate millions of pseudo-random BSON documents
 // and insert them into a Mongodb instance.
-package main
+package datagen
 
 import (
 	"context"
@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	version        = "0.5.1"
+	// Version is the current version of mgodatagen
+	Version        = "0.6.0"
 	defaultTimeout = 10 * time.Second
 )
 
@@ -572,16 +573,19 @@ type Options struct {
 	General    `group:"general"`
 }
 
-// Mgodatagen create a database according to specified options
-func Mgodatagen(options *Options) error {
+// Generate create a database according to specified options
+func Generate(out io.Writer, options *Options) error {
 	if options.Version {
-		fmt.Fprintf(os.Stdout, "mgodatagen version %s\n", version)
+		fmt.Fprintf(out, "mgodatagen version %s\n", Version)
 		return nil
 	}
-	return run(options)
+	if options.Quiet {
+		out = ioutil.Discard
+	}
+	return run(out, options)
 }
 
-func run(options *Options) error {
+func run(out io.Writer, options *Options) error {
 	if options.New != "" {
 		err := createEmptyCfgFile(options.New)
 		if err != nil {
@@ -594,10 +598,6 @@ func run(options *Options) error {
 	}
 	if options.BatchSize > 1000 || options.BatchSize <= 0 {
 		return fmt.Errorf("invalid value for -b | --batchsize: %v. BatchSize has to be between 1 and 1000", options.BatchSize)
-	}
-	var out io.Writer = os.Stderr
-	if options.Quiet {
-		out = ioutil.Discard
 	}
 	fmt.Fprintln(out, "Parsing configuration file...")
 	content, err := ioutil.ReadFile(options.ConfigFile)

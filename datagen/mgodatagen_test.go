@@ -1,4 +1,4 @@
-package main
+package datagen
 
 import (
 	"fmt"
@@ -222,7 +222,7 @@ func TestCreateEmptyFile(t *testing.T) {
 			New: filename,
 		},
 	}
-	err := run(options)
+	err := run(ioutil.Discard, options)
 	if err != nil {
 		t.Errorf("expected no error for creating empty file but got %v", err)
 	}
@@ -249,7 +249,7 @@ func TestCreateEmptyFile(t *testing.T) {
 func TestCollectionContent(t *testing.T) {
 
 	datagen := newDatagen(session, currentVersion, defaultOpts, ioutil.Discard)
-	collections := parseConfig(t, "samples/bson_test.json")
+	collections := parseConfig(t, "../samples/bson_test.json")
 	generateColl(t, datagen, &collections[0])
 
 	c := datagen.session.DB(collections[0].DB).C(collections[0].Name)
@@ -391,7 +391,7 @@ func TestCollectionContent(t *testing.T) {
 }
 
 func TestCollectionWithRef(t *testing.T) {
-	collections := parseConfig(t, "samples/config.json")
+	collections := parseConfig(t, "../samples/config.json")
 
 	// TODO : for some reason, the test fails if first collection has more documents
 	// than the second collection
@@ -435,7 +435,7 @@ func TestCollectionWithRef(t *testing.T) {
 }
 
 func TestCollectionContentWithAggregation(t *testing.T) {
-	collections := parseConfig(t, "samples/agg.json")
+	collections := parseConfig(t, "../samples/agg.json")
 
 	datagen := newDatagen(session, currentVersion, defaultOpts, ioutil.Discard)
 
@@ -482,7 +482,7 @@ func TestCollectionContentWithAggregation(t *testing.T) {
 
 func TestCreateCollection(t *testing.T) {
 
-	collections := parseConfig(t, "samples/bson_test.json")
+	collections := parseConfig(t, "../samples/bson_test.json")
 
 	createCollectionTests := []struct {
 		name         string
@@ -608,7 +608,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 
 	datagen := newDatagen(session, currentVersion, defaultOpts, ioutil.Discard)
 
-	collections := parseConfig(t, "samples/bson_test.json")
+	collections := parseConfig(t, "../samples/bson_test.json")
 
 	generateColl(t, datagen, &collections[0])
 
@@ -690,7 +690,7 @@ func TestRealRun(t *testing.T) {
 			options: Options{
 				Connection: defaultConnOpts,
 				Config: Config{
-					ConfigFile:      "samples/bson_test.json",
+					ConfigFile:      "../samples/bson_test.json",
 					NumInsertWorker: 1,
 					BatchSize:       1000,
 				},
@@ -705,7 +705,7 @@ func TestRealRun(t *testing.T) {
 			options: Options{
 				Connection: defaultConnOpts,
 				Config: Config{
-					ConfigFile:      "samples/bson_test.json",
+					ConfigFile:      "../samples/bson_test.json",
 					NumInsertWorker: 1,
 					BatchSize:       1000,
 					Append:          true,
@@ -721,7 +721,7 @@ func TestRealRun(t *testing.T) {
 			options: Options{
 				Connection: defaultConnOpts,
 				Config: Config{
-					ConfigFile:      "samples/bson_test.json",
+					ConfigFile:      "../samples/bson_test.json",
 					NumInsertWorker: 1,
 					BatchSize:       1000,
 					IndexOnly:       true,
@@ -751,7 +751,7 @@ func TestRealRun(t *testing.T) {
 			options: Options{
 				Connection: defaultConnOpts,
 				Config: Config{
-					ConfigFile:      "samples/agg.json",
+					ConfigFile:      "../samples/agg.json",
 					NumInsertWorker: 1,
 					BatchSize:       1001,
 				},
@@ -766,7 +766,7 @@ func TestRealRun(t *testing.T) {
 			options: Options{
 				Connection: defaultConnOpts,
 				Config: Config{
-					ConfigFile:      "samples/agg.json",
+					ConfigFile:      "../samples/agg.json",
 					NumInsertWorker: 1,
 					BatchSize:       1000,
 				},
@@ -785,7 +785,7 @@ func TestRealRun(t *testing.T) {
 	for _, tt := range realRunTests {
 		t.Run(tt.name, func(t *testing.T) {
 			generators.ClearRef()
-			err := Mgodatagen(&tt.options)
+			err := Generate(os.Stdout, &tt.options)
 			if tt.correct {
 				if err != nil {
 					t.Errorf("expected no error for options %v, but got %v", tt.options, err)
@@ -815,7 +815,7 @@ func TestRealRun(t *testing.T) {
 
 func TestBulkInsertFail(t *testing.T) {
 
-	collections := parseConfig(t, "samples/bson_test.json")
+	collections := parseConfig(t, "../samples/bson_test.json")
 	collections[0].Count = 11000
 	collections[0].Content["_id"] = config.GeneratorJSON{
 		Type:     "constant",
