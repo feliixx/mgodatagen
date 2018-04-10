@@ -76,7 +76,7 @@ func TestParseConfig(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no error for config %s: %v", tt.configBytes, err)
 				}
-				if len(c) != tt.nbColl {
+				if tt.nbColl != len(c) {
 					t.Errorf("expected %d coll but got %d", tt.nbColl, len(c))
 				}
 			} else {

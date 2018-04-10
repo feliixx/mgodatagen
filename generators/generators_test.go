@@ -90,38 +90,57 @@ func TestBigArray(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		if len(a.Key) != arrayGeneratorBig.Size {
+
+		if want, got := arrayGeneratorBig.Size, len(a.Key); want != got {
 			t.Errorf("wrong array size, expected %d, got %d", arrayGeneratorBig.Size, len(a.Key))
 		}
 	}
 }
 
 func TestGetLength(t *testing.T) {
-	emptyGenerator := NewEmptyGenerator("", 0, bson.ElementDocument, NewEncoder(4, 0))
-	l := emptyGenerator.getLength(5, 5)
-	if l != uint32(5) {
-		t.Errorf("got wrong length, expected %d, got %d", uint32(5), l)
+
+	lengthTests := []struct {
+		min uint32
+		max uint32
+	}{
+		{5, 5},
+		{5, 10},
 	}
-	l = emptyGenerator.getLength(5, 10)
-	if l > 10 || l < 5 {
-		t.Errorf("length should be >= 5 and <= 10, but was %d", l)
+
+	e := NewEmptyGenerator("", 0, bson.ElementDocument, NewEncoder(4, 0))
+
+	for _, tt := range lengthTests {
+		if got := e.getLength(tt.min, tt.max); got < tt.min || got > tt.max {
+			t.Errorf("length should be >= %d and <= %d, but was %d", tt.min, tt.max, got)
+		}
 	}
 }
 
 func TestGetUniqueArray(t *testing.T) {
-	u := &uniqueGenerator{
-		CurrentIndex: 0,
+
+	uniqueTests := []struct {
+		docCount   int
+		stringSize int
+		correct    bool
+		length     int
+	}{
+		{1000, 1, false, 0},
+		{1000, 3, true, 1000},
 	}
-	err := u.getUniqueArray(1000, 1)
-	if err == nil {
-		t.Error("getUniqueArray should fail because stringsize to low")
-	}
-	err = u.getUniqueArray(1000, 3)
-	if err != nil {
-		t.Error(err.Error())
-	}
-	if len(u.Values) != 1000 {
-		t.Errorf("expected %d values but got %d", 1000, len(u.Values))
+
+	for _, tt := range uniqueTests {
+		u := &uniqueGenerator{}
+		err := u.getUniqueArray(tt.docCount, tt.stringSize)
+		if tt.correct {
+			if err != nil {
+				t.Errorf("expected no error but got %v", err)
+			}
+			if want, got := tt.length, len(u.Values); want != got {
+				t.Errorf("expected %d values but got %d", want, got)
+			}
+		} else if err == nil {
+			t.Errorf("expected an error but got none for params %d, %d", tt.docCount, tt.stringSize)
+		}
 	}
 }
 
@@ -633,22 +652,22 @@ func TestNewAggregatorFromMap(t *testing.T) {
 		} else if !tt.correct && err == nil {
 			t.Errorf("expected an error for config %v but got none", tt.config)
 		}
-		if len(aggs) != tt.aggregatorNb {
-			t.Errorf("for config %v, expected %d agg but got %d", tt.config, tt.aggregatorNb, len(aggs))
+
+		if want, got := tt.aggregatorNb, len(aggs); want != got {
+			t.Errorf("for config %v, expected %d agg but got %d", tt.config, want, got)
 		}
 	}
 }
 
 func TestClearMap(t *testing.T) {
-	l := len(mapRef)
-	if l > 0 {
-		ClearRef()
+
+	ClearRef()
+
+	if want, got := 0, len(mapRef); want != got {
+		t.Errorf("wrong mapRef length, expected %d, got %d", want, got)
 	}
-	if len(mapRef) != 0 {
-		t.Errorf("wrong mapRef length, expected 0, got %d", len(mapRef))
-	}
-	if len(mapRefType) != 0 {
-		t.Errorf("wrong mapRefType length, expected 0, got %d", len(mapRefType))
+	if want, got := 0, len(mapRefType); want != got {
+		t.Errorf("wrong mapRefType length, expected %d, got %d", want, got)
 	}
 }
 
@@ -665,9 +684,8 @@ func TestVersionAtLeast(t *testing.T) {
 
 	for _, tt := range versionTests {
 		ci := NewCollInfo(1, false, tt.actualVersion, defaultSeed)
-		r := ci.versionAtLeast(tt.atLeastVersion...)
-		if r != tt.response {
-			t.Errorf("got %v, expected %v for test %v", r, tt.response, tt.actualVersion)
+		if want, got := tt.response, ci.versionAtLeast(tt.atLeastVersion...); want != got {
+			t.Errorf("for version %v with versionAtLeast %v, expected %v but got %v", tt.actualVersion, tt.atLeastVersion, want, got)
 		}
 	}
 }

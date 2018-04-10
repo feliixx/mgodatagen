@@ -41,72 +41,6 @@ var (
 	}
 )
 
-type expectedDoc struct {
-	ID         bson.ObjectId `bson:"_id"`
-	Name       string        `bson:"name"`
-	C32        int32         `bson:"c32"`
-	C64        int64         `bson:"c64"`
-	Float      float64       `bson:"float"`
-	Verified   bool          `bson:"verified"`
-	Position   []float64     `bson:"position"`
-	Dt         string        `bson:"dt"`
-	Afa        []string      `bson:"afa"`
-	Ac         []string      `bson:"ac"`
-	Fake       string        `bson:"faker"`
-	Cst        int32         `bson:"cst"`
-	Nb         int64         `bson:"nb"`
-	Nnb        int32         `bson:"nnb"`
-	Date       time.Time     `bson:"date"`
-	BinaryData []byte        `bson:"binaryData"`
-	List       []int32       `bson:"list"`
-	Object     struct {
-		K1    string `bson:"k1"`
-		K2    int32  `bson:"k2"`
-		Subob struct {
-			Sk int32 `bson:"s-k"`
-		} `bson:"sub-ob"`
-	} `bson:"object"`
-}
-
-type distinctResult struct {
-	Values []interface{} `bson:"values"`
-}
-
-func distinct(t *testing.T, dbName, collName, keyName string, result distinctResult) int {
-	err := session.DB(dbName).Run(bson.D{
-		{Name: "distinct", Value: collName},
-		{Name: "key", Value: keyName},
-	}, &result)
-	if err != nil {
-		t.Error(err)
-	}
-	return len(result.Values)
-}
-
-func parseConfig(t *testing.T, fileName string) []config.Collection {
-	generators.ClearRef()
-	content, err := ioutil.ReadFile(fileName)
-	if err != nil {
-		t.Error(err)
-	}
-	c, err := config.ParseConfig(content, false)
-	if err != nil {
-		t.Error(err)
-	}
-	return c
-}
-
-func generateColl(t *testing.T, d *datagen, c *config.Collection) {
-	err := d.createCollection(c)
-	if err != nil {
-		t.Error(err)
-	}
-	err = d.fillCollection(c)
-	if err != nil {
-		t.Error(err)
-	}
-}
-
 func TestMain(m *testing.M) {
 	s, v, err := connectToDB(&defaultConnOpts, ioutil.Discard)
 	if err != nil {
@@ -132,16 +66,16 @@ func TestHandleCommandError(t *testing.T) {
 		Ok: true,
 	}
 	err := handleCommandError("fail", fmt.Errorf("some reason"), &r)
-	if err.Error() != "fail\n  cause: some reason" {
-		t.Errorf("handleCommand error returned incorrect message: %s", err.Error())
+	if want, got := "fail\n  cause: some reason", err.Error(); want != got {
+		t.Errorf("handleCommand error returned incorrect message: expected %s, got %s", want, got)
 	}
 	r = result{
 		Ok:     false,
 		ErrMsg: "errmsg",
 	}
 	err = handleCommandError("fail", fmt.Errorf("some reason"), &r)
-	if err.Error() != "fail\n  cause: errmsg" {
-		t.Errorf("handleCommand error returned incorrect message: %s", err.Error())
+	if want, got := "fail\n  cause: errmsg", err.Error(); want != got {
+		t.Errorf("handleCommand error returned incorrect message: expected %s, got %s", want, got)
 	}
 }
 
@@ -206,8 +140,8 @@ func TestConnectToDb(t *testing.T) {
 					t.Errorf("error should match regex %s but was %v", tt.errMsgRegex.String(), err)
 				}
 			}
-			if len(v) != tt.versionLen {
-				t.Errorf("expected len(v) == %d, but got %d", tt.versionLen, len(v))
+			if want, got := tt.versionLen, len(v); want != got {
+				t.Errorf("expected len(v) == %d, but got %d", want, got)
 			}
 		})
 	}
@@ -228,7 +162,12 @@ func TestCreateEmptyFile(t *testing.T) {
 	}
 	defer os.Remove(filename)
 
-	expected := `[{
+	content, err := ioutil.ReadFile(filename)
+	if err != nil {
+		t.Error(err)
+	}
+
+	want := `[{
 "database": "dbName",
 "collection": "collectionName",
 "count": 1000,
@@ -237,12 +176,8 @@ func TestCreateEmptyFile(t *testing.T) {
   }
 }]
 `
-	content, err := ioutil.ReadFile(filename)
-	if err != nil {
-		t.Error(err)
-	}
-	if expected != string(content) {
-		t.Errorf("expected %s\nbut got\n%s", expected, content)
+	if got := string(content); want != got {
+		t.Errorf("expected \n%s\nbut got\n%s", want, got)
 	}
 }
 
@@ -257,11 +192,36 @@ func TestCollectionContent(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if docCount != int(collections[0].Count) {
-		t.Errorf("expected %d documents but got %d", docCount, int(collections[0].Count))
+	if want, got := int(collections[0].Count), docCount; want != got {
+		t.Errorf("expected %d documents but got %d", want, got)
 	}
 
-	var results []expectedDoc
+	var results []struct {
+		ID         bson.ObjectId `bson:"_id"`
+		Name       string        `bson:"name"`
+		C32        int32         `bson:"c32"`
+		C64        int64         `bson:"c64"`
+		Float      float64       `bson:"float"`
+		Verified   bool          `bson:"verified"`
+		Position   []float64     `bson:"position"`
+		Dt         string        `bson:"dt"`
+		Afa        []string      `bson:"afa"`
+		Ac         []string      `bson:"ac"`
+		Fake       string        `bson:"faker"`
+		Cst        int32         `bson:"cst"`
+		Nb         int64         `bson:"nb"`
+		Nnb        int32         `bson:"nnb"`
+		Date       time.Time     `bson:"date"`
+		BinaryData []byte        `bson:"binaryData"`
+		List       []int32       `bson:"list"`
+		Object     struct {
+			K1    string `bson:"k1"`
+			K2    int32  `bson:"k2"`
+			Subob struct {
+				Sk int32 `bson:"s-k"`
+			} `bson:"sub-ob"`
+		} `bson:"object"`
+	}
 	err = c.Find(nil).All(&results)
 	if err != nil {
 		t.Error(err)
@@ -661,8 +621,8 @@ func TestCollectionWithIndexes(t *testing.T) {
 			}
 			for i := range tt.indexes {
 				// idx[0] is index on '_id' field
-				if tt.indexes[i].Name != idx[i+1].Name {
-					t.Errorf("index does not match: expected %s, got %s", tt.indexes[i].Name, idx[i].Name)
+				if want, got := tt.indexes[i].Name, idx[i+1].Name; want != got {
+					t.Errorf("index does not match: expected %s, got %s", want, got)
 				}
 			}
 		} else {
@@ -835,5 +795,44 @@ func TestBulkInsertFail(t *testing.T) {
 	errMsgRegexp := regexp.MustCompile("^exception occurred during bulk insert.*\n  cause.*\n Try.*")
 	if !errMsgRegexp.MatchString(err.Error()) {
 		t.Errorf("error message should match %s but was %v", errMsgRegexp.String(), err)
+	}
+}
+
+type distinctResult struct {
+	Values []interface{} `bson:"values"`
+}
+
+func distinct(t *testing.T, dbName, collName, keyName string, result distinctResult) int {
+	err := session.DB(dbName).Run(bson.D{
+		{Name: "distinct", Value: collName},
+		{Name: "key", Value: keyName},
+	}, &result)
+	if err != nil {
+		t.Error(err)
+	}
+	return len(result.Values)
+}
+
+func parseConfig(t *testing.T, fileName string) []config.Collection {
+	generators.ClearRef()
+	content, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		t.Error(err)
+	}
+	c, err := config.ParseConfig(content, false)
+	if err != nil {
+		t.Error(err)
+	}
+	return c
+}
+
+func generateColl(t *testing.T, d *datagen, c *config.Collection) {
+	err := d.createCollection(c)
+	if err != nil {
+		t.Error(err)
+	}
+	err = d.fillCollection(c)
+	if err != nil {
+		t.Error(err)
 	}
 }
