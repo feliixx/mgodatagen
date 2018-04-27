@@ -1,14 +1,16 @@
-package config
+package datagen_test
 
 import (
 	"io/ioutil"
 	"regexp"
 	"testing"
+
+	"github.com/feliixx/mgodatagen/datagen"
 )
 
 func TestParseConfig(t *testing.T) {
 
-	b, err := ioutil.ReadFile("../samples/config.json")
+	b, err := ioutil.ReadFile("generators/testdata/ref.json")
 	if err != nil {
 		t.Error(err)
 	}
@@ -18,15 +20,15 @@ func TestParseConfig(t *testing.T) {
 		configBytes     []byte
 		ignoreMissingDB bool
 		correct         bool
-		errMsgRegexp    *regexp.Regexp
+		errMsgRegex     *regexp.Regexp
 		nbColl          int
 	}{
 		{
-			name:            "samples/config.json",
+			name:            "ref.json",
 			configBytes:     b,
 			ignoreMissingDB: false,
 			correct:         true,
-			errMsgRegexp:    nil,
+			errMsgRegex:     nil,
 			nbColl:          2,
 		},
 		{
@@ -39,7 +41,7 @@ func TestParseConfig(t *testing.T) {
 				}]`),
 			ignoreMissingDB: false,
 			correct:         false,
-			errMsgRegexp:    regexp.MustCompile("^Error in configuration file: object / array / Date badly formatted: \n\n\t\t.*"),
+			errMsgRegex:     regexp.MustCompile("^Error in configuration file: object / array / Date badly formatted: \n\n\t\t.*"),
 			nbColl:          0,
 		},
 		{
@@ -51,7 +53,7 @@ func TestParseConfig(t *testing.T) {
 				}]`),
 			ignoreMissingDB: false,
 			correct:         false,
-			errMsgRegexp:    regexp.MustCompile("^Error in configuration file: \n\t'collection' and 'database' fields can't be empty.*"),
+			errMsgRegex:     regexp.MustCompile("^Error in configuration file: \n\t'collection' and 'database' fields can't be empty.*"),
 			nbColl:          0,
 		},
 		{
@@ -64,14 +66,14 @@ func TestParseConfig(t *testing.T) {
 				}]`),
 			ignoreMissingDB: false,
 			correct:         false,
-			errMsgRegexp:    regexp.MustCompile("^Error in configuration file: \n\tfor collection.*"),
+			errMsgRegex:     regexp.MustCompile("^Error in configuration file: \n\tfor collection.*"),
 			nbColl:          0,
 		},
 	}
 
 	for _, tt := range configTests {
 		t.Run(tt.name, func(t *testing.T) {
-			c, err := ParseConfig(tt.configBytes, tt.ignoreMissingDB)
+			c, err := datagen.ParseConfig(tt.configBytes, tt.ignoreMissingDB)
 			if tt.correct {
 				if err != nil {
 					t.Errorf("expected no error for config %s: %v", tt.configBytes, err)
@@ -83,8 +85,8 @@ func TestParseConfig(t *testing.T) {
 				if err == nil {
 					t.Errorf("expected an error for config %s", tt.configBytes)
 				}
-				if !tt.errMsgRegexp.MatchString(err.Error()) {
-					t.Errorf("error message should match %s, but was %v", tt.errMsgRegexp.String(), err)
+				if !tt.errMsgRegex.MatchString(err.Error()) {
+					t.Errorf("error message should match %s, but was %v", tt.errMsgRegex.String(), err)
 				}
 			}
 		})

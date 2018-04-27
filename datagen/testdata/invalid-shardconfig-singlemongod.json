@@ -1,0 +1,14 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "invalid-shardconfig-singlemongod",
+        "count": 1,
+        "shardConfig": {
+            "shardCollection": "datagen_it_test.invalid-shardconfig-singlemongod",
+            "key": {
+                "_id": 1
+            }
+        },
+        "content": {}
+    }
+]

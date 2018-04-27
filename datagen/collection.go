@@ -1,12 +1,13 @@
-package config
+package datagen
 
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+
+	"github.com/feliixx/mgodatagen/datagen/generators"
 )
 
 // Collection struct storing global collection info
@@ -18,7 +19,7 @@ type Collection struct {
 	// Number of documents to insert in the collection
 	Count int `json:"count"`
 	// Schema of the documents for this collection
-	Content map[string]GeneratorJSON `json:"content"`
+	Content map[string]generators.Config `json:"content"`
 	// Compression level for a collection. Available for `WiredTiger` only.
 	// can be none|snappy|zlib. Default is "snappy"
 	CompressionLevel string `json:"compressionLevel"`
@@ -56,71 +57,6 @@ type ShardingConfig struct {
 	unique           bool           `bson:"unique"`
 	NumInitialChunks int            `bson:"numInitialChunks,omitempty"`
 	Collation        *mgo.Collation `bson:"collation,omitempty"`
-}
-
-// GeneratorJSON struct containing all possible options
-type GeneratorJSON struct {
-	// Type of object to genereate.
-	Type string `json:"type"`
-	// Percentage of documents that won't contains this field
-	NullPercentage int `json:"nullPercentage"`
-	// Maximum number of distinct value for this field
-	MaxDistinctValue int `json:"maxDistinctValue"`
-	// For `string` type only. If set to 'true', string will be unique
-	Unique bool `json:"unique"`
-	// For `string` and `binary` type only. Specify the Min length of the object to generate
-	MinLength int `json:"MinLength"`
-	// For `string` and `binary` type only. Specify the Max length of the object to generate
-	MaxLength int `json:"MaxLength"`
-	// For `int` type only. Lower bound for the int32 to generate
-	MinInt32 int32 `json:"MinInt"`
-	// For `int` type only. Higher bound for the int32 to generate
-	MaxInt32 int32 `json:"MaxInt"`
-	// For `long` type only. Lower bound for the int64 to generate
-	MinInt64 int64 `json:"MinLong"`
-	// For `long` type only. Higher bound for the int64 to generate
-	MaxInt64 int64 `json:"MaxLong"`
-	// For `double` type only. Lower bound for the float64 to generate
-	MinFloat64 float64 `json:"MinDouble"`
-	// For `double` type only. Higher bound for the float64 to generate
-	MaxFloat64 float64 `json:"MaxDouble"`
-	// For `array` only. Size of the array
-	Size int `json:"size"`
-	// For `array` only. GeneratorJSON to fill the array. Need to
-	// pass a pointer here to avoid 'invalid recursive type' error
-	ArrayContent *GeneratorJSON `json:"arrayContent"`
-	// For `object` only. List of GeneratorJSON to generate the content
-	// of the object
-	ObjectContent map[string]GeneratorJSON `json:"objectContent"`
-	// For `fromArray` only. If specified, the generator pick one of the item of the array
-	In []interface{} `json:"in"`
-	// For `date` only. Lower bound for the date to generate
-	StartDate time.Time `json:"StartDate"`
-	// For `date` only. Higher bound for the date to generate
-	EndDate time.Time `json:"endDate"`
-	// For `constant` type only. Value of the constant field
-	ConstVal interface{} `json:"constVal"`
-	// For `autoincrement` type only. Start value
-	Start32 int32 `json:"startInt"`
-	// For `autoincrement` type only. Start value
-	Start64 int64 `json:"startLong"`
-	// For `autoincrement` type only. Type of the field, can be int | long
-	AutoType string `json:"autoType"`
-	// For `faker` type only. Method to use
-	Method string `json:"method"`
-	// For `ref` type only. Used to retrieve the array storing the value
-	// for this field
-	ID int `json:"id"`
-	// For `ref` type only. generator for the field
-	RefContent *GeneratorJSON `json:"refContent"`
-	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
-	Collection string `json:"collection"`
-	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
-	Database string `json:"database"`
-	// For `boundAggregator` and `valueAggregator` only
-	Field string `json:"field"`
-	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
-	Query bson.M `json:"query"`
 }
 
 // ParseConfig returns a list of Collection to create from a

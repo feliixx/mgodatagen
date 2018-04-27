@@ -1,0 +1,13 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "invalid_content",
+        "count": 11000,
+        "content": {
+            "_id": {
+                "type": "constant",
+                "value": 0
+            }
+        }
+    }
+]

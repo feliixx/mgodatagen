@@ -20,14 +20,7 @@ import (
 	"github.com/globalsign/mgo/bson"
 	"gopkg.in/cheggaaa/pb.v2"
 
-	"github.com/feliixx/mgodatagen/config"
-	"github.com/feliixx/mgodatagen/generators"
-)
-
-const (
-	// Version is the current version of mgodatagen
-	Version        = "0.6.0"
-	defaultTimeout = 10 * time.Second
+	"github.com/feliixx/mgodatagen/datagen/generators"
 )
 
 type result struct {
@@ -43,7 +36,7 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 	if conn.UserName != "" && conn.Password != "" {
 		url += conn.UserName + ":" + conn.Password + "@"
 	}
-	session, err := mgo.DialWithTimeout(url+conn.Host+":"+conn.Port, conn.timeout)
+	session, err := mgo.DialWithTimeout(url+conn.Host+":"+conn.Port, conn.Timeout)
 	if err != nil {
 		return nil, nil, fmt.Errorf("connection failed\n  cause: %v", err)
 	}
@@ -71,8 +64,33 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 	return session, versionInt, nil
 }
 
+type dtg struct {
+	out     io.Writer
+	session *mgo.Session
+	version []int
+	Options
+}
+
+func (d *dtg) generate(v *Collection) error {
+	err := d.createCollection(v)
+	if err != nil {
+		return err
+	}
+	if !d.IndexOnly {
+		err = d.fillCollection(v)
+		if err != nil {
+			return err
+		}
+	}
+	err = d.ensureIndex(v)
+	if err != nil {
+		return err
+	}
+	return d.printCollStats(v)
+}
+
 // create a collection with specific options
-func (d *datagen) createCollection(coll *config.Collection) error {
+func (d *dtg) createCollection(coll *Collection) error {
 	c := d.session.DB(coll.DB).C(coll.Name)
 
 	if d.Append || d.IndexOnly {
@@ -100,13 +118,13 @@ func (d *datagen) createCollection(coll *config.Collection) error {
 		// index to shard the collection
 		// if shard key is '_id', no need to rebuild the index
 		if coll.ShardConfig.Key["_id"] == 1 {
-			index := config.Index{
+			index := Index{
 				Name: "shardKey",
 				Key:  coll.ShardConfig.Key,
 			}
 			err := c.Database.Run(bson.D{
 				{Name: "createIndexes", Value: c.Name},
-				{Name: "indexes", Value: [1]config.Index{index}},
+				{Name: "indexes", Value: [1]Index{index}},
 			}, &r)
 			if err != nil || !r.Ok {
 				return handleCommandError(fmt.Sprintf("couldn't create shard key with index config %v", index.Key), err, &r)
@@ -142,12 +160,12 @@ var pool = sync.Pool{
 	},
 }
 
-func (d *datagen) fillCollection(coll *config.Collection) error {
+func (d *dtg) fillCollection(coll *Collection) error {
 
 	seed := uint64(time.Now().Unix())
 	ci := generators.NewCollInfo(coll.Count, d.ShortName, d.version, seed)
 
-	generator, err := ci.DocumentGenerator(coll.Content)
+	docGenerator, err := ci.DocumentGenerator(coll.Content)
 	if err != nil {
 		return err
 	}
@@ -229,15 +247,17 @@ Loop:
 			rc.nbToInsert = int(coll.Count - count)
 		}
 		for i := 0; i < rc.nbToInsert; i++ {
-			generator.Value()
-			if len(rc.documents[i].Data) < len(ci.Encoder.Data) {
-				for j := len(rc.documents[i].Data); j < len(ci.Encoder.Data); j++ {
+			docGenerator.Value()
+			l := ci.Encoder.Len()
+			// if documents[i] is not large enough, grow it manually
+			if len(rc.documents[i].Data) < l {
+				for j := len(rc.documents[i].Data); j < l; j++ {
 					rc.documents[i].Data = append(rc.documents[i].Data, byte(0))
 				}
 			} else {
-				rc.documents[i].Data = rc.documents[i].Data[0:len(ci.Encoder.Data)]
+				rc.documents[i].Data = rc.documents[i].Data[:l]
 			}
-			copy(rc.documents[i].Data, ci.Encoder.Data)
+			copy(rc.documents[i].Data, ci.Encoder.Bytes())
 		}
 		count += rc.nbToInsert
 		bar.Add(rc.nbToInsert)
@@ -260,14 +280,14 @@ Loop:
 }
 
 // Update documents with pre-computed aggregations
-func (d *datagen) updateWithAggregators(coll *config.Collection) error {
+func (d *dtg) updateWithAggregators(coll *Collection) error {
 
 	ci := generators.NewCollInfo(coll.Count, d.ShortName, d.version, 0)
-	aggArr, err := ci.DocumentAggregator(coll.Content)
+	aggregators, err := ci.DocumentAggregator(coll.Content)
 	if err != nil {
 		return err
 	}
-	if len(aggArr) == 0 {
+	if len(aggregators) == 0 {
 		return nil
 	}
 	fmt.Fprintf(d.out, "Generating aggregated data for collection %v\n", coll.Name)
@@ -280,9 +300,9 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 	tasks := make(chan [2]bson.M, d.BatchSize)
 	errs := make(chan error)
 
+	// run updates in a new goroutine
 	var wg sync.WaitGroup
 	wg.Add(1)
-
 	go func() {
 		defer wg.Done()
 		s := d.session.Copy()
@@ -314,105 +334,47 @@ func (d *datagen) updateWithAggregators(coll *config.Collection) error {
 	}()
 
 	c := d.session.DB(coll.DB).C(coll.Name)
-	for _, agg := range aggArr {
+	var aggregationError error
 
-		select {
-		case err := <-errs:
-			close(tasks)
-			return err
-		default:
-		}
+Loop:
+	for _, aggregator := range aggregators {
 
-		localVar := "_id"
-		localKey := "_id"
-		for k, v := range agg.Query {
-			vStr := fmt.Sprintf("%v", v)
-			if len(vStr) >= 2 && vStr[:2] == "$$" {
-				localVar = vStr[2:]
-				localKey = k
-			}
-		}
-
+		localVar := aggregator.LocalVar()
 		var result struct {
 			Values []interface{} `bson:"values"`
 		}
-		err := c.Database.Run(bson.D{
+		err = c.Database.Run(bson.D{
 			{Name: "distinct", Value: c.Name},
 			{Name: "key", Value: localVar},
 		}, &result)
 		if err != nil {
-			return fmt.Errorf("fail to get distinct values for local field %v: %v", localVar, err)
+			aggregationError = fmt.Errorf("fail to get distinct values for local field %v: %v", localVar, err)
+			break Loop
 		}
-
-		switch agg.Mode {
-		case generators.CountAggregator:
-			var r struct {
-				N int32 `bson:"n"`
+		for _, value := range result.Values {
+			select {
+			case err := <-errs:
+				aggregationError = err
+				break Loop
+			default:
 			}
-			for _, v := range result.Values {
-				command := bson.D{{Name: "count", Value: agg.Collection}}
-				if agg.Query != nil {
-					agg.Query[localKey] = v
-					command = append(command, bson.DocElem{Name: "query", Value: agg.Query})
-				}
 
-				err := c.Database.Session.DB(agg.Database).Run(command, &r)
-				if err != nil {
-					return fmt.Errorf("couldn't count documents for key%v: %v", agg.K, err)
-				}
-				tasks <- [2]bson.M{{localVar: v}, {"$set": bson.M{agg.K: r.N}}}
+			update, err := aggregator.Update(d.session, value)
+			if err != nil {
+				aggregationError = err
+				break Loop
 			}
-		case generators.ValueAggregator:
-			for _, v := range result.Values {
-				agg.Query[localKey] = v
-
-				err = c.Database.Session.DB(agg.Database).Run(bson.D{
-					{Name: "distinct", Value: agg.Collection},
-					{Name: "key", Value: agg.Field},
-					{Name: "query", Value: agg.Query}}, &result)
-
-				if err != nil {
-					return fmt.Errorf("aggregation failed (distinct values) for field %v: %v", agg.K, err)
-				}
-				tasks <- [2]bson.M{{localVar: v}, {"$set": bson.M{agg.K: result.Values}}}
-			}
-		case generators.BoundAggregator:
-			res := bson.M{}
-			for _, v := range result.Values {
-				agg.Query[localKey] = v
-				agg.Query[agg.Field] = bson.M{"$ne": nil}
-				bound := bson.M{}
-
-				pipeline := []bson.M{{"$match": agg.Query},
-					{"$sort": bson.M{agg.Field: 1}},
-					{"$limit": 1},
-					{"$project": bson.M{"min": "$" + agg.Field}}}
-				err = c.Database.C(agg.Collection).Pipe(pipeline).One(&res)
-				if err != nil {
-					return fmt.Errorf("aggregation failed (lower bound) for field %v: %v", agg.K, err)
-				}
-				bound["m"] = res["min"]
-				pipeline = []bson.M{{"$match": agg.Query},
-					{"$sort": bson.M{agg.Field: -1}},
-					{"$limit": 1},
-					{"$project": bson.M{"max": "$" + agg.Field}}}
-				err = c.Database.C(agg.Collection).Pipe(pipeline).One(&res)
-				if err != nil {
-					return fmt.Errorf("aggregation failed (higher bound) for field %v: %v", agg.K, err)
-				}
-				bound["M"] = res["max"]
-				tasks <- [2]bson.M{{localVar: v}, {"$set": bson.M{agg.K: bound}}}
-			}
+			tasks <- update
 		}
-		bar.Add(int(coll.Count) / len(aggArr))
+		bar.Add(int(coll.Count) / len(aggregators))
 	}
 	close(tasks)
 	wg.Wait()
-	return nil
+	return aggregationError
 }
 
 // create index on generated collections
-func (d *datagen) ensureIndex(coll *config.Collection) error {
+func (d *dtg) ensureIndex(coll *Collection) error {
 	if len(coll.Indexes) == 0 {
 		fmt.Fprintf(d.out, "No index to build for collection %s\n\n", coll.Name)
 		return nil
@@ -439,7 +401,7 @@ func (d *datagen) ensureIndex(coll *config.Collection) error {
 	return nil
 }
 
-func (d *datagen) printCollStats(coll *config.Collection) error {
+func (d *dtg) printCollStats(coll *Collection) error {
 	c := d.session.DB(coll.DB).C(coll.Name)
 	stats := struct {
 		Count      int64  `bson:"count"`
@@ -500,40 +462,6 @@ func handleCommandError(msg string, err error, r *result) error {
 	return fmt.Errorf("%s\n  cause: %s", msg, m)
 }
 
-type datagen struct {
-	out     io.Writer
-	session *mgo.Session
-	version []int
-	Options
-}
-
-func newDatagen(session *mgo.Session, version []int, options Options, out io.Writer) *datagen {
-	return &datagen{
-		out:     out,
-		session: session,
-		version: version,
-		Options: options,
-	}
-}
-
-func (d *datagen) generate(v *config.Collection) error {
-	err := d.createCollection(v)
-	if err != nil {
-		return err
-	}
-	if !d.IndexOnly {
-		err = d.fillCollection(v)
-		if err != nil {
-			return err
-		}
-	}
-	err = d.ensureIndex(v)
-	if err != nil {
-		return err
-	}
-	return d.printCollStats(v)
-}
-
 // General struct that stores global options from command line args
 type General struct {
 	Help    bool `long:"help" description:"show this help message"`
@@ -547,11 +475,11 @@ type Connection struct {
 	Port     string `long:"port" value-name:"<port>" description:"server port" default:"27017"`
 	UserName string `short:"u" long:"username" value-name:"<username>" description:"username for authentification"`
 	Password string `short:"p" long:"password" value-name:"<password>" description:"password for authentification"`
-	timeout  time.Duration
+	Timeout  time.Duration
 }
 
-// Config struct that stores info on config file from command line args
-type Config struct {
+// Configuration struct that stores info on config file from command line args
+type Configuration struct {
 	ConfigFile      string `short:"f" long:"file" value-name:"<configfile>" description:"JSON config file. This field is required"`
 	IndexOnly       bool   `short:"i" long:"indexonly" description:"if present, mgodatagen will just try to rebuild index"`
 	ShortName       bool   `short:"s" long:"shortname" description:"if present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
@@ -567,25 +495,31 @@ type Template struct {
 
 // Options struct to store flags from CLI
 type Options struct {
-	Template   `group:"template"`
-	Config     `group:"configuration"`
-	Connection `group:"connection infos"`
-	General    `group:"general"`
+	Template      `group:"template"`
+	Configuration `group:"configuration"`
+	Connection    `group:"connection infos"`
+	General       `group:"general"`
 }
 
-// Generate create a database according to specified options
-func Generate(out io.Writer, options *Options) error {
-	if options.Version {
-		fmt.Fprintf(out, "mgodatagen version %s\n", Version)
-		return nil
-	}
+const (
+	mgodatagenVersion = "0.7.0"
+	defaultTimeout    = 10 * time.Second
+)
+
+// Generate create a database according to specified options. Progress informations
+// are send to out
+func Generate(options *Options, out io.Writer) error {
+	return run(options, out)
+}
+
+func run(options *Options, out io.Writer) error {
 	if options.Quiet {
 		out = ioutil.Discard
 	}
-	return run(out, options)
-}
-
-func run(out io.Writer, options *Options) error {
+	if options.Version {
+		fmt.Fprintf(out, "mgodatagen version %s\n", mgodatagenVersion)
+		return nil
+	}
 	if options.New != "" {
 		err := createEmptyCfgFile(options.New)
 		if err != nil {
@@ -604,21 +538,28 @@ func run(out io.Writer, options *Options) error {
 	if err != nil {
 		return fmt.Errorf("File error: %v", err)
 	}
-	collectionList, err := config.ParseConfig(content, false)
+	collectionList, err := ParseConfig(content, false)
 	if err != nil {
 		return err
 	}
-	options.Connection.timeout = defaultTimeout
+	if options.Connection.Timeout == 0 {
+		options.Connection.Timeout = defaultTimeout
+	}
 	session, version, err := connectToDB(&options.Connection, out)
 	if err != nil {
 		return err
 	}
 	defer session.Close()
 
-	datagen := newDatagen(session, version, *options, out)
+	dtg := &dtg{
+		out:     out,
+		session: session,
+		version: version,
+		Options: *options,
+	}
 
 	for _, v := range collectionList {
-		err = datagen.generate(&v)
+		err = dtg.generate(&v)
 		if err != nil {
 			return err
 		}

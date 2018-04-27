@@ -43,8 +43,6 @@ go get -u "github.com/feliixx/mgodatagen"
 Several options are available (use `mgodatagen --help` to print this): 
 
 ```
-mgodatagen version 0.6.0
-
 Usage:
   mgodatagen
 
@@ -179,15 +177,15 @@ See **MongodB documentation** for details on parameters:
 
 ### Example
 
-A set of sample config files can be found in the **samples** directory. To use it, 
+A set of sample config files can be found in **datagen/testdata/**. To use it, 
 make sure that you have a mongodb instance running (on 127.0.0.1:27017 for example)
 and run 
 
 ```
-./mgodatagen -f samples/config.json
+./mgodatagen -f datagen/testdata/ref.json
 ```
 
-This will insert 1000000 random documents in collections `test` and `link` of database 
+This will insert 1000 random documents in collections `test` and `link` of database 
 `datagen_it_test` with the structure defined in the config file. 
 
 

@@ -1,0 +1,22 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "invalid-index",
+        "count": 1,
+        "content": {},
+        "indexes": [
+            {
+                "name": "idx_1",
+                "key": {
+                    "c32": 1
+                }
+            },
+            {
+                "name": "idx_2",
+                "key": {
+                    "invalid": "invalid"
+                }
+            }
+        ]
+    }
+]

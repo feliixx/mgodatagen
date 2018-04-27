@@ -6,7 +6,6 @@
 mgodatagen
 build/
 scripts/
-samples/test.json
 # Test binary, build with `go test -c`
 *.test
 ROADMAP.md

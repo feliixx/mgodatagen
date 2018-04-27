@@ -1,0 +1,9 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "zlib",
+        "compressionLevel": "zlib",
+        "count": 1,
+        "content": {}
+    }
+]
