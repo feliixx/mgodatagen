@@ -1,0 +1,73 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "test",
+        "count": 10000,
+        "content": {
+            "link": {
+                "type": "int",
+                "minInt": 0,
+                "maxInt": 5
+            },
+            "field": {
+                "type": "fromArray",
+                "nullPercentage": 40,
+                "in": [
+                    "a",
+                    "b",
+                    "c",
+                    "d",
+                    "e",
+                    "f",
+                    "g",
+                    "h",
+                    "i"
+                ]
+            },
+            "field1": {
+                "type": "int",
+                "nullPercentage": 10,
+                "minInt": 0,
+                "maxInt": 10000
+            }
+        }
+    },
+    {
+        "database": "datagen_it_test",
+        "collection": "agg",
+        "count": 6,
+        "content": {
+            "_id": {
+                "type": "autoincrement",
+                "autoType": "int",
+                "startInt": 0
+            },
+            "AG-FI": {
+                "type": "countAggregator",
+                "collection": "test",
+                "database": "datagen_it_test",
+                "query": {
+                    "link": "$$_id"
+                }
+            },
+            "AG-CI": {
+                "type": "boundAggregator",
+                "collection": "test",
+                "database": "datagen_it_test",
+                "field": "field1",
+                "query": {
+                    "link": "$$_id"
+                }
+            },
+            "AG-VA": {
+                "type": "valueAggregator",
+                "collection": "test",
+                "database": "datagen_it_test",
+                "field": "field",
+                "query": {
+                    "link": "$$_id"
+                }
+            }
+        }
+    }
+]

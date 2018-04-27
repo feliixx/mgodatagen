@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/fatih/color"
@@ -19,11 +18,10 @@ func main() {
 		os.Exit(1)
 	}
 	if options.Help {
-		fmt.Fprintf(os.Stdout, "mgodatagen version %s\n\n", datagen.Version)
 		p.WriteHelp(os.Stdout)
 		os.Exit(0)
 	}
-	err = datagen.Generate(os.Stdout, &options)
+	err = datagen.Generate(&options, os.Stdout)
 	if err != nil {
 		color.Red("%v", err)
 		os.Exit(1)

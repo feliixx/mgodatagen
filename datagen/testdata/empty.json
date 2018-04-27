@@ -1,0 +1,8 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "empty",
+        "count": 1,
+        "content": {}
+    }
+]

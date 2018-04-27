@@ -1,0 +1,14 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "invalid-shardconfig-nonid",
+        "count": 1,
+        "shardConfig": {
+            "shardCollection": "datagen_it_test.invalid-shardconfig-nonid",
+            "key": {
+                "n": 1
+            }
+        },
+        "content": {}
+    }
+]
