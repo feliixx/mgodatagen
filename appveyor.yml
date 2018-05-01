@@ -18,4 +18,4 @@ install:
 
 build_script:
   - go test -v ./... -race
-  - mgodatagen.exe -f datagen\generators\testdata\full-bson.json 
+  - mgodatagen.exe -f datagen\testdata\big.json 

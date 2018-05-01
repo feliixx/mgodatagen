@@ -31,7 +31,7 @@ before_script:
 
 script:
   - ./test.sh
-  - ./mgodatagen -f datagen/generators/testdata/full-bson.json
+  - ./mgodatagen -f datagen/testdata/big.json
   
 after_success:
   - bash <(curl -s https://codecov.io/bash)
