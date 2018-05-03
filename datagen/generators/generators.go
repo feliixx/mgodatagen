@@ -11,8 +11,6 @@ package generators
 
 import (
 	"crypto/md5"
-	"fmt"
-	"math"
 	"os"
 	"strconv"
 	"sync/atomic"
@@ -94,22 +92,21 @@ type Generator interface {
 	Exists() bool
 }
 
-// emptyGenerator provides basic functionnality commons to all generators.
-type emptyGenerator struct {
+// base implements Key(), Type() and Exists() methods. Intended to be
+// embeded in each generator
+type base struct {
 	// []byte(key) + OxOO
 	key []byte
 	// probability that the element doesn't exist
 	nullPercentage uint32
-	// bson type as defined here:
-	bsonType byte
-	// structure to hold the encoded document
-	buffer *Encoder
-	pcg32  *pcg.PCG32
+	bsonType       byte
+	buffer         *Encoder
+	pcg32          *pcg.PCG32
 }
 
-// NewEmptyGenerator returns a new EmptyGenerator
-func newEmptyGenerator(key string, nullPercentage uint32, bsonType byte, out *Encoder, pcg32 *pcg.PCG32) emptyGenerator {
-	return emptyGenerator{
+// newBase returns a new base
+func newBase(key string, nullPercentage uint32, bsonType byte, out *Encoder, pcg32 *pcg.PCG32) base {
+	return base{
 		key:            append([]byte(key), byte(0)),
 		nullPercentage: nullPercentage,
 		bsonType:       bsonType,
@@ -118,25 +115,25 @@ func newEmptyGenerator(key string, nullPercentage uint32, bsonType byte, out *En
 	}
 }
 
-func (g *emptyGenerator) Key() []byte { return g.key }
+func (b *base) Key() []byte { return b.key }
 
 // if a generator has a nullPercentage of 10%, this method will return
 // true ~90% of the time, and false ~10% of the time
-func (g *emptyGenerator) Exists() bool {
-	if g.nullPercentage == 0 {
+func (b *base) Exists() bool {
+	if b.nullPercentage == 0 {
 		return true
 	}
 	// get the last 10 bits of a random int32 to get a number between 0 and 1023,
 	// and compare it to nullPercentage * 10
-	return g.pcg32.Random()>>22 >= g.nullPercentage
+	return b.pcg32.Random()>>22 >= b.nullPercentage
 }
 
 // Type return the bson type of the element created by the generator
-func (g *emptyGenerator) Type() byte { return g.bsonType }
+func (b *base) Type() byte { return b.bsonType }
 
 // Generator for creating random string of a length within [`MinLength`, `MaxLength`]
 type stringGenerator struct {
-	emptyGenerator
+	base
 	minLength uint32
 	maxLength uint32
 }
@@ -169,7 +166,7 @@ func (g *stringGenerator) Value() {
 
 // Generator for creating random int32 between `Min` and `Max`
 type int32Generator struct {
-	emptyGenerator
+	base
 	min int32
 	max int32
 }
@@ -180,7 +177,7 @@ func (g *int32Generator) Value() {
 
 // Generator for creating random int64 between `Min` and `Max`
 type int64Generator struct {
-	emptyGenerator
+	base
 	min   int64
 	max   int64
 	pcg64 *pcg.PCG64
@@ -192,7 +189,7 @@ func (g *int64Generator) Value() {
 
 // Generator for creating random float64 between `Min` and `Max`
 type float64Generator struct {
-	emptyGenerator
+	base
 	mean   float64
 	stdDev float64
 	pcg64  *pcg.PCG64
@@ -204,7 +201,7 @@ func (g *float64Generator) Value() {
 
 // Generator for creating random decimal128
 type decimal128Generator struct {
-	emptyGenerator
+	base
 	pcg64 *pcg.PCG64
 }
 
@@ -216,7 +213,7 @@ func (g *decimal128Generator) Value() {
 
 // Generator for creating random bool
 type boolGenerator struct {
-	emptyGenerator
+	base
 }
 
 func (g *boolGenerator) Value() {
@@ -225,7 +222,7 @@ func (g *boolGenerator) Value() {
 
 // Generator for creating bson.ObjectId
 type objectIDGenerator struct {
-	emptyGenerator
+	base
 }
 
 // Value add a bson.ObjectId to the encoder.
@@ -250,13 +247,15 @@ func (g *objectIDGenerator) Value() {
 	)
 }
 
-// Generator for creating random object
-type objectGenerator struct {
-	emptyGenerator
+// DocumentGenerator for creating random object
+type DocumentGenerator struct {
+	base
 	generators []Generator
 }
 
-func (g *objectGenerator) Value() {
+// Value create a new bson documents from Generators of g. Documents
+// bytes are written to the associated Encoder
+func (g *DocumentGenerator) Value() {
 	g.buffer.Truncate(4)
 	for _, gen := range g.generators {
 		if gen.Exists() {
@@ -271,8 +270,15 @@ func (g *objectGenerator) Value() {
 	g.buffer.WriteAt(0, int32Bytes(int32(g.buffer.Len())))
 }
 
+// Add append a new Generator to the DocumentGenerator
+func (g *DocumentGenerator) Add(generator Generator) {
+	if generator != nil {
+		g.generators = append(g.generators, generator)
+	}
+}
+
 // Generator for creating embedded documents
-type embeddedObjectGenerator objectGenerator
+type embeddedObjectGenerator DocumentGenerator
 
 func (g *embeddedObjectGenerator) Value() {
 	current := g.buffer.Len()
@@ -292,7 +298,7 @@ func (g *embeddedObjectGenerator) Value() {
 
 // Generator for creating random array
 type arrayGenerator struct {
-	emptyGenerator
+	base
 	size      int
 	generator Generator
 }
@@ -319,7 +325,7 @@ func (g *arrayGenerator) Value() {
 
 // Generator for creating random binary data
 type binaryDataGenerator struct {
-	emptyGenerator
+	base
 	minLength uint32
 	maxLength uint32
 }
@@ -343,7 +349,7 @@ func (g *binaryDataGenerator) Value() {
 
 // Generator for creatingrandom date within bounds
 type dateGenerator struct {
-	emptyGenerator
+	base
 	startDate uint64
 	delta     uint64
 	pcg64     *pcg.PCG64
@@ -356,7 +362,7 @@ func (g *dateGenerator) Value() {
 
 // Generator for creating random GPS coordinates
 type positionGenerator struct {
-	emptyGenerator
+	base
 	pcg64 *pcg.PCG64
 }
 
@@ -377,7 +383,7 @@ func (g *positionGenerator) Value() {
 // ConstGenerator for creating constant value. Val already contains the bson element
 // type and the key in addition of the actual value
 type constGenerator struct {
-	emptyGenerator
+	base
 	val []byte
 }
 
@@ -387,7 +393,7 @@ func (g *constGenerator) Value() {
 
 // Generator for creating auto-incremented int32
 type autoIncrementGenerator32 struct {
-	emptyGenerator
+	base
 	counter int32
 }
 
@@ -398,7 +404,7 @@ func (g *autoIncrementGenerator32) Value() {
 
 // Generator for creating auto-incremented int64
 type autoIncrementGenerator64 struct {
-	emptyGenerator
+	base
 	counter int64
 }
 
@@ -409,7 +415,7 @@ func (g *autoIncrementGenerator64) Value() {
 
 // Generator for creating a random value from an array of user-defined values
 type fromArrayGenerator struct {
-	emptyGenerator
+	base
 	size          int
 	array         [][]byte
 	index         int
@@ -426,7 +432,7 @@ func (g *fromArrayGenerator) Value() {
 
 // Generator for creating random string using faker library
 type fakerGenerator struct {
-	emptyGenerator
+	base
 	faker *faker.Faker
 	f     func(f *faker.Faker) string
 }
@@ -436,50 +442,4 @@ func (g *fakerGenerator) Value() {
 	g.buffer.Write(int32Bytes(int32(len(fakerVal) + 1)))
 	g.buffer.Write(fakerVal)
 	g.buffer.WriteSingleByte(byte(0))
-}
-
-// uniqueGenerator used to create an array containing unique strings
-type uniqueGenerator struct {
-	values       [][]byte
-	currentIndex int
-}
-
-// recursively generate all possible combinations with repeat
-func (u *uniqueGenerator) recur(data []byte, stringSize int, index int, docCount int) {
-	for i := 0; i < len(letterBytes); i++ {
-		if u.currentIndex < docCount {
-			data[index+4] = letterBytes[i]
-			if index == stringSize-1 {
-				tmp := make([]byte, len(data))
-				copy(tmp, data)
-				u.values[u.currentIndex] = tmp
-				u.currentIndex++
-			} else {
-				u.recur(data, stringSize, index+1, docCount)
-			}
-		}
-	}
-}
-
-// generate an array of length 'docCount' containing unique string
-// array will look like (for stringSize=3)
-// [ "aaa", "aab", "aac", ...]
-func (u *uniqueGenerator) getUniqueArray(docCount int, stringSize int) error {
-	// if string size >= 5, there is at least 1073741824 possible string, so don't bother checking collection count
-	if stringSize == 0 {
-		return fmt.Errorf("with unique generator, MinLength has to be > 0")
-	}
-	if stringSize < 5 {
-		maxNumber := int(math.Pow(float64(len(letterBytes)), float64(stringSize)))
-		if docCount > maxNumber {
-			return fmt.Errorf("doc count is greater than possible value for string of size %v, max is %v ( %v^%v) ", stringSize, maxNumber, len(letterBytes), stringSize)
-		}
-	}
-	u.values = make([][]byte, docCount)
-	data := make([]byte, stringSize+5)
-
-	copy(data[0:4], int32Bytes(int32(stringSize)+1))
-
-	u.recur(data, stringSize, 0, docCount)
-	return nil
 }

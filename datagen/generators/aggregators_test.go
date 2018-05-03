@@ -84,7 +84,7 @@ func TestNewAggregatorCond(t *testing.T) {
 			correct: false,
 		},
 	}
-	ci := generators.NewCollInfo(1, false, []int{3, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed)
 
 	for _, tt := range newAggregatorTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -131,11 +131,11 @@ func TestNewAggregatorFromMap(t *testing.T) {
 		},
 	}
 
-	ci := generators.NewCollInfo(1, true, []int{3, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed)
 
 	for _, tt := range documentAggregatorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			aggs, err := ci.DocumentAggregator(tt.config)
+			aggs, err := ci.AggregatorList(tt.config)
 			if tt.correct && err != nil {
 				t.Errorf("expected no error for config %v \nbut got \n%v", tt.config, err)
 			} else if !tt.correct && err == nil {
@@ -220,7 +220,7 @@ func TestAggregatorUpdate(t *testing.T) {
 		},
 	}
 
-	ci := generators.NewCollInfo(1, true, []int{3, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed)
 	session, err := mgo.Dial("mongodb://")
 	if err != nil {
 		t.Error(err)

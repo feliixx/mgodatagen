@@ -163,7 +163,7 @@ var pool = sync.Pool{
 func (d *dtg) fillCollection(coll *Collection) error {
 
 	seed := uint64(time.Now().Unix())
-	ci := generators.NewCollInfo(coll.Count, d.ShortName, d.version, seed)
+	ci := generators.NewCollInfo(coll.Count, d.version, seed)
 
 	docGenerator, err := ci.DocumentGenerator(coll.Content)
 	if err != nil {
@@ -282,8 +282,8 @@ Loop:
 // Update documents with pre-computed aggregations
 func (d *dtg) updateWithAggregators(coll *Collection) error {
 
-	ci := generators.NewCollInfo(coll.Count, d.ShortName, d.version, 0)
-	aggregators, err := ci.DocumentAggregator(coll.Content)
+	ci := generators.NewCollInfo(coll.Count, d.version, 0)
+	aggregators, err := ci.AggregatorList(coll.Content)
 	if err != nil {
 		return err
 	}
@@ -343,7 +343,7 @@ Loop:
 		var result struct {
 			Values []interface{} `bson:"values"`
 		}
-		err = c.Database.Run(bson.D{
+		err := c.Database.Run(bson.D{
 			{Name: "distinct", Value: c.Name},
 			{Name: "key", Value: localVar},
 		}, &result)
@@ -482,7 +482,6 @@ type Connection struct {
 type Configuration struct {
 	ConfigFile      string `short:"f" long:"file" value-name:"<configfile>" description:"JSON config file. This field is required"`
 	IndexOnly       bool   `short:"i" long:"indexonly" description:"if present, mgodatagen will just try to rebuild index"`
-	ShortName       bool   `short:"s" long:"shortname" description:"if present, JSON keys in the documents will be reduced\n to the first two letters only ('name' => 'na')"`
 	Append          bool   `short:"a" long:"append" description:"if present, append documents to the collection without\n removing older documents or deleting the collection"`
 	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU+1"`
 	BatchSize       int    `short:"b" long:"batchsize" value-name:"<size>" description:"bulk insert batch size" default:"1000"`

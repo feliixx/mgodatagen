@@ -52,8 +52,6 @@ template:
 configuration:
   -f, --file=<configfile>      JSON config file. This field is required
   -i, --indexonly              if present, mgodatagen will just try to rebuild index
-  -s, --shortname              if present, JSON keys in the documents will be reduced
-                               to the first two letters only ('name' => 'na')
   -a, --append                 if present, append documents to the collection without
                                removing older documents or deleting the collection
   -n, --numWorker=<nb>         number of concurrent workers inserting documents
