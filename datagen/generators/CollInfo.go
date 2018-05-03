@@ -15,30 +15,36 @@ import (
 type CollInfo struct {
 	// number of document in the collection
 	Count int
-	// if set to true, keep only first two chars for each key
-	ShortNames bool
 	// MongoDB version
 	Version []int
 	// seed for random generation
 	Seed uint64
-	// buffer to hold bson documents bytes
-	Encoder *Encoder
-	pcg32   *pcg.PCG32
-	pcg64   *pcg.PCG64
+	// buffer to hold bson document bytes
+	DocBuffer *DocBuffer
+	// map holding references values when using a reference generator
+	mapRef map[int][][]byte
+	// map holding references types when using a reference generator
+	mapRefType map[int]byte
+	pcg32      *pcg.PCG32
+	pcg64      *pcg.PCG64
 }
 
-// NewCollInfo returns a new CollInfo. If count is <=0, it will be set to 1
-func NewCollInfo(count int, version []int, seed uint64) *CollInfo {
+// NewCollInfo returns a new CollInfo.
+// mapRef is a map holding bson-encoded values for references fields.
+// mapRefType is a map holding bson type for references fields.
+func NewCollInfo(count int, version []int, seed uint64, mapRef map[int][][]byte, mapRefType map[int]byte) *CollInfo {
 	if count <= 0 {
 		count = 1
 	}
 	return &CollInfo{
-		Count:   count,
-		Version: version,
-		Seed:    seed,
-		Encoder: NewEncoder(),
-		pcg32:   pcg.NewPCG32().Seed(seed, seed),
-		pcg64:   pcg.NewPCG64().Seed(seed, seed, seed, seed),
+		Count:      count,
+		Version:    version,
+		Seed:       seed,
+		DocBuffer:  NewDocBuffer(),
+		mapRef:     mapRef,
+		mapRefType: mapRefType,
+		pcg32:      pcg.NewPCG32().Seed(seed, seed),
+		pcg64:      pcg.NewPCG64().Seed(seed, seed, seed, seed),
 	}
 }
 
@@ -59,28 +65,6 @@ func (ci *CollInfo) versionAtLeast(v ...int) (result bool) {
 // Config struct containing all possible options
 type Config struct {
 	// Type of object to generate, required
-	// available types are:
-	//  - string
-	//  - int
-	//  - long
-	//  - double
-	//  - decimal
-	//  - boolean
-	//  - date
-	//  - objectId
-	//  - object
-	//  - array
-	//  - fromArray
-	//  - binary data
-	//  - position
-	//  - ref
-	//  - autoincrement
-	//  - faker
-	//  - countAggregator
-	//  - valueAggregator
-	//  - boundAggregator
-	//
-	// see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
 	Type string `json:"type"`
 	// Percentage of documents that won't contains this field, optional
 	NullPercentage int `json:"nullPercentage"`
@@ -190,7 +174,9 @@ func uniqueValues(docCount int, stringSize int) ([][]byte, error) {
 	return u.values, nil
 }
 
-var bsonTypeMap = map[string]byte{
+// GeneratorTypes hold the available generator type, and their corresponding bson type.
+// see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
+var GeneratorTypes = map[string]byte{
 	"string":        bson.ElementString,
 	"faker":         bson.ElementString,
 	"int":           bson.ElementInt32,
@@ -202,10 +188,10 @@ var bsonTypeMap = map[string]byte{
 	"array":         bson.ElementArray,
 	"position":      bson.ElementArray,
 	"object":        bson.ElementDocument,
-	"fromArray":     bson.ElementNil,
-	"constant":      bson.ElementNil,
-	"ref":           bson.ElementNil,
-	"autoincrement": bson.ElementNil,
+	"fromArray":     bson.ElementNil, // can be of any bson type
+	"constant":      bson.ElementNil, // can be of any bson type
+	"ref":           bson.ElementNil, // can be of any bson type
+	"autoincrement": bson.ElementNil, // type bson.ElementInt32 or bson.ElementInt64
 	"binary":        bson.ElementBinary,
 	"date":          bson.ElementDatetime,
 
@@ -214,7 +200,8 @@ var bsonTypeMap = map[string]byte{
 	"boundAggregator": bson.ElementNil,
 }
 
-var fakerMethods = map[string]func(f *faker.Faker) string{
+// FakerMethods hold the available faker methods, and the corresponding faker function
+var FakerMethods = map[string]func(f *faker.Faker) string{
 	"CellPhoneNumber":    (*faker.Faker).CellPhoneNumber,
 	"City":               (*faker.Faker).City,
 	"CityPrefix":         (*faker.Faker).CityPrefix,
@@ -259,12 +246,12 @@ func (ci *CollInfo) NewGenerator(key string, config *Config) (Generator, error) 
 		key = "k"
 	}
 
-	bsonType, ok := bsonTypeMap[config.Type]
+	bsonType, ok := GeneratorTypes[config.Type]
 	if !ok {
 		return nil, fmt.Errorf("invalid type %v for field %v", config.Type, key)
 	}
 	nullPercentage := uint32(config.NullPercentage) * 10
-	base := newBase(key, nullPercentage, bsonType, ci.Encoder, ci.pcg32)
+	base := newBase(key, nullPercentage, bsonType, ci.DocBuffer, ci.pcg32)
 
 	if config.MaxDistinctValue != 0 {
 		size := config.MaxDistinctValue
@@ -474,7 +461,7 @@ func (ci *CollInfo) NewGenerator(key string, config *Config) (Generator, error) 
 		if err != nil {
 			return nil, fmt.Errorf("fail to instantiate faker generator: %v", err)
 		}
-		method, ok := fakerMethods[config.Method]
+		method, ok := FakerMethods[config.Method]
 		if !ok {
 			return nil, fmt.Errorf("invalid Faker method for key %v: %v", key, config.Method)
 		}
@@ -484,20 +471,20 @@ func (ci *CollInfo) NewGenerator(key string, config *Config) (Generator, error) 
 			f:     method,
 		}, nil
 	case "ref":
-		_, ok := mapRef[config.ID]
+		_, ok := ci.mapRef[config.ID]
 		if !ok {
-			arr, t, err := ci.preGenerate(key, config.RefContent, ci.Count)
+			values, bsonType, err := ci.preGenerate(key, config.RefContent, ci.Count)
 			if err != nil {
 				return nil, err
 			}
-			mapRef[config.ID] = arr
-			mapRefType[config.ID] = t
+			ci.mapRef[config.ID] = values
+			ci.mapRefType[config.ID] = bsonType
 		}
-		base.bsonType = mapRefType[config.ID]
+		base.bsonType = ci.mapRefType[config.ID]
 		return &fromArrayGenerator{
 			base:          base,
-			array:         mapRef[config.ID],
-			size:          len(mapRef[config.ID]),
+			array:         ci.mapRef[config.ID],
+			size:          len(ci.mapRef[config.ID]),
 			index:         0,
 			doNotTruncate: true,
 		}, nil
@@ -508,7 +495,7 @@ func (ci *CollInfo) NewGenerator(key string, config *Config) (Generator, error) 
 // DocumentGenerator creates an object generator to generate valid bson documents
 func (ci *CollInfo) DocumentGenerator(content map[string]Config) (*DocumentGenerator, error) {
 	d := &DocumentGenerator{
-		base:       newBase("", 0, bson.ElementDocument, ci.Encoder, ci.pcg32),
+		base:       newBase("", 0, bson.ElementDocument, ci.DocBuffer, ci.pcg32),
 		generators: make([]Generator, 0, len(content)),
 	}
 	for k, v := range content {
@@ -524,7 +511,7 @@ func (ci *CollInfo) DocumentGenerator(content map[string]Config) (*DocumentGener
 // preGenerate generate `nb`values using a generator created from config
 func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]byte, bsonType byte, err error) {
 
-	tmpCi := NewCollInfo(ci.Count, ci.Version, ci.Seed)
+	tmpCi := NewCollInfo(ci.Count, ci.Version, ci.Seed, ci.mapRef, ci.mapRefType)
 	g, err := tmpCi.NewGenerator(key, config)
 	if err != nil {
 		return nil, bson.ElementNil, fmt.Errorf("for field %s, error while creating base array: %v", key, err)
@@ -533,10 +520,10 @@ func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]
 	values = make([][]byte, nb)
 	for i := 0; i < nb; i++ {
 		g.Value()
-		tmpArr := make([]byte, tmpCi.Encoder.Len())
-		copy(tmpArr, tmpCi.Encoder.Bytes())
+		tmpArr := make([]byte, tmpCi.DocBuffer.Len())
+		copy(tmpArr, tmpCi.DocBuffer.Bytes())
 		values[i] = tmpArr
-		tmpCi.Encoder.Truncate(0)
+		tmpCi.DocBuffer.Truncate(0)
 	}
 	if nb > 1 {
 		if bytes.Equal(values[0], values[1]) {
@@ -566,7 +553,7 @@ func (ci *CollInfo) NewAggregator(key string, config *Config) (Aggregator, error
 		}
 	}
 
-	ea := emptyAggregator{
+	base := baseAggregator{
 		key:        key,
 		query:      config.Query,
 		collection: config.Collection,
@@ -575,25 +562,17 @@ func (ci *CollInfo) NewAggregator(key string, config *Config) (Aggregator, error
 	}
 	switch config.Type {
 	case "countAggregator":
-		return &countAggregator{
-			emptyAggregator: ea,
-		}, nil
+		return &countAggregator{baseAggregator: base}, nil
 	case "valueAggregator":
 		if config.Field == "" {
 			return nil, fmt.Errorf("for field %v, 'field' can't be null or empty", key)
 		}
-		return &valueAggregator{
-			emptyAggregator: ea,
-			field:           config.Field,
-		}, nil
+		return &valueAggregator{baseAggregator: base, field: config.Field}, nil
 	case "boundAggregator":
 		if config.Field == "" {
 			return nil, fmt.Errorf("for field %v, 'field' can't be null or empty", key)
 		}
-		return &boundAggregator{
-			emptyAggregator: ea,
-			field:           config.Field,
-		}, nil
+		return &boundAggregator{baseAggregator: base, field: config.Field}, nil
 	default:
 		return nil, fmt.Errorf("invalid type %v for field %v", config.Field, config.Type)
 	}

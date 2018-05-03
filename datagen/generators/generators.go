@@ -22,10 +22,6 @@ import (
 )
 
 var (
-	// stores value for ref fields
-	mapRef = map[int][][]byte{}
-	// stores bson type for each ref array
-	mapRefType = map[int]byte{}
 	// machine ID to generate unique object ID
 	machineID = readMachineID()
 	// process ID to generate unique object ID
@@ -52,18 +48,15 @@ var (
 )
 
 // readMachineId generates and returns a machine id.
-// If this function fails to get the hostname it will cause a runtime error.
 func readMachineID() []byte {
-	var sum [3]byte
-	id := sum[:]
-	hostname, err1 := os.Hostname()
-	if err1 != nil {
-		return uint32Bytes(getRandomUint32())[0:3]
+	id := uint32Bytes(getRandomUint32())
+	hostname, err := os.Hostname()
+	if err == nil {
+		h := md5.New()
+		h.Write([]byte(hostname))
+		id = h.Sum(nil)
 	}
-	hw := md5.New()
-	hw.Write([]byte(hostname))
-	copy(id, hw.Sum(nil))
-	return id
+	return id[0:3]
 }
 
 func getRandomUint32() uint32 {
@@ -72,21 +65,15 @@ func getRandomUint32() uint32 {
 	return pcg32.Random()
 }
 
-// ClearRef empty references map
-func ClearRef() {
-	mapRef = make(map[int][][]byte, 0)
-	mapRefType = make(map[int]byte, 0)
-}
-
-// Generator interface for all generator objects
+// Generator is an interface for generator that can be used to
+// generate random value of a specific type, and encode them in bson
+// format
 type Generator interface {
-	// Key return the generator key folowed by 0x00
+	// Key returns the generator key folowed by 0x00 as a slice of bytes
 	Key() []byte
-	// Type return the bson type of the element as defined
-	// in bson spec: http://bsonspec.org/
+	// Type returns the bson type of the element as defined in bson spec: http://bsonspec.org/
 	Type() byte
-	// Value encode a bson element and append it to the generator
-	// encoder
+	// Value encode a value in bson format and append it to the generator buffer
 	Value()
 	// Exists returns true if the generation should be performed.
 	Exists() bool
@@ -100,12 +87,12 @@ type base struct {
 	// probability that the element doesn't exist
 	nullPercentage uint32
 	bsonType       byte
-	buffer         *Encoder
+	buffer         *DocBuffer
 	pcg32          *pcg.PCG32
 }
 
 // newBase returns a new base
-func newBase(key string, nullPercentage uint32, bsonType byte, out *Encoder, pcg32 *pcg.PCG32) base {
+func newBase(key string, nullPercentage uint32, bsonType byte, out *DocBuffer, pcg32 *pcg.PCG32) base {
 	return base{
 		key:            append([]byte(key), byte(0)),
 		nullPercentage: nullPercentage,
@@ -115,21 +102,21 @@ func newBase(key string, nullPercentage uint32, bsonType byte, out *Encoder, pcg
 	}
 }
 
-func (b *base) Key() []byte { return b.key }
+func (g *base) Key() []byte { return g.key }
 
 // if a generator has a nullPercentage of 10%, this method will return
 // true ~90% of the time, and false ~10% of the time
-func (b *base) Exists() bool {
-	if b.nullPercentage == 0 {
+func (g *base) Exists() bool {
+	if g.nullPercentage == 0 {
 		return true
 	}
 	// get the last 10 bits of a random int32 to get a number between 0 and 1023,
 	// and compare it to nullPercentage * 10
-	return b.pcg32.Random()>>22 >= b.nullPercentage
+	return g.pcg32.Random()>>22 >= g.nullPercentage
 }
 
 // Type return the bson type of the element created by the generator
-func (b *base) Type() byte { return b.bsonType }
+func (g *base) Type() byte { return g.bsonType }
 
 // Generator for creating random string of a length within [`MinLength`, `MaxLength`]
 type stringGenerator struct {
@@ -138,6 +125,8 @@ type stringGenerator struct {
 	maxLength uint32
 }
 
+// folowing code is an adaptation of existing code from this question:
+// https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-golang/
 const (
 	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_"
 	letterIdxBits = 6                    // 6 bits to represent a letter index (2^6 => 0-63)
@@ -150,7 +139,6 @@ func (g *stringGenerator) Value() {
 	if g.minLength != g.maxLength {
 		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
 	}
-	// +1 for terminating byte 0x00
 	g.buffer.Write(uint32Bytes(length + 1))
 	cache, remain := g.pcg32.Random(), letterIdxMax
 	for i := 0; i < int(length); i++ {
@@ -225,7 +213,7 @@ type objectIDGenerator struct {
 	base
 }
 
-// Value add a bson.ObjectId to the encoder.
+// Value add a bson.ObjectId to the DocBuffer.
 func (g *objectIDGenerator) Value() {
 	t := uint32(time.Now().Unix())
 	i := atomic.AddUint32(&objectIDCounter, 1)
@@ -247,14 +235,14 @@ func (g *objectIDGenerator) Value() {
 	)
 }
 
-// DocumentGenerator for creating random object
+// DocumentGenerator is a Generator for creating random bson documents
 type DocumentGenerator struct {
 	base
 	generators []Generator
 }
 
 // Value create a new bson documents from Generators of g. Documents
-// bytes are written to the associated Encoder
+// bytes are written to the associated DocBuffer
 func (g *DocumentGenerator) Value() {
 	g.buffer.Truncate(4)
 	for _, gen := range g.generators {

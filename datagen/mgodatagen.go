@@ -65,9 +65,11 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 }
 
 type dtg struct {
-	out     io.Writer
-	session *mgo.Session
-	version []int
+	out        io.Writer
+	session    *mgo.Session
+	version    []int
+	mapRef     map[int][][]byte
+	mapRefType map[int]byte
 	Options
 }
 
@@ -163,7 +165,7 @@ var pool = sync.Pool{
 func (d *dtg) fillCollection(coll *Collection) error {
 
 	seed := uint64(time.Now().Unix())
-	ci := generators.NewCollInfo(coll.Count, d.version, seed)
+	ci := generators.NewCollInfo(coll.Count, d.version, seed, d.mapRef, d.mapRefType)
 
 	docGenerator, err := ci.DocumentGenerator(coll.Content)
 	if err != nil {
@@ -248,7 +250,7 @@ Loop:
 		}
 		for i := 0; i < rc.nbToInsert; i++ {
 			docGenerator.Value()
-			l := ci.Encoder.Len()
+			l := ci.DocBuffer.Len()
 			// if documents[i] is not large enough, grow it manually
 			if len(rc.documents[i].Data) < l {
 				for j := len(rc.documents[i].Data); j < l; j++ {
@@ -257,7 +259,7 @@ Loop:
 			} else {
 				rc.documents[i].Data = rc.documents[i].Data[:l]
 			}
-			copy(rc.documents[i].Data, ci.Encoder.Bytes())
+			copy(rc.documents[i].Data, ci.DocBuffer.Bytes())
 		}
 		count += rc.nbToInsert
 		bar.Add(rc.nbToInsert)
@@ -282,7 +284,7 @@ Loop:
 // Update documents with pre-computed aggregations
 func (d *dtg) updateWithAggregators(coll *Collection) error {
 
-	ci := generators.NewCollInfo(coll.Count, d.version, 0)
+	ci := generators.NewCollInfo(coll.Count, d.version, 0, d.mapRef, d.mapRefType)
 	aggregators, err := ci.AggregatorList(coll.Content)
 	if err != nil {
 		return err
@@ -551,10 +553,12 @@ func run(options *Options, out io.Writer) error {
 	defer session.Close()
 
 	dtg := &dtg{
-		out:     out,
-		session: session,
-		version: version,
-		Options: *options,
+		out:        out,
+		session:    session,
+		version:    version,
+		mapRef:     make(map[int][][]byte, 0),
+		mapRefType: make(map[int]byte, 0),
+		Options:    *options,
 	}
 
 	for _, v := range collectionList {

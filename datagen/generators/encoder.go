@@ -2,22 +2,22 @@ package generators
 
 import "math"
 
-// Encoder is a wrapper around a slice of bytes. It provides
+// DocBuffer is a wrapper around a slice of bytes. It provides
 // method similar to bytes.Buffer, plus a specific method WriteAt() to
 // write buf at a specific position of the underlying slice of bytes
-type Encoder struct {
+type DocBuffer struct {
 	buf []byte
 }
 
-// NewEncoder returns a new encoder seeded with time.Now()
-func NewEncoder() *Encoder {
-	return &Encoder{
+// NewDocBuffer returns a new DocBuffer seeded with time.Now()
+func NewDocBuffer() *DocBuffer {
+	return &DocBuffer{
 		buf: make([]byte, 0, 256),
 	}
 }
 
 // Truncate discards all but the first n bytes from the buffer
-func (e *Encoder) Truncate(n int) {
+func (e *DocBuffer) Truncate(n int) {
 	for len(e.buf) < n {
 		e.buf = append(e.buf, byte(0))
 	}
@@ -25,33 +25,33 @@ func (e *Encoder) Truncate(n int) {
 }
 
 // Write appends bytes to the buffer
-func (e *Encoder) Write(b []byte) {
+func (e *DocBuffer) Write(b []byte) {
 	e.buf = append(e.buf, b...)
 }
 
 // WriteSingleByte appends a single byte to the buffer
-func (e *Encoder) WriteSingleByte(b byte) {
+func (e *DocBuffer) WriteSingleByte(b byte) {
 	e.buf = append(e.buf, b)
 }
 
 // WriteAt writes bytes to the buffer at a specific
 // position
-func (e *Encoder) WriteAt(startPos int, b []byte) {
+func (e *DocBuffer) WriteAt(startPos int, b []byte) {
 	copy(e.buf[startPos:startPos+len(b)], b)
 }
 
 // Reserve add 4 bytes to the buffer
-func (e *Encoder) Reserve() {
+func (e *DocBuffer) Reserve() {
 	e.buf = append(e.buf, byte(0), byte(0), byte(0), byte(0))
 }
 
 // Bytes returns the content of the buffer
-func (e *Encoder) Bytes() []byte {
+func (e *DocBuffer) Bytes() []byte {
 	return e.buf
 }
 
 // Len returns the length of the buffer
-func (e *Encoder) Len() int {
+func (e *DocBuffer) Len() int {
 	return len(e.buf)
 }
 

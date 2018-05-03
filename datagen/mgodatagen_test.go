@@ -14,7 +14,6 @@ import (
 	"github.com/globalsign/mgo/bson"
 
 	"github.com/feliixx/mgodatagen/datagen"
-	"github.com/feliixx/mgodatagen/datagen/generators"
 )
 
 var (
@@ -648,7 +647,6 @@ func TestGenerate(t *testing.T) {
 
 	for _, tt := range realRunTests {
 		t.Run(tt.name, func(t *testing.T) {
-			generators.ClearRef()
 			err := datagen.Generate(&tt.options, os.Stdout)
 			if tt.correct {
 				if err != nil {
@@ -706,7 +704,6 @@ func distinct(t *testing.T, dbName, collName, keyName string, result distinctRes
 }
 
 func parseConfig(t *testing.T, fileName string) []datagen.Collection {
-	generators.ClearRef()
 	content, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		t.Error(err)

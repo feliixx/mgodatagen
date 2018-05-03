@@ -24,7 +24,7 @@ type Aggregator interface {
 	Update(session *mgo.Session, value interface{}) ([2]bson.M, error)
 }
 
-type emptyAggregator struct {
+type baseAggregator struct {
 	key        string
 	query      bson.M
 	collection string
@@ -32,11 +32,11 @@ type emptyAggregator struct {
 	localVar   string
 }
 
-func (a emptyAggregator) Query() bson.M    { return a.query }
-func (a emptyAggregator) LocalVar() string { return a.localVar }
+func (a baseAggregator) Query() bson.M    { return a.query }
+func (a baseAggregator) LocalVar() string { return a.localVar }
 
 type countAggregator struct {
-	emptyAggregator
+	baseAggregator
 }
 
 func (a *countAggregator) Update(session *mgo.Session, value interface{}) ([2]bson.M, error) {
@@ -59,7 +59,7 @@ func (a *countAggregator) Update(session *mgo.Session, value interface{}) ([2]bs
 }
 
 type valueAggregator struct {
-	emptyAggregator
+	baseAggregator
 	field string
 }
 
@@ -83,7 +83,7 @@ func (a *valueAggregator) Update(session *mgo.Session, value interface{}) ([2]bs
 }
 
 type boundAggregator struct {
-	emptyAggregator
+	baseAggregator
 	field string
 }
 

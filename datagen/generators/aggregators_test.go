@@ -84,7 +84,8 @@ func TestNewAggregatorCond(t *testing.T) {
 			correct: false,
 		},
 	}
-	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed)
+
+	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed, nil, nil)
 
 	for _, tt := range newAggregatorTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -131,7 +132,7 @@ func TestNewAggregatorFromMap(t *testing.T) {
 		},
 	}
 
-	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed, nil, nil)
 
 	for _, tt := range documentAggregatorTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -218,9 +219,28 @@ func TestAggregatorUpdate(t *testing.T) {
 				{"$set": bson.M{"key": bson.M{"m": 2, "M": 3}}},
 			},
 		},
+		{
+			name: "countAggregator no local field",
+			baseDoc: []interface{}{
+				bson.M{"_id": 1, "field": 1},
+				bson.M{"_id": 2, "field": 2},
+			},
+			config: generators.Config{
+				Type:       "countAggregator",
+				Collection: "test",
+				Database:   "datagen_it_test",
+				Query: bson.M{
+					"field": 1,
+				},
+			},
+			expectedUpdate: [2]bson.M{
+				{"_id": 1},
+				{"$set": bson.M{"key": int32(1)}},
+			},
+		},
 	}
 
-	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed, nil, nil)
 	session, err := mgo.Dial("mongodb://")
 	if err != nil {
 		t.Error(err)

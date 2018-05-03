@@ -16,13 +16,6 @@ const defaultSeed = 0
 
 func TestIsDocumentCorrect(t *testing.T) {
 
-	contentList := loadCollConfig(t, "full-bson.json")
-	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed)
-	generator, err := ci.DocumentGenerator(contentList[0])
-	if err != nil {
-		t.Error(err)
-	}
-
 	var expectedDoc struct {
 		ID         bson.ObjectId `bson:"_id"`
 		Name       string        `bson:"name"`
@@ -49,18 +42,45 @@ func TestIsDocumentCorrect(t *testing.T) {
 		} `bson:"object"`
 	}
 
-	for i := 0; i < 1000; i++ {
-		generator.Value()
-		err := bson.Unmarshal(ci.Encoder.Bytes(), &expectedDoc)
-		if err != nil {
-			t.Errorf("fail to unmarshal doc: %v", err)
-		}
+	fullDocumentTests := []struct {
+		name     string
+		content  map[string]generators.Config
+		expected interface{}
+	}{
+		{
+			name:     "full-bson.json",
+			content:  loadCollConfig(t, "full-bson.json")[0],
+			expected: expectedDoc,
+		},
+		{
+			name:     "empty generator",
+			content:  map[string]generators.Config{},
+			expected: bson.M{},
+		},
+	}
+
+	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed, map[int][][]byte{}, map[int]byte{})
+
+	for _, tt := range fullDocumentTests {
+		t.Run(tt.name, func(t *testing.T) {
+			docGenerator, err := ci.DocumentGenerator(tt.content)
+			if err != nil {
+				t.Error(err)
+			}
+			for i := 0; i < ci.Count; i++ {
+				docGenerator.Value()
+				err := bson.Unmarshal(ci.DocBuffer.Bytes(), &tt.expected)
+				if err != nil {
+					t.Errorf("fail to unmarshal doc: %v", err)
+				}
+			}
+		})
 	}
 }
 
 func TestBigArray(t *testing.T) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(-1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	docGenerator, err := ci.DocumentGenerator(map[string]generators.Config{
 		"key": {Type: "array", Size: 15, ArrayContent: &generators.Config{Type: "boolean"}},
 	})
@@ -73,7 +93,7 @@ func TestBigArray(t *testing.T) {
 	}
 	for i := 0; i < 100; i++ {
 		docGenerator.Value()
-		err := bson.Unmarshal(ci.Encoder.Bytes(), &a)
+		err := bson.Unmarshal(ci.DocBuffer.Bytes(), &a)
 		if err != nil {
 			t.Error(err)
 		}
@@ -85,7 +105,7 @@ func TestBigArray(t *testing.T) {
 
 func TestDocumentWithDecimal128(t *testing.T) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	docGenerator, err := ci.DocumentGenerator(map[string]generators.Config{
 		"key": {Type: "decimal"},
 	})
@@ -98,7 +118,7 @@ func TestDocumentWithDecimal128(t *testing.T) {
 	}
 	for i := 0; i < 1000; i++ {
 		docGenerator.Value()
-		err := bson.Unmarshal(ci.Encoder.Bytes(), &d)
+		err := bson.Unmarshal(ci.DocBuffer.Bytes(), &d)
 		if err != nil {
 			t.Error(err)
 		}
@@ -444,7 +464,7 @@ func TestNewGenerator(t *testing.T) {
 		})
 	}
 
-	ci := generators.NewCollInfo(100, nil, defaultSeed)
+	ci := generators.NewCollInfo(100, nil, defaultSeed, map[int][][]byte{}, map[int]byte{})
 
 	for _, tt := range newGeneratorTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -493,7 +513,7 @@ func TestNewGeneratorFromMap(t *testing.T) {
 		},
 	}
 
-	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed, map[int][][]byte{}, map[int]byte{})
 
 	for _, tt := range generatorFromMapTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -529,7 +549,7 @@ func loadCollConfig(t *testing.T, filename string) []map[string]generators.Confi
 }
 func BenchmarkGeneratorString(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	stringGenerator, err := ci.NewGenerator("key", &generators.Config{
 		Type:      "string",
 		MinLength: 5,
@@ -541,12 +561,12 @@ func BenchmarkGeneratorString(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		stringGenerator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 func BenchmarkGeneratorInt32(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	int32Generator, err := ci.NewGenerator("key", &generators.Config{
 		Type:   "int",
 		MinInt: 0,
@@ -558,12 +578,12 @@ func BenchmarkGeneratorInt32(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		int32Generator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 func BenchmarkGeneratorInt64(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	int64Generator, err := ci.NewGenerator("key", &generators.Config{
 		Type:    "long",
 		MinLong: 0,
@@ -575,12 +595,12 @@ func BenchmarkGeneratorInt64(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		int64Generator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 func BenchmarkGeneratorFloat64(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	float64Generator, err := ci.NewGenerator("key", &generators.Config{
 		Type:      "double",
 		MinDouble: 0,
@@ -593,12 +613,12 @@ func BenchmarkGeneratorFloat64(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		float64Generator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 func BenchmarkGeneratorBool(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	boolGenerator, err := ci.NewGenerator("key", &generators.Config{
 		Type: "boolean",
 	})
@@ -609,13 +629,13 @@ func BenchmarkGeneratorBool(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		boolGenerator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 
 func BenchmarkGeneratorPos(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	posGenerator, err := ci.NewGenerator("key", &generators.Config{
 		Type: "position",
 	})
@@ -626,13 +646,13 @@ func BenchmarkGeneratorPos(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		posGenerator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 
 func BenchmarkGeneratorObjectId(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	objectIDGenerator, err := ci.NewGenerator("key", &generators.Config{
 		Type: "objectId",
 	})
@@ -643,13 +663,13 @@ func BenchmarkGeneratorObjectId(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		objectIDGenerator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 
 func BenchmarkGeneratorBinary(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	binaryGenerator, err := ci.NewGenerator("key", &generators.Config{
 		Type:      "binary",
 		MinLength: 20,
@@ -662,12 +682,12 @@ func BenchmarkGeneratorBinary(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		binaryGenerator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 func BenchmarkGeneratorDecimal128(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	decimal128Generator, err := ci.NewGenerator("key", &generators.Config{
 		Type: "decimal",
 	})
@@ -678,12 +698,12 @@ func BenchmarkGeneratorDecimal128(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		decimal128Generator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 func BenchmarkGeneratorDate(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	dateGenerator, err := ci.NewGenerator("key", &generators.Config{
 		Type:      "decimal",
 		StartDate: time.Now(),
@@ -696,13 +716,13 @@ func BenchmarkGeneratorDate(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		dateGenerator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 
 func BenchmarkGeneratorArray(b *testing.B) {
 
-	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed)
+	ci := generators.NewCollInfo(1, []int{3, 6, 4}, defaultSeed, nil, nil)
 	arrayGenerator, err := ci.NewGenerator("key", &generators.Config{
 		Type:         "array",
 		Size:         5,
@@ -715,7 +735,7 @@ func BenchmarkGeneratorArray(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		arrayGenerator.Value()
-		ci.Encoder.Truncate(0)
+		ci.DocBuffer.Truncate(0)
 	}
 }
 
@@ -723,7 +743,7 @@ func BenchmarkGeneratorAll(b *testing.B) {
 
 	contentList := loadCollConfig(nil, "ref.json")
 
-	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed)
+	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed, map[int][][]byte{}, map[int]byte{})
 	docGenerator, err := ci.DocumentGenerator(contentList[0])
 	if err != nil {
 		b.Fail()
