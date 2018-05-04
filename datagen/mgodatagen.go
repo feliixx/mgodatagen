@@ -17,8 +17,8 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	"github.com/gosuri/uiprogress"
 	"github.com/olekukonko/tablewriter"
-	"gopkg.in/cheggaaa/pb.v2"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 )
@@ -41,7 +41,7 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 		return nil, nil, fmt.Errorf("connection failed\n  cause: %v", err)
 	}
 	infos, _ := session.BuildInfo()
-	fmt.Fprintf(out, "mongodb server version %s\n", infos.Version)
+	fmt.Fprintf(out, "MongoDB server version %s\n", infos.Version)
 
 	version := strings.Split(infos.Version, ".")
 	versionInt := make([]int, len(version))
@@ -94,9 +94,8 @@ func (d *dtg) createCollection(coll *Collection) error {
 	if d.Append || d.IndexOnly {
 		return nil
 	}
-
 	c.DropCollection()
-	fmt.Fprintf(d.out, "\nCollection %s:\n", coll.Name)
+	fmt.Fprintf(d.out, "\ncollection %s\n", coll.Name)
 
 	if coll.CompressionLevel != "" {
 		err := c.Create(&mgo.CollectionInfo{StorageEngine: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
@@ -158,8 +157,6 @@ var pool = sync.Pool{
 	},
 }
 
-const progressBarTemplate = `{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}          `
-
 func (d *dtg) fillCollection(coll *Collection) error {
 
 	seed := uint64(time.Now().Unix())
@@ -189,8 +186,14 @@ func (d *dtg) fillCollection(coll *Collection) error {
 	var wg sync.WaitGroup
 	wg.Add(nbInsertingGoRoutines)
 
-	bar := pb.ProgressBarTemplate(progressBarTemplate).Start(int(coll.Count))
-	bar.SetWriter(d.out)
+	progress := uiprogress.New()
+	progress.SetOut(d.out)
+	progress.Start()
+
+	progressBar := progress.AddBar(coll.Count).AppendCompleted()
+	progressBar.PrependFunc(func(b *uiprogress.Bar) string {
+		return "   generating "
+	})
 
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
@@ -260,14 +263,13 @@ Loop:
 			copy(rc.documents[i].Data, ci.DocBuffer.Bytes())
 		}
 		count += rc.nbToInsert
-		bar.Add(rc.nbToInsert)
+		progressBar.Set(count)
 		task <- rc
 	}
 	close(task)
 
 	wg.Wait()
-	bar.Finish()
-
+	progress.Stop()
 	if ctx.Err() != nil {
 		return <-errs
 	}
@@ -289,10 +291,15 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	if len(aggregators) == 0 {
 		return nil
 	}
-	fmt.Fprintf(d.out, "\nAggregating data for collection %v:\n", coll.Name)
-	bar := pb.ProgressBarTemplate(progressBarTemplate).Start(int(coll.Count))
-	bar.SetWriter(d.out)
-	defer bar.Finish()
+	progress := uiprogress.New()
+	progress.SetOut(d.out)
+	progress.Start()
+
+	progressBar := progress.AddBar(coll.Count).AppendCompleted()
+	progressBar.PrependFunc(func(b *uiprogress.Bar) string {
+		return "   aggregating"
+	})
+
 	// aggregation might be very long, so make sure the connection won't timeout
 	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
 
@@ -336,7 +343,7 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	var aggregationError error
 
 Loop:
-	for _, aggregator := range aggregators {
+	for i, aggregator := range aggregators {
 
 		localVar := aggregator.LocalVar()
 		var result struct {
@@ -365,10 +372,11 @@ Loop:
 			}
 			tasks <- update
 		}
-		bar.Add(int(coll.Count) / len(aggregators))
+		progressBar.Set(int(coll.Count/len(aggregators)) * (i + 1))
 	}
 	close(tasks)
 	wg.Wait()
+	progress.Stop()
 	return aggregationError
 }
 
