@@ -15,7 +15,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"gopkg.in/cheggaaa/pb.v2"
@@ -100,7 +99,7 @@ func (d *dtg) createCollection(coll *Collection) error {
 	}
 
 	c.DropCollection()
-	fmt.Fprintf(d.out, "Creating collection %s...\n", coll.Name)
+	fmt.Fprintf(d.out, "Creating collection %s:\n\n", coll.Name)
 
 	if coll.CompressionLevel != "" {
 		err := c.Create(&mgo.CollectionInfo{StorageEngine: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
@@ -162,6 +161,8 @@ var pool = sync.Pool{
 	},
 }
 
+const progressBarTemplate = `{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}          `
+
 func (d *dtg) fillCollection(coll *Collection) error {
 
 	seed := uint64(time.Now().Unix())
@@ -191,7 +192,7 @@ func (d *dtg) fillCollection(coll *Collection) error {
 	var wg sync.WaitGroup
 	wg.Add(nbInsertingGoRoutines)
 
-	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}   {{speed . "%s doc/s" }}   {{rtime . "%s"}}          `).Start(int(coll.Count))
+	bar := pb.ProgressBarTemplate(progressBarTemplate).Start(int(coll.Count))
 	bar.SetWriter(d.out)
 
 	for i := 0; i < nbInsertingGoRoutines; i++ {
@@ -277,7 +278,6 @@ Loop:
 	if err != nil {
 		return err
 	}
-	color.New(color.FgGreen).Fprintf(d.out, "Generating collection %s done\n", coll.Name)
 	return nil
 }
 
@@ -292,8 +292,8 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	if len(aggregators) == 0 {
 		return nil
 	}
-	fmt.Fprintf(d.out, "Generating aggregated data for collection %v\n", coll.Name)
-	bar := pb.ProgressBarTemplate(`{{counters .}} {{ bar . "[" "=" ">" " " "]"}} {{percent . }}                          `).Start(int(coll.Count))
+	fmt.Fprintf(d.out, "Aggregating data for collection %v:\n\n", coll.Name)
+	bar := pb.ProgressBarTemplate(progressBarTemplate).Start(int(coll.Count))
 	bar.SetWriter(d.out)
 	defer bar.Finish()
 	// aggregation might be very long, so make sure the connection won't timeout
@@ -378,10 +378,8 @@ Loop:
 // create index on generated collections
 func (d *dtg) ensureIndex(coll *Collection) error {
 	if len(coll.Indexes) == 0 {
-		fmt.Fprintf(d.out, "No index to build for collection %s\n\n", coll.Name)
 		return nil
 	}
-	fmt.Fprintf(d.out, "Building indexes for collection %s...\n", coll.Name)
 
 	c := d.session.DB(coll.DB).C(coll.Name)
 	err := c.DropAllIndexes()
@@ -399,7 +397,6 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 	if err != nil || !r.Ok {
 		return handleCommandError(fmt.Sprintf("error while building indexes for collection %s", coll.Name), err, &r)
 	}
-	color.New(color.FgGreen).Fprintf(d.out, "Building indexes for collection %s done\n\n", coll.Name)
 	return nil
 }
 
@@ -534,7 +531,6 @@ func run(options *Options, out io.Writer) error {
 	if options.BatchSize > 1000 || options.BatchSize <= 0 {
 		return fmt.Errorf("invalid value for -b | --batchsize: %v. BatchSize has to be between 1 and 1000", options.BatchSize)
 	}
-	fmt.Fprintln(out, "Parsing configuration file...")
 	content, err := ioutil.ReadFile(options.ConfigFile)
 	if err != nil {
 		return fmt.Errorf("File error: %v", err)
