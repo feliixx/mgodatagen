@@ -17,6 +17,7 @@ import (
 
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
+	"github.com/olekukonko/tablewriter"
 	"gopkg.in/cheggaaa/pb.v2"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
@@ -40,7 +41,7 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 		return nil, nil, fmt.Errorf("connection failed\n  cause: %v", err)
 	}
 	infos, _ := session.BuildInfo()
-	fmt.Fprintf(out, "mongodb server version %s\n\n", infos.Version)
+	fmt.Fprintf(out, "mongodb server version %s\n", infos.Version)
 
 	version := strings.Split(infos.Version, ".")
 	versionInt := make([]int, len(version))
@@ -83,11 +84,7 @@ func (d *dtg) generate(v *Collection) error {
 			return err
 		}
 	}
-	err = d.ensureIndex(v)
-	if err != nil {
-		return err
-	}
-	return d.printCollStats(v)
+	return d.ensureIndex(v)
 }
 
 // create a collection with specific options
@@ -99,7 +96,7 @@ func (d *dtg) createCollection(coll *Collection) error {
 	}
 
 	c.DropCollection()
-	fmt.Fprintf(d.out, "Creating collection %s:\n\n", coll.Name)
+	fmt.Fprintf(d.out, "\nCollection %s:\n", coll.Name)
 
 	if coll.CompressionLevel != "" {
 		err := c.Create(&mgo.CollectionInfo{StorageEngine: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
@@ -292,7 +289,7 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	if len(aggregators) == 0 {
 		return nil
 	}
-	fmt.Fprintf(d.out, "Aggregating data for collection %v:\n\n", coll.Name)
+	fmt.Fprintf(d.out, "\nAggregating data for collection %v:\n", coll.Name)
 	bar := pb.ProgressBarTemplate(progressBarTemplate).Start(int(coll.Count))
 	bar.SetWriter(d.out)
 	defer bar.Finish()
@@ -400,25 +397,41 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 	return nil
 }
 
-func (d *dtg) printCollStats(coll *Collection) error {
-	c := d.session.DB(coll.DB).C(coll.Name)
-	stats := struct {
-		Count      int64  `bson:"count"`
-		AvgObjSize int64  `bson:"avgObjSize"`
+func (d *dtg) printCollStats(collections []Collection) error {
+
+	var stats struct {
+		Count      int    `bson:"count"`
+		AvgObjSize int    `bson:"avgObjSize"`
 		IndexSizes bson.M `bson:"indexSizes"`
-	}{}
-	err := c.Database.Run(bson.D{
-		{Name: "collStats", Value: c.Name},
-		{Name: "scale", Value: 1024},
-	}, &stats)
-	if err != nil {
-		return fmt.Errorf("couldn't get stats for collection %s \n  cause: %v ", c.Name, err)
 	}
-	indexString := ""
-	for k, v := range stats.IndexSizes {
-		indexString += fmt.Sprintf("%s %v KB\n\t\t    ", k, v)
+	rows := make([][]string, 0, len(collections))
+
+	for _, collection := range collections {
+		c := d.session.DB(collection.DB).C(collection.Name)
+		err := c.Database.Run(bson.D{
+			{Name: "collStats", Value: c.Name},
+			{Name: "scale", Value: 1024},
+		}, &stats)
+		if err != nil {
+			return fmt.Errorf("couldn't get stats for collection %s \n  cause: %v ", c.Name, err)
+		}
+		indexes := make([]string, 0, len(stats.IndexSizes))
+		for k, v := range stats.IndexSizes {
+			indexes = append(indexes, fmt.Sprintf("%s  %v kB", k, v))
+		}
+		rows = append(rows, []string{
+			c.Name,
+			strconv.Itoa(stats.Count),
+			strconv.Itoa(stats.AvgObjSize),
+			strings.Join(indexes, "\n"),
+		})
 	}
-	fmt.Fprintf(d.out, "Stats for collection %s:\n\t - doc count: %v\n\t - average object size: %v bytes\n\t - indexes: %s\n", c.Name, stats.Count, stats.AvgObjSize, indexString)
+
+	fmt.Fprintf(d.out, "\n")
+	table := tablewriter.NewWriter(d.out)
+	table.SetHeader([]string{"collection", "count", "avg object size", "indexes"})
+	table.AppendBulk(rows)
+	table.Render()
 	return nil
 }
 
@@ -563,5 +576,7 @@ func run(options *Options, out io.Writer) error {
 			return err
 		}
 	}
-	return nil
+
+	return dtg.printCollStats(collectionList)
+
 }
