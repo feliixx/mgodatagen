@@ -545,7 +545,7 @@ type Options struct {
 }
 
 const (
-	mgodatagenVersion = "0.7.0"
+	mgodatagenVersion = "0.7.1"
 	defaultTimeout    = 10 * time.Second
 )
 
