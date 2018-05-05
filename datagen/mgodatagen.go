@@ -18,6 +18,7 @@ import (
 	"github.com/globalsign/mgo"
 	"github.com/globalsign/mgo/bson"
 	"github.com/gosuri/uiprogress"
+	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/olekukonko/tablewriter"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
@@ -41,7 +42,7 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 		return nil, nil, fmt.Errorf("connection failed\n  cause: %v", err)
 	}
 	infos, _ := session.BuildInfo()
-	fmt.Fprintf(out, "MongoDB server version %s\n", infos.Version)
+	fmt.Fprintf(out, "MongoDB server version %s\n\n", infos.Version)
 
 	version := strings.Split(infos.Version, ".")
 	versionInt := make([]int, len(version))
@@ -73,18 +74,59 @@ type dtg struct {
 	Options
 }
 
-func (d *dtg) generate(v *Collection) error {
-	err := d.createCollection(v)
-	if err != nil {
-		return err
+func (d *dtg) generate(collection *Collection) error {
+
+	var steps = []struct {
+		name     string
+		stepFunc func(dtg *dtg, collection *Collection) error
+	}{
+		{
+			name:     "creating",
+			stepFunc: (*dtg).createCollection,
+		},
+		{
+			name:     "generating",
+			stepFunc: (*dtg).fillCollection,
+		},
+		{
+			name:     "aggregating",
+			stepFunc: (*dtg).updateWithAggregators,
+		},
+		{
+			name:     "indexing",
+			stepFunc: (*dtg).ensureIndex,
+		},
+		{
+			name:     "done",
+			stepFunc: func(d *dtg, c *Collection) error { return nil },
+		},
 	}
-	if !d.IndexOnly {
-		err = d.fillCollection(v)
+
+	progress := uiprogress.New()
+	progress.SetOut(d.out)
+
+	progress.Start()
+	defer progress.Stop()
+
+	progressBar := progress.AddBar(len(steps)).AppendCompleted().PrependElapsed().PrependFunc(func(b *uiprogress.Bar) string {
+		// workaround to avoid index out of range exception
+		// TODO investigate in uiprogress
+		current := b.Current()
+		if current > len(steps)-1 {
+			current = len(steps) - 1
+		}
+		return strutil.Resize("collection "+collection.Name+": "+steps[current].name, 35)
+	})
+
+	for _, s := range steps {
+		err := s.stepFunc(d, collection)
 		if err != nil {
 			return err
 		}
+		progressBar.Incr()
 	}
-	return d.ensureIndex(v)
+
+	return nil
 }
 
 // create a collection with specific options
@@ -95,7 +137,6 @@ func (d *dtg) createCollection(coll *Collection) error {
 		return nil
 	}
 	c.DropCollection()
-	fmt.Fprintf(d.out, "\ncollection %s\n", coll.Name)
 
 	if coll.CompressionLevel != "" {
 		err := c.Create(&mgo.CollectionInfo{StorageEngine: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
@@ -159,6 +200,10 @@ var pool = sync.Pool{
 
 func (d *dtg) fillCollection(coll *Collection) error {
 
+	if d.IndexOnly {
+		return nil
+	}
+
 	seed := uint64(time.Now().Unix())
 	ci := generators.NewCollInfo(coll.Count, d.version, seed, d.mapRef, d.mapRefType)
 
@@ -185,15 +230,6 @@ func (d *dtg) fillCollection(coll *Collection) error {
 
 	var wg sync.WaitGroup
 	wg.Add(nbInsertingGoRoutines)
-
-	progress := uiprogress.New()
-	progress.SetOut(d.out)
-	progress.Start()
-
-	progressBar := progress.AddBar(coll.Count).AppendCompleted()
-	progressBar.PrependFunc(func(b *uiprogress.Bar) string {
-		return "   generating "
-	})
 
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
@@ -263,25 +299,23 @@ Loop:
 			copy(rc.documents[i].Data, ci.DocBuffer.Bytes())
 		}
 		count += rc.nbToInsert
-		progressBar.Set(count)
 		task <- rc
 	}
 	close(task)
 
 	wg.Wait()
-	progress.Stop()
 	if ctx.Err() != nil {
 		return <-errs
-	}
-	err = d.updateWithAggregators(coll)
-	if err != nil {
-		return err
 	}
 	return nil
 }
 
 // Update documents with pre-computed aggregations
 func (d *dtg) updateWithAggregators(coll *Collection) error {
+
+	if d.IndexOnly {
+		return nil
+	}
 
 	ci := generators.NewCollInfo(coll.Count, d.version, 0, d.mapRef, d.mapRefType)
 	aggregators, err := ci.AggregatorList(coll.Content)
@@ -291,14 +325,6 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	if len(aggregators) == 0 {
 		return nil
 	}
-	progress := uiprogress.New()
-	progress.SetOut(d.out)
-	progress.Start()
-
-	progressBar := progress.AddBar(coll.Count).AppendCompleted()
-	progressBar.PrependFunc(func(b *uiprogress.Bar) string {
-		return "   aggregating"
-	})
 
 	// aggregation might be very long, so make sure the connection won't timeout
 	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
@@ -343,7 +369,7 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	var aggregationError error
 
 Loop:
-	for i, aggregator := range aggregators {
+	for _, aggregator := range aggregators {
 
 		localVar := aggregator.LocalVar()
 		var result struct {
@@ -372,11 +398,9 @@ Loop:
 			}
 			tasks <- update
 		}
-		progressBar.Set(int(coll.Count/len(aggregators)) * (i + 1))
 	}
 	close(tasks)
 	wg.Wait()
-	progress.Stop()
 	return aggregationError
 }
 
@@ -405,7 +429,7 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 	return nil
 }
 
-func (d *dtg) printCollStats(collections []Collection) error {
+func (d *dtg) printStats(collections []Collection) error {
 
 	var stats struct {
 		Count      int    `bson:"count"`
@@ -556,7 +580,7 @@ func run(options *Options, out io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("File error: %v", err)
 	}
-	collectionList, err := ParseConfig(content, false)
+	collections, err := ParseConfig(content, false)
 	if err != nil {
 		return err
 	}
@@ -578,13 +602,14 @@ func run(options *Options, out io.Writer) error {
 		Options:    *options,
 	}
 
-	for _, v := range collectionList {
-		err = dtg.generate(&v)
+	for _, collection := range collections {
+		err = dtg.generate(&collection)
 		if err != nil {
 			return err
 		}
 	}
-
-	return dtg.printCollStats(collectionList)
-
+	if !options.Quiet {
+		return dtg.printStats(collections)
+	}
+	return nil
 }

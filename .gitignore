@@ -11,7 +11,6 @@ scripts/
 ROADMAP.md
 # Benchmark results
 bench*
-*.txt
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 # vscode folder

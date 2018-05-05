@@ -1,6 +1,7 @@
 package datagen_test
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -19,7 +20,7 @@ import (
 var (
 	session         *mgo.Session
 	defaultConnOpts = datagen.Connection{
-		Host: "localhost",
+		Host: "127.0.0.1",
 		Port: "27017",
 	}
 	defaultGeneralOpts = datagen.General{
@@ -28,7 +29,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	s, err := mgo.Dial("mongodb://localhost:27017")
+	s, err := mgo.Dial("mongodb://127.0.0.1:27017")
 	if err != nil {
 		fmt.Printf("couldn't connect to db: %v\n", err)
 		os.Exit(1)
@@ -77,6 +78,33 @@ func TestCreateEmptyFile(t *testing.T) {
 `
 	if got := string(content); want != got {
 		t.Errorf("expected \n%s\nbut got\n%s", want, got)
+	}
+}
+
+func TestProgressOutput(t *testing.T) {
+
+	configFile := "testdata/empty.json"
+	options := defaultOpts(configFile)
+	options.Quiet = false
+
+	var buffer bytes.Buffer
+	err := datagen.Generate(&options, &buffer)
+	if err != nil {
+		t.Error(err)
+	}
+
+	b, err := ioutil.ReadFile("testdata/output.txt")
+	if err != nil {
+		t.Error(err)
+	}
+	// skip the first lines as they depends on MongoDB version
+	expected := bytes.SplitN(b, []byte("+"), 2)
+	want := expected[1]
+
+	output := bytes.SplitN(buffer.Bytes(), []byte("+"), 2)
+	got := output[1]
+	if !bytes.Equal(want, got) {
+		t.Errorf("expected \n%s \n but got \n%s", want, got)
 	}
 }
 
