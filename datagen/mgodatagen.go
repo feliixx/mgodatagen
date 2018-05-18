@@ -78,7 +78,7 @@ func (d *dtg) generate(collection *Collection) error {
 
 	var steps = []struct {
 		name     string
-		stepFunc func(dtg *dtg, collection *Collection) error
+		stepFunc func(dtg *dtg, collection *Collection, bar *uiprogress.Bar) error
 	}{
 		{
 			name:     "creating",
@@ -96,41 +96,43 @@ func (d *dtg) generate(collection *Collection) error {
 			name:     "indexing",
 			stepFunc: (*dtg).ensureIndex,
 		},
-		{
-			name:     "done",
-			stepFunc: func(d *dtg, c *Collection) error { return nil },
-		},
 	}
 
 	progress := uiprogress.New()
 	progress.SetOut(d.out)
-
 	progress.Start()
 	defer progress.Stop()
 
-	progressBar := progress.AddBar(len(steps)).AppendCompleted().PrependElapsed().PrependFunc(func(b *uiprogress.Bar) string {
-		// workaround to avoid index out of range exception
-		// TODO investigate in uiprogress
+	total := collection.Count + 3
+	progressBar := progress.AddBar(total).AppendCompleted().PrependElapsed().PrependFunc(func(b *uiprogress.Bar) string {
+
 		current := b.Current()
-		if current > len(steps)-1 {
-			current = len(steps) - 1
+		stepName := "done"
+		switch {
+		case current <= 1:
+			stepName = steps[0].name
+		case current >= 2 && current < collection.Count+1:
+			stepName = steps[1].name
+		case current == collection.Count+1:
+			stepName = steps[2].name
+		case current == collection.Count+2:
+			stepName = steps[3].name
 		}
-		return strutil.Resize("collection "+collection.Name+": "+steps[current].name, 35)
+		return strutil.Resize("collection "+collection.Name+": "+stepName, 35)
 	})
 
 	for _, s := range steps {
-		err := s.stepFunc(d, collection)
+		err := s.stepFunc(d, collection, progressBar)
 		if err != nil {
 			return err
 		}
-		progressBar.Incr()
 	}
-
 	return nil
 }
 
 // create a collection with specific options
-func (d *dtg) createCollection(coll *Collection) error {
+func (d *dtg) createCollection(coll *Collection, bar *uiprogress.Bar) error {
+	defer bar.Incr()
 	c := d.session.DB(coll.DB).C(coll.Name)
 
 	if d.Append || d.IndexOnly {
@@ -198,7 +200,8 @@ var pool = sync.Pool{
 	},
 }
 
-func (d *dtg) fillCollection(coll *Collection) error {
+func (d *dtg) fillCollection(coll *Collection, bar *uiprogress.Bar) error {
+	defer bar.Set(coll.Count + 1)
 
 	if d.IndexOnly {
 		return nil
@@ -299,6 +302,7 @@ Loop:
 			copy(rc.documents[i].Data, ci.DocBuffer.Bytes())
 		}
 		count += rc.nbToInsert
+		bar.Set(bar.Current() + rc.nbToInsert)
 		task <- rc
 	}
 	close(task)
@@ -311,7 +315,8 @@ Loop:
 }
 
 // Update documents with pre-computed aggregations
-func (d *dtg) updateWithAggregators(coll *Collection) error {
+func (d *dtg) updateWithAggregators(coll *Collection, bar *uiprogress.Bar) error {
+	defer bar.Incr()
 
 	if d.IndexOnly {
 		return nil
@@ -405,7 +410,9 @@ Loop:
 }
 
 // create index on generated collections
-func (d *dtg) ensureIndex(coll *Collection) error {
+func (d *dtg) ensureIndex(coll *Collection, bar *uiprogress.Bar) error {
+	defer bar.Incr()
+
 	if len(coll.Indexes) == 0 {
 		return nil
 	}
@@ -545,7 +552,7 @@ type Options struct {
 }
 
 const (
-	mgodatagenVersion = "0.7.1"
+	mgodatagenVersion = "0.7.2"
 	defaultTimeout    = 10 * time.Second
 )
 
