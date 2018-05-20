@@ -20,7 +20,7 @@ func TestNewAggregatorCond(t *testing.T) {
 		{
 			name: "empty collection",
 			config: generators.Config{
-				Type:       "countAggregator",
+				Type:       generators.TypeCountAggregator,
 				Query:      bson.M{"n": 1},
 				Database:   "db",
 				Collection: "",
@@ -30,7 +30,7 @@ func TestNewAggregatorCond(t *testing.T) {
 		{
 			name: "empty field valueAggregator",
 			config: generators.Config{
-				Type:       "valueAggregator",
+				Type:       generators.TypeValueAggregator,
 				Collection: "coll",
 				Query:      bson.M{"n": 1},
 				Database:   "db",
@@ -41,7 +41,7 @@ func TestNewAggregatorCond(t *testing.T) {
 		{
 			name: "empty field boundAggregator",
 			config: generators.Config{
-				Type:       "boundAggregator",
+				Type:       generators.TypeBoundAggregator,
 				Collection: "coll",
 				Query:      bson.M{"n": 1},
 				Database:   "db",
@@ -52,7 +52,7 @@ func TestNewAggregatorCond(t *testing.T) {
 		{
 			name: "missing all",
 			config: generators.Config{
-				Type: "countAggregator",
+				Type: generators.TypeCountAggregator,
 			},
 			correct: false,
 		},
@@ -69,7 +69,7 @@ func TestNewAggregatorCond(t *testing.T) {
 		{
 			name: "empty query",
 			config: generators.Config{
-				Type:  "countAggregator",
+				Type:  generators.TypeCountAggregator,
 				Query: bson.M{},
 			},
 			correct: false,
@@ -77,7 +77,7 @@ func TestNewAggregatorCond(t *testing.T) {
 		{
 			name: "missing databse",
 			config: generators.Config{
-				Type:       "boundAggregator",
+				Type:       generators.TypeBoundAggregator,
 				Collection: "test",
 				Query:      bson.M{"n": 1},
 			},
@@ -113,7 +113,7 @@ func TestNewAggregatorFromMap(t *testing.T) {
 			name: "empty collection name",
 			config: map[string]generators.Config{
 				"key": {
-					Type:       "valueAggregator",
+					Type:       generators.TypeValueAggregator,
 					Collection: "",
 				},
 			},
@@ -165,7 +165,7 @@ func TestAggregatorUpdate(t *testing.T) {
 				bson.M{"_id": 3, "local": 1},
 			},
 			config: generators.Config{
-				Type:       "countAggregator",
+				Type:       generators.TypeCountAggregator,
 				Collection: "test",
 				Database:   "datagen_it_test",
 				Query: bson.M{
@@ -185,7 +185,7 @@ func TestAggregatorUpdate(t *testing.T) {
 				bson.M{"_id": 3, "local": 2},
 			},
 			config: generators.Config{
-				Type:       "valueAggregator",
+				Type:       generators.TypeValueAggregator,
 				Collection: "test",
 				Database:   "datagen_it_test",
 				Field:      "_id",
@@ -206,7 +206,7 @@ func TestAggregatorUpdate(t *testing.T) {
 				bson.M{"_id": 3, "local": 1},
 			},
 			config: generators.Config{
-				Type:       "boundAggregator",
+				Type:       generators.TypeBoundAggregator,
 				Collection: "test",
 				Database:   "datagen_it_test",
 				Field:      "_id",
@@ -226,7 +226,7 @@ func TestAggregatorUpdate(t *testing.T) {
 				bson.M{"_id": 2, "field": 2},
 			},
 			config: generators.Config{
-				Type:       "countAggregator",
+				Type:       generators.TypeCountAggregator,
 				Collection: "test",
 				Database:   "datagen_it_test",
 				Query: bson.M{

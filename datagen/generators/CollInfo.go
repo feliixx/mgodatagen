@@ -48,20 +48,6 @@ func NewCollInfo(count int, version []int, seed uint64, mapRef map[int][][]byte,
 	}
 }
 
-// check if current version of mongodb is greater or at least equal
-// than a specific version
-func (ci *CollInfo) versionAtLeast(v ...int) (result bool) {
-	for i := range v {
-		if i == len(ci.Version) {
-			return false
-		}
-		if ci.Version[i] != v[i] {
-			return ci.Version[i] >= v[i]
-		}
-	}
-	return true
-}
-
 // Config struct containing all possible options
 type Config struct {
 	// Type of object to generate, required
@@ -127,6 +113,430 @@ type Config struct {
 	Query bson.M `json:"query"`
 }
 
+// available generator types, see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
+const (
+	TypeString        = "string"
+	TypeInt           = "int"
+	TypeLong          = "long"
+	TypeDouble        = "double"
+	TypeDecimal       = "decimal"
+	TypeBoolean       = "boolean"
+	TypeObjectID      = "objectId"
+	TypeArray         = "array"
+	TypePosition      = "position"
+	TypeObject        = "object"
+	TypeFromArray     = "fromArray"
+	TypeConstant      = "constant"
+	TypeRef           = "ref"
+	TypeAutoincrement = "autoincrement"
+	TypeBinary        = "binary"
+	TypeDate          = "date"
+	TypeFaker         = "faker"
+)
+
+// aggregator types
+const (
+	TypeCountAggregator = "countAggregator"
+	TypeValueAggregator = "valueAggregator"
+	TypeBoundAggregator = "boundAggregator"
+)
+
+// available faker methods
+const (
+	MethodCellPhoneNumber    = "CellPhoneNumber"
+	MethodCity               = "City"
+	MethodCityPrefix         = "CityPrefix"
+	MethodCitySuffix         = "CitySuffix"
+	MethodCompanyBs          = "CompanyBs"
+	MethodCompanyCatchPhrase = "CompanyCatchPhrase"
+	MethodCompanyName        = "CompanyName"
+	MethodCompanySuffix      = "CompanySuffix"
+	MethodCountry            = "Country"
+	MethodDomainName         = "DomainName"
+	MethodDomainSuffix       = "DomainSuffix"
+	MethodDomainWord         = "DomainWord"
+	MethodEmail              = "Email"
+	MethodFirstName          = "FirstName"
+	MethodFreeEmail          = "FreeEmail"
+	MethodJobTitle           = "JobTitle"
+	MethodLastName           = "LastName"
+	MethodName               = "Name"
+	MethodNamePrefix         = "NamePrefix"
+	MethodNameSuffix         = "NameSuffix"
+	MethodPhoneNumber        = "PhoneNumber"
+	MethodPostCode           = "PostCode"
+	MethodSafeEmail          = "SafeEmail"
+	MethodSecondaryAddress   = "SecondaryAddress"
+	MethodState              = "State"
+	MethodStateAbbr          = "StateAbbr"
+	MethodStreetAddress      = "StreetAddress"
+	MethodStreetName         = "StreetName"
+	MethodStreetSuffix       = "StreetSuffix"
+	MethodURL                = "URL"
+	MethodUserName           = "UserName"
+)
+
+var mapTypes = map[string]byte{
+	TypeString:        bson.ElementString,
+	TypeInt:           bson.ElementInt32,
+	TypeLong:          bson.ElementInt64,
+	TypeDouble:        bson.ElementFloat64,
+	TypeDecimal:       bson.ElementDecimal128,
+	TypeBoolean:       bson.ElementBool,
+	TypeObjectID:      bson.ElementObjectId,
+	TypeArray:         bson.ElementArray,
+	TypePosition:      bson.ElementArray,
+	TypeObject:        bson.ElementDocument,
+	TypeFromArray:     bson.ElementNil, // can be of any bson type
+	TypeConstant:      bson.ElementNil, // can be of any bson type
+	TypeRef:           bson.ElementNil, // can be of any bson type
+	TypeAutoincrement: bson.ElementNil, // type bson.ElementInt32 or bson.ElementInt64
+	TypeBinary:        bson.ElementBinary,
+	TypeDate:          bson.ElementDatetime,
+	TypeFaker:         bson.ElementString,
+
+	TypeCountAggregator: bson.ElementNil,
+	TypeValueAggregator: bson.ElementNil,
+	TypeBoundAggregator: bson.ElementNil,
+}
+
+var fakerMethods = map[string]func(f *faker.Faker) string{
+	MethodCellPhoneNumber:    (*faker.Faker).CellPhoneNumber,
+	MethodCity:               (*faker.Faker).City,
+	MethodCityPrefix:         (*faker.Faker).CityPrefix,
+	MethodCitySuffix:         (*faker.Faker).CitySuffix,
+	MethodCompanyBs:          (*faker.Faker).CompanyBs,
+	MethodCompanyCatchPhrase: (*faker.Faker).CompanyCatchPhrase,
+	MethodCompanyName:        (*faker.Faker).CompanyName,
+	MethodCompanySuffix:      (*faker.Faker).CompanySuffix,
+	MethodCountry:            (*faker.Faker).Country,
+	MethodDomainName:         (*faker.Faker).DomainName,
+	MethodDomainSuffix:       (*faker.Faker).DomainSuffix,
+	MethodDomainWord:         (*faker.Faker).DomainWord,
+	MethodEmail:              (*faker.Faker).Email,
+	MethodFirstName:          (*faker.Faker).FirstName,
+	MethodFreeEmail:          (*faker.Faker).FreeEmail,
+	MethodJobTitle:           (*faker.Faker).JobTitle,
+	MethodLastName:           (*faker.Faker).LastName,
+	MethodName:               (*faker.Faker).Name,
+	MethodNamePrefix:         (*faker.Faker).NamePrefix,
+	MethodNameSuffix:         (*faker.Faker).NameSuffix,
+	MethodPhoneNumber:        (*faker.Faker).PhoneNumber,
+	MethodPostCode:           (*faker.Faker).PostCode,
+	MethodSafeEmail:          (*faker.Faker).SafeEmail,
+	MethodSecondaryAddress:   (*faker.Faker).SecondaryAddress,
+	MethodState:              (*faker.Faker).State,
+	MethodStateAbbr:          (*faker.Faker).StateAbbr,
+	MethodStreetAddress:      (*faker.Faker).StreetAddress,
+	MethodStreetName:         (*faker.Faker).StreetName,
+	MethodStreetSuffix:       (*faker.Faker).StreetSuffix,
+	MethodURL:                (*faker.Faker).URL,
+	MethodUserName:           (*faker.Faker).UserName,
+}
+
+// NewGenerator returns a new Generator based on config
+func (ci *CollInfo) NewGenerator(key string, config *Config) (Generator, error) {
+
+	if config.NullPercentage > 100 || config.NullPercentage < 0 {
+		return nil, fmt.Errorf("for field %s, null percentage has to be between 0 and 100", key)
+	}
+	// use a default key of length 1. This can happen for a generator of type fromArray
+	// used as generator of an ArrayGenerator
+	if len(key) == 0 {
+		key = "k"
+	}
+
+	bsonType, ok := mapTypes[config.Type]
+	if !ok {
+		return nil, fmt.Errorf("invalid type %v for field %v", config.Type, key)
+	}
+	nullPercentage := uint32(config.NullPercentage) * 10
+	base := newBase(key, nullPercentage, bsonType, ci.DocBuffer, ci.pcg32)
+
+	if config.MaxDistinctValue != 0 {
+		size := config.MaxDistinctValue
+		config.MaxDistinctValue = 0
+		values, bsonType, err := ci.preGenerate(key, config, size)
+		if err != nil {
+			return nil, err
+		}
+		base.bsonType = bsonType
+		return &fromArrayGenerator{
+			base:  base,
+			array: values,
+			size:  size,
+			index: 0,
+		}, nil
+	}
+
+	switch config.Type {
+	case TypeString:
+		if config.MinLength < 0 || config.MinLength > config.MaxLength {
+			return nil, fmt.Errorf("for field %s, make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'", key)
+		}
+		if config.Unique {
+			values, err := uniqueValues(ci.Count, int(config.MaxLength))
+			if err != nil {
+				return nil, fmt.Errorf("for field %s, %v", key, err)
+			}
+			return &fromArrayGenerator{
+				base:  base,
+				array: values,
+				size:  ci.Count,
+				index: 0,
+			}, nil
+		}
+		return &stringGenerator{
+			base:      base,
+			minLength: uint32(config.MinLength),
+			maxLength: uint32(config.MaxLength),
+		}, nil
+
+	case TypeInt:
+		if config.MaxInt == 0 || config.MaxInt <= config.MinInt {
+			return nil, fmt.Errorf("for field %s, make sure that 'maxInt' > 'minInt'", key)
+		}
+		return &int32Generator{
+			base: base,
+			min:  config.MinInt,
+			max:  config.MaxInt + 1,
+		}, nil
+
+	case TypeLong:
+		if config.MaxLong == 0 || config.MaxLong <= config.MinLong {
+			return nil, fmt.Errorf("for field %s, make sure that 'maxLong' > 'minLong'", key)
+		}
+		return &int64Generator{
+			base:  base,
+			min:   config.MinLong,
+			max:   config.MaxLong + 1,
+			pcg64: ci.pcg64,
+		}, nil
+
+	case TypeDouble:
+		if config.MaxDouble == 0 || config.MaxDouble <= config.MinDouble {
+			return nil, fmt.Errorf("for field %s, make sure that 'maxDouble' > 'minDouble'", key)
+		}
+		return &float64Generator{
+			base:   base,
+			mean:   config.MinDouble,
+			stdDev: (config.MaxDouble - config.MinDouble) / 2,
+			pcg64:  ci.pcg64,
+		}, nil
+
+	case TypeDecimal:
+		if !ci.versionAtLeast(3, 4) {
+			return nil, fmt.Errorf("for field %s, decimal type (bson decimal128) requires mongodb 3.4 at least", key)
+		}
+		return &decimal128Generator{base: base, pcg64: ci.pcg64}, nil
+
+	case TypeBoolean:
+		return &boolGenerator{base: base}, nil
+
+	case TypeObjectID:
+		return &objectIDGenerator{base: base}, nil
+
+	case TypeArray:
+		if config.Size <= 0 {
+			return nil, fmt.Errorf("for field %s, make sure that 'size' >= 0", key)
+		}
+		g, err := ci.NewGenerator("", config.ArrayContent)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't create new generator: %v", err)
+		}
+
+		// if the generator is of type FromArrayGenerator,
+		// use the type of the first Element as global type
+		// for the generator
+		// => fromArrayGenerator currently has to contain object of
+		// the same type, otherwise bson object will be incorrect
+		switch g.(type) {
+		case *fromArrayGenerator:
+			g := g.(*fromArrayGenerator)
+			// if array is generated with preGenerate(), this step is not needed
+			if !g.doNotTruncate {
+				g.bsonType = g.array[0][0]
+				// do not write first 3 bytes, ie
+				// bson type, byte("k"), byte(0) to avoid conflict with
+				// array index, because index is the key
+				for i := range g.array {
+					g.array[i] = g.array[i][3:]
+				}
+			}
+		case *constGenerator:
+			g := g.(*constGenerator)
+			g.bsonType = g.val[0]
+			g.val = g.val[1+len(g.Key()):]
+		default:
+		}
+
+		return &arrayGenerator{
+			base:      base,
+			size:      config.Size,
+			generator: g,
+		}, nil
+
+	case TypeObject:
+		emg := &embeddedObjectGenerator{
+			base:       base,
+			generators: make([]Generator, 0, len(config.ObjectContent)),
+		}
+		for k, v := range config.ObjectContent {
+			g, err := ci.NewGenerator(k, &v)
+			if err != nil {
+				return nil, fmt.Errorf("for field %s: %v", key, err)
+			}
+			if g != nil {
+				emg.generators = append(emg.generators, g)
+			}
+		}
+		return emg, nil
+
+	case TypeFromArray:
+		if len(config.In) == 0 {
+			return nil, fmt.Errorf("for field %s, 'in' array can't be null or empty", key)
+		}
+		array := make([][]byte, len(config.In))
+		for i, v := range config.In {
+			m := bson.M{key: v}
+			raw, err := bson.Marshal(m)
+			if err != nil {
+				return nil, fmt.Errorf("for field %s, couldn't marshal value: %v", key, err)
+			}
+			// remove first 4 bytes (bson document size) adn last bytes (terminating 0x00
+			// indicating end of document) to keep only the bson content
+			array[i] = raw[4 : len(raw)-1]
+		}
+		return &fromArrayGenerator{
+			base:  base,
+			array: array,
+			size:  len(config.In),
+			index: 0,
+		}, nil
+
+	case TypeBinary:
+		if config.MinLength < 0 || config.MinLength > config.MaxLength {
+			return nil, fmt.Errorf("for field %s, make sure that 'minLength' >= 0 and 'minLength' < 'maxLength'", key)
+		}
+		return &binaryDataGenerator{
+			base:      base,
+			maxLength: uint32(config.MaxLength),
+			minLength: uint32(config.MinLength),
+		}, nil
+
+	case TypeDate:
+		if config.StartDate.Unix() > config.EndDate.Unix() {
+			return nil, fmt.Errorf("for field %s, make sure that 'startDate' < 'endDate'", key)
+		}
+		return &dateGenerator{
+			base:      base,
+			startDate: uint64(config.StartDate.Unix()),
+			delta:     uint64(config.EndDate.Unix() - config.StartDate.Unix()),
+			pcg64:     ci.pcg64,
+		}, nil
+
+	case TypePosition:
+		return &positionGenerator{base: base, pcg64: ci.pcg64}, nil
+
+	case TypeConstant:
+		m := bson.M{key: config.ConstVal}
+		raw, err := bson.Marshal(m)
+		if err != nil {
+			return nil, fmt.Errorf("for field %s, couldn't marshal value: %v", key, err)
+		}
+		return &constGenerator{
+			base: base,
+			// remove first 4 bytes (bson document size) adn last bytes (terminating 0x00
+			// indicating end of document) to keep only the bson content
+			val: raw[4 : len(raw)-1],
+		}, nil
+
+	case TypeAutoincrement:
+		switch config.AutoType {
+		case TypeInt:
+			base.bsonType = bson.ElementInt32
+			return &autoIncrementGenerator32{
+				base:    base,
+				counter: config.StartInt,
+			}, nil
+		case TypeLong:
+			base.bsonType = bson.ElementInt64
+			return &autoIncrementGenerator64{
+				base:    base,
+				counter: config.StartLong,
+			}, nil
+		default:
+			return nil, fmt.Errorf("invalid type %v for field %v", config.Type, key)
+		}
+
+	case TypeFaker:
+		// TODO: use "en" locale for now, but should be configurable
+		fk, err := faker.New("en")
+		if err != nil {
+			return nil, fmt.Errorf("fail to instantiate faker generator: %v", err)
+		}
+		method, ok := fakerMethods[config.Method]
+		if !ok {
+			return nil, fmt.Errorf("invalid Faker method for key %v: %v", key, config.Method)
+		}
+		return &fakerGenerator{
+			base:  base,
+			faker: fk,
+			f:     method,
+		}, nil
+
+	case TypeRef:
+		_, ok := ci.mapRef[config.ID]
+		if !ok {
+			values, bsonType, err := ci.preGenerate(key, config.RefContent, ci.Count)
+			if err != nil {
+				return nil, err
+			}
+			ci.mapRef[config.ID] = values
+			ci.mapRefType[config.ID] = bsonType
+		}
+		base.bsonType = ci.mapRefType[config.ID]
+		return &fromArrayGenerator{
+			base:          base,
+			array:         ci.mapRef[config.ID],
+			size:          len(ci.mapRef[config.ID]),
+			index:         0,
+			doNotTruncate: true,
+		}, nil
+	}
+	return nil, nil
+}
+
+// DocumentGenerator creates an object generator to generate valid bson documents
+func (ci *CollInfo) DocumentGenerator(content map[string]Config) (*DocumentGenerator, error) {
+	d := &DocumentGenerator{
+		base:       newBase("", 0, bson.ElementDocument, ci.DocBuffer, ci.pcg32),
+		generators: make([]Generator, 0, len(content)),
+	}
+	for k, v := range content {
+		g, err := ci.NewGenerator(k, &v)
+		if err != nil {
+			return nil, fmt.Errorf("fail to create DocumentGenerator:\n\tcause: %v", err)
+		}
+		d.Add(g)
+	}
+	return d, nil
+}
+
+// check if current version of mongodb is greater or at least equal
+// than a specific version
+func (ci *CollInfo) versionAtLeast(v ...int) (result bool) {
+	for i := range v {
+		if i == len(ci.Version) {
+			return false
+		}
+		if ci.Version[i] != v[i] {
+			return ci.Version[i] >= v[i]
+		}
+	}
+	return true
+}
+
 type unique struct {
 	values       [][]byte
 	currentIndex int
@@ -174,341 +584,7 @@ func uniqueValues(docCount int, stringSize int) ([][]byte, error) {
 	return u.values, nil
 }
 
-// GeneratorTypes hold the available generator type, and their corresponding bson type.
-// see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
-var GeneratorTypes = map[string]byte{
-	"string":        bson.ElementString,
-	"faker":         bson.ElementString,
-	"int":           bson.ElementInt32,
-	"long":          bson.ElementInt64,
-	"double":        bson.ElementFloat64,
-	"decimal":       bson.ElementDecimal128,
-	"boolean":       bson.ElementBool,
-	"objectId":      bson.ElementObjectId,
-	"array":         bson.ElementArray,
-	"position":      bson.ElementArray,
-	"object":        bson.ElementDocument,
-	"fromArray":     bson.ElementNil, // can be of any bson type
-	"constant":      bson.ElementNil, // can be of any bson type
-	"ref":           bson.ElementNil, // can be of any bson type
-	"autoincrement": bson.ElementNil, // type bson.ElementInt32 or bson.ElementInt64
-	"binary":        bson.ElementBinary,
-	"date":          bson.ElementDatetime,
-
-	"countAggregator": bson.ElementNil,
-	"valueAggregator": bson.ElementNil,
-	"boundAggregator": bson.ElementNil,
-}
-
-// FakerMethods hold the available faker methods, and the corresponding faker function
-var FakerMethods = map[string]func(f *faker.Faker) string{
-	"CellPhoneNumber":    (*faker.Faker).CellPhoneNumber,
-	"City":               (*faker.Faker).City,
-	"CityPrefix":         (*faker.Faker).CityPrefix,
-	"CitySuffix":         (*faker.Faker).CitySuffix,
-	"CompanyBs":          (*faker.Faker).CompanyBs,
-	"CompanyCatchPhrase": (*faker.Faker).CompanyCatchPhrase,
-	"CompanyName":        (*faker.Faker).CompanyName,
-	"CompanySuffix":      (*faker.Faker).CompanySuffix,
-	"Country":            (*faker.Faker).Country,
-	"DomainName":         (*faker.Faker).DomainName,
-	"DomainSuffix":       (*faker.Faker).DomainSuffix,
-	"DomainWord":         (*faker.Faker).DomainWord,
-	"Email":              (*faker.Faker).Email,
-	"FirstName":          (*faker.Faker).FirstName,
-	"FreeEmail":          (*faker.Faker).FreeEmail,
-	"JobTitle":           (*faker.Faker).JobTitle,
-	"LastName":           (*faker.Faker).LastName,
-	"Name":               (*faker.Faker).Name,
-	"NamePrefix":         (*faker.Faker).NamePrefix,
-	"NameSuffix":         (*faker.Faker).NameSuffix,
-	"PhoneNumber":        (*faker.Faker).PhoneNumber,
-	"PostCode":           (*faker.Faker).PostCode,
-	"SafeEmail":          (*faker.Faker).SafeEmail,
-	"SecondaryAddress":   (*faker.Faker).SecondaryAddress,
-	"State":              (*faker.Faker).State,
-	"StateAbbr":          (*faker.Faker).StateAbbr,
-	"StreetAddress":      (*faker.Faker).StreetAddress,
-	"StreetName":         (*faker.Faker).StreetName,
-	"StreetSuffix":       (*faker.Faker).StreetSuffix,
-	"URL":                (*faker.Faker).URL,
-	"UserName":           (*faker.Faker).UserName,
-}
-
-// NewGenerator returns a new Generator based on config
-func (ci *CollInfo) NewGenerator(key string, config *Config) (Generator, error) {
-	if config.NullPercentage > 100 || config.NullPercentage < 0 {
-		return nil, fmt.Errorf("for field %s, null percentage has to be between 0 and 100", key)
-	}
-	// use a default key of length 1. This can happen for a generator of type fromArray
-	// used as generator of an ArrayGenerator
-	if len(key) == 0 {
-		key = "k"
-	}
-
-	bsonType, ok := GeneratorTypes[config.Type]
-	if !ok {
-		return nil, fmt.Errorf("invalid type %v for field %v", config.Type, key)
-	}
-	nullPercentage := uint32(config.NullPercentage) * 10
-	base := newBase(key, nullPercentage, bsonType, ci.DocBuffer, ci.pcg32)
-
-	if config.MaxDistinctValue != 0 {
-		size := config.MaxDistinctValue
-		config.MaxDistinctValue = 0
-		values, bsonType, err := ci.preGenerate(key, config, size)
-		if err != nil {
-			return nil, err
-		}
-		base.bsonType = bsonType
-		return &fromArrayGenerator{
-			base:  base,
-			array: values,
-			size:  size,
-			index: 0,
-		}, nil
-	}
-
-	switch config.Type {
-	case "string":
-		if config.MinLength < 0 || config.MinLength > config.MaxLength {
-			return nil, fmt.Errorf("for field %s, make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'", key)
-		}
-		if config.Unique {
-			values, err := uniqueValues(ci.Count, int(config.MaxLength))
-			if err != nil {
-				return nil, fmt.Errorf("for field %s, %v", key, err)
-			}
-			return &fromArrayGenerator{
-				base:  base,
-				array: values,
-				size:  ci.Count,
-				index: 0,
-			}, nil
-		}
-		return &stringGenerator{
-			base:      base,
-			minLength: uint32(config.MinLength),
-			maxLength: uint32(config.MaxLength),
-		}, nil
-	case "int":
-		if config.MaxInt == 0 || config.MaxInt <= config.MinInt {
-			return nil, fmt.Errorf("for field %s, make sure that 'maxInt' > 'minInt'", key)
-		}
-		return &int32Generator{
-			base: base,
-			min:  config.MinInt,
-			max:  config.MaxInt + 1,
-		}, nil
-	case "long":
-		if config.MaxLong == 0 || config.MaxLong <= config.MinLong {
-			return nil, fmt.Errorf("for field %s, make sure that 'maxLong' > 'minLong'", key)
-		}
-		return &int64Generator{
-			base:  base,
-			min:   config.MinLong,
-			max:   config.MaxLong + 1,
-			pcg64: ci.pcg64,
-		}, nil
-	case "double":
-		if config.MaxDouble == 0 || config.MaxDouble <= config.MinDouble {
-			return nil, fmt.Errorf("for field %s, make sure that 'maxDouble' > 'minDouble'", key)
-		}
-		return &float64Generator{
-			base:   base,
-			mean:   config.MinDouble,
-			stdDev: (config.MaxDouble - config.MinDouble) / 2,
-			pcg64:  ci.pcg64,
-		}, nil
-	case "decimal":
-		if !ci.versionAtLeast(3, 4) {
-			return nil, fmt.Errorf("for field %s, decimal type (bson decimal128) requires mongodb 3.4 at least", key)
-		}
-		return &decimal128Generator{base: base, pcg64: ci.pcg64}, nil
-	case "boolean":
-		return &boolGenerator{base: base}, nil
-	case "objectId":
-		return &objectIDGenerator{base: base}, nil
-	case "array":
-		if config.Size <= 0 {
-			return nil, fmt.Errorf("for field %s, make sure that 'size' >= 0", key)
-		}
-		g, err := ci.NewGenerator("", config.ArrayContent)
-		if err != nil {
-			return nil, fmt.Errorf("couldn't create new generator: %v", err)
-		}
-
-		// if the generator is of type FromArrayGenerator,
-		// use the type of the first Element as global type
-		// for the generator
-		// => fromArrayGenerator currently has to contain object of
-		// the same type, otherwise bson object will be incorrect
-		switch g.(type) {
-		case *fromArrayGenerator:
-			g := g.(*fromArrayGenerator)
-			// if array is generated with preGenerate(), this step is not needed
-			if !g.doNotTruncate {
-				g.bsonType = g.array[0][0]
-				// do not write first 3 bytes, ie
-				// bson type, byte("k"), byte(0) to avoid conflict with
-				// array index, because index is the key
-				for i := range g.array {
-					g.array[i] = g.array[i][3:]
-				}
-			}
-		case *constGenerator:
-			g := g.(*constGenerator)
-			g.bsonType = g.val[0]
-			g.val = g.val[1+len(g.Key()):]
-		default:
-		}
-
-		return &arrayGenerator{
-			base:      base,
-			size:      config.Size,
-			generator: g,
-		}, nil
-	case "object":
-		emg := &embeddedObjectGenerator{
-			base:       base,
-			generators: make([]Generator, 0, len(config.ObjectContent)),
-		}
-		for k, v := range config.ObjectContent {
-			g, err := ci.NewGenerator(k, &v)
-			if err != nil {
-				return nil, fmt.Errorf("for field %s: %v", key, err)
-			}
-			if g != nil {
-				emg.generators = append(emg.generators, g)
-			}
-		}
-		return emg, nil
-
-	case "fromArray":
-		if len(config.In) == 0 {
-			return nil, fmt.Errorf("for field %s, 'in' array can't be null or empty", key)
-		}
-		array := make([][]byte, len(config.In))
-		for i, v := range config.In {
-			m := bson.M{key: v}
-			raw, err := bson.Marshal(m)
-			if err != nil {
-				return nil, fmt.Errorf("for field %s, couldn't marshal value: %v", key, err)
-			}
-			// remove first 4 bytes (bson document size) adn last bytes (terminating 0x00
-			// indicating end of document) to keep only the bson content
-			array[i] = raw[4 : len(raw)-1]
-		}
-		return &fromArrayGenerator{
-			base:  base,
-			array: array,
-			size:  len(config.In),
-			index: 0,
-		}, nil
-	case "binary":
-		if config.MinLength < 0 || config.MinLength > config.MaxLength {
-			return nil, fmt.Errorf("for field %s, make sure that 'minLength' >= 0 and 'minLength' < 'maxLength'", key)
-		}
-		return &binaryDataGenerator{
-			base:      base,
-			maxLength: uint32(config.MaxLength),
-			minLength: uint32(config.MinLength),
-		}, nil
-	case "date":
-		if config.StartDate.Unix() > config.EndDate.Unix() {
-			return nil, fmt.Errorf("for field %s, make sure that 'startDate' < 'endDate'", key)
-		}
-		return &dateGenerator{
-			base:      base,
-			startDate: uint64(config.StartDate.Unix()),
-			delta:     uint64(config.EndDate.Unix() - config.StartDate.Unix()),
-			pcg64:     ci.pcg64,
-		}, nil
-	case "position":
-		return &positionGenerator{base: base, pcg64: ci.pcg64}, nil
-	case "constant":
-		m := bson.M{key: config.ConstVal}
-		raw, err := bson.Marshal(m)
-		if err != nil {
-			return nil, fmt.Errorf("for field %s, couldn't marshal value: %v", key, err)
-		}
-		return &constGenerator{
-			base: base,
-			// remove first 4 bytes (bson document size) adn last bytes (terminating 0x00
-			// indicating end of document) to keep only the bson content
-			val: raw[4 : len(raw)-1],
-		}, nil
-	case "autoincrement":
-		switch config.AutoType {
-		case "int":
-			base.bsonType = bson.ElementInt32
-			return &autoIncrementGenerator32{
-				base:    base,
-				counter: config.StartInt,
-			}, nil
-		case "long":
-			base.bsonType = bson.ElementInt64
-			return &autoIncrementGenerator64{
-				base:    base,
-				counter: config.StartLong,
-			}, nil
-		default:
-			return nil, fmt.Errorf("invalid type %v for field %v", config.Type, key)
-		}
-	case "faker":
-		// TODO: use "en" locale for now, but should be configurable
-		fk, err := faker.New("en")
-		if err != nil {
-			return nil, fmt.Errorf("fail to instantiate faker generator: %v", err)
-		}
-		method, ok := FakerMethods[config.Method]
-		if !ok {
-			return nil, fmt.Errorf("invalid Faker method for key %v: %v", key, config.Method)
-		}
-		return &fakerGenerator{
-			base:  base,
-			faker: fk,
-			f:     method,
-		}, nil
-	case "ref":
-		_, ok := ci.mapRef[config.ID]
-		if !ok {
-			values, bsonType, err := ci.preGenerate(key, config.RefContent, ci.Count)
-			if err != nil {
-				return nil, err
-			}
-			ci.mapRef[config.ID] = values
-			ci.mapRefType[config.ID] = bsonType
-		}
-		base.bsonType = ci.mapRefType[config.ID]
-		return &fromArrayGenerator{
-			base:          base,
-			array:         ci.mapRef[config.ID],
-			size:          len(ci.mapRef[config.ID]),
-			index:         0,
-			doNotTruncate: true,
-		}, nil
-	}
-	return nil, nil
-}
-
-// DocumentGenerator creates an object generator to generate valid bson documents
-func (ci *CollInfo) DocumentGenerator(content map[string]Config) (*DocumentGenerator, error) {
-	d := &DocumentGenerator{
-		base:       newBase("", 0, bson.ElementDocument, ci.DocBuffer, ci.pcg32),
-		generators: make([]Generator, 0, len(content)),
-	}
-	for k, v := range content {
-		g, err := ci.NewGenerator(k, &v)
-		if err != nil {
-			return nil, fmt.Errorf("fail to create DocumentGenerator:\n\tcause: %v", err)
-		}
-		d.Add(g)
-	}
-	return d, nil
-}
-
-// preGenerate generate `nb`values using a generator created from config
+// preGenerate generates `nb`values using a generator created from config
 func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]byte, bsonType byte, err error) {
 
 	tmpCi := NewCollInfo(ci.Count, ci.Version, ci.Seed, ci.mapRef, ci.mapRefType)
@@ -535,6 +611,7 @@ func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]
 
 // NewAggregator returns a new Aggregator based on config
 func (ci *CollInfo) NewAggregator(key string, config *Config) (Aggregator, error) {
+
 	if config.Query == nil || len(config.Query) == 0 {
 		return nil, fmt.Errorf("for field %v, 'query' can't be null or empty", key)
 	}
@@ -561,29 +638,36 @@ func (ci *CollInfo) NewAggregator(key string, config *Config) (Aggregator, error
 		localVar:   localVar,
 	}
 	switch config.Type {
-	case "countAggregator":
+	case TypeCountAggregator:
 		return &countAggregator{baseAggregator: base}, nil
-	case "valueAggregator":
+
+	case TypeValueAggregator:
 		if config.Field == "" {
 			return nil, fmt.Errorf("for field %v, 'field' can't be null or empty", key)
 		}
 		return &valueAggregator{baseAggregator: base, field: config.Field}, nil
-	case "boundAggregator":
+
+	case TypeBoundAggregator:
 		if config.Field == "" {
 			return nil, fmt.Errorf("for field %v, 'field' can't be null or empty", key)
 		}
 		return &boundAggregator{baseAggregator: base, field: config.Field}, nil
+
 	default:
 		return nil, fmt.Errorf("invalid type %v for field %v", config.Field, config.Type)
 	}
 }
 
-// newAggregatorFromMap creates a slice of Aggregator based on a map of configuration
+// AggregatorList creates a slice of Aggregator from a map of Config
+func (ci *CollInfo) AggregatorList(content map[string]Config) ([]Aggregator, error) {
+	return ci.newAggregatorFromMap(content)
+}
+
 func (ci *CollInfo) newAggregatorFromMap(content map[string]Config) ([]Aggregator, error) {
 	agArr := make([]Aggregator, 0)
 	for k, v := range content {
 		switch v.Type {
-		case "countAggregator", "valueAggregator", "boundAggregator":
+		case TypeCountAggregator, TypeValueAggregator, TypeBoundAggregator:
 			a, err := ci.NewAggregator(k, &v)
 			if err != nil {
 				return nil, err
@@ -593,9 +677,4 @@ func (ci *CollInfo) newAggregatorFromMap(content map[string]Config) ([]Aggregato
 		}
 	}
 	return agArr, nil
-}
-
-// AggregatorList creates a slice of Aggregator from a map of Config
-func (ci *CollInfo) AggregatorList(content map[string]Config) ([]Aggregator, error) {
-	return ci.newAggregatorFromMap(content)
 }

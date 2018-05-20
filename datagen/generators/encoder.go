@@ -4,12 +4,12 @@ import "math"
 
 // DocBuffer is a wrapper around a slice of bytes. It provides
 // method similar to bytes.Buffer, plus a specific method WriteAt() to
-// write buf at a specific position of the underlying slice of bytes
+// write at a specific position of the underlying slice of bytes
 type DocBuffer struct {
 	buf []byte
 }
 
-// NewDocBuffer returns a new DocBuffer seeded with time.Now()
+// NewDocBuffer returns a new DocBuffer
 func NewDocBuffer() *DocBuffer {
 	return &DocBuffer{
 		buf: make([]byte, 0, 256),
@@ -40,7 +40,7 @@ func (e *DocBuffer) WriteAt(startPos int, b []byte) {
 	copy(e.buf[startPos:startPos+len(b)], b)
 }
 
-// Reserve add 4 bytes to the buffer
+// Reserve appends 4 bytes to the buffer
 func (e *DocBuffer) Reserve() {
 	e.buf = append(e.buf, byte(0), byte(0), byte(0), byte(0))
 }
