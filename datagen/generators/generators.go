@@ -25,7 +25,7 @@ import (
 // generate random value of a specific type, and encode them in bson
 // format
 type Generator interface {
-	// Key returns the generator key folowed by 0x00 as a slice of bytes
+	// Key returns the element key
 	Key() []byte
 	// Type returns the bson type of the element as defined in bson spec: http://bsonspec.org/
 	Type() byte
@@ -38,7 +38,6 @@ type Generator interface {
 // base implements Key(), Type() and Exists() methods. Intended to be
 // embeded in each generator
 type base struct {
-	// []byte(key) + OxOO
 	key []byte
 	// probability that the element doesn't exist
 	nullPercentage uint32
@@ -50,7 +49,7 @@ type base struct {
 // newBase returns a new base
 func newBase(key string, nullPercentage uint32, bsonType byte, out *DocBuffer, pcg32 *pcg.PCG32) base {
 	return base{
-		key:            append([]byte(key), byte(0)),
+		key:            []byte(key),
 		nullPercentage: nullPercentage,
 		bsonType:       bsonType,
 		buffer:         out,
@@ -233,6 +232,7 @@ func (g *DocumentGenerator) Value() {
 			if gen.Type() != bson.ElementNil {
 				g.buffer.WriteSingleByte(gen.Type())
 				g.buffer.Write(gen.Key())
+				g.buffer.WriteSingleByte(byte(0))
 			}
 			gen.Value()
 		}
@@ -259,6 +259,7 @@ func (g *embeddedObjectGenerator) Value() {
 			if gen.Type() != bson.ElementNil {
 				g.buffer.WriteSingleByte(gen.Type())
 				g.buffer.Write(gen.Key())
+				g.buffer.WriteSingleByte(byte(0))
 			}
 			gen.Value()
 		}

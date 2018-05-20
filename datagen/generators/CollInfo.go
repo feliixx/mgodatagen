@@ -366,7 +366,8 @@ func (ci *CollInfo) NewGenerator(key string, config *Config) (Generator, error) 
 		case *constGenerator:
 			g := g.(*constGenerator)
 			g.bsonType = g.val[0]
-			g.val = g.val[1+len(g.Key()):]
+			// 2: 1 for bson type, and 1 for terminating byte 0x00 after element key
+			g.val = g.val[2+len(g.Key()):]
 		default:
 		}
 
