@@ -216,7 +216,7 @@ func (d *dtg) fillCollection(coll *Collection) error {
 	seed := uint64(time.Now().Unix())
 	ci := generators.NewCollInfo(coll.Count, d.version, seed, d.mapRef, d.mapRefType)
 
-	docGenerator, err := ci.DocumentGenerator(coll.Content)
+	docGenerator, err := ci.NewDocumentGenerator(coll.Content)
 	if err != nil {
 		return err
 	}
@@ -324,7 +324,7 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	}
 
 	ci := generators.NewCollInfo(coll.Count, d.version, 0, d.mapRef, d.mapRefType)
-	aggregators, err := ci.AggregatorList(coll.Content)
+	aggregators, err := ci.NewAggregatorSlice(coll.Content)
 	if err != nil {
 		return err
 	}

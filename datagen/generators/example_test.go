@@ -17,8 +17,8 @@ func Example() {
 			MaxLength: 5,
 		},
 	}
-	ci := generators.NewCollInfo(1, nil, 1, nil, nil)
-	docGenerator, err := ci.DocumentGenerator(content)
+	collInfo := generators.NewCollInfo(1, nil, 1, nil, nil)
+	docGenerator, err := collInfo.NewDocumentGenerator(content)
 	if err != nil {
 		log.Fatal(err)
 	}

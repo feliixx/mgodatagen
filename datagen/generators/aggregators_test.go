@@ -1,6 +1,7 @@
 package generators_test
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -57,16 +58,6 @@ func TestNewAggregatorCond(t *testing.T) {
 			correct: false,
 		},
 		{
-			name: "unknown aggregator type",
-			config: generators.Config{
-				Type:       "unknown",
-				Collection: "test",
-				Database:   "test",
-				Query:      bson.M{"n": 1},
-			},
-			correct: false,
-		},
-		{
 			name: "empty query",
 			config: generators.Config{
 				Type:  generators.TypeCountAggregator,
@@ -89,7 +80,10 @@ func TestNewAggregatorCond(t *testing.T) {
 
 	for _, tt := range newAggregatorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ci.NewAggregator("k", &tt.config)
+			var content = map[string]generators.Config{
+				"k": tt.config,
+			}
+			_, err := ci.NewAggregatorSlice(content)
 			if tt.correct && err != nil {
 				t.Errorf("expected no error for config %v \nbut got \n%v", tt.config, err)
 			} else if !tt.correct && err == nil {
@@ -136,7 +130,7 @@ func TestNewAggregatorFromMap(t *testing.T) {
 
 	for _, tt := range documentAggregatorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			aggs, err := ci.AggregatorList(tt.config)
+			aggs, err := ci.NewAggregatorSlice(tt.config)
 			if tt.correct && err != nil {
 				t.Errorf("expected no error for config %v \nbut got \n%v", tt.config, err)
 			} else if !tt.correct && err == nil {
@@ -249,10 +243,8 @@ func TestAggregatorUpdate(t *testing.T) {
 	for _, tt := range aggregatorUpdateTest {
 		t.Run(tt.name, func(t *testing.T) {
 			createCollection(t, session, tt.config, tt.baseDoc)
-			aggregator, err := ci.NewAggregator("key", &tt.config)
-			if err != nil {
-				t.Error(err)
-			}
+			aggregator := newAggregator(t, ci, tt.config)
+
 			if want, got := aggregator.Query(), tt.config.Query; !reflect.DeepEqual(want, got) {
 				t.Errorf("different keys, expected %s, got %s", want, got)
 			}
@@ -269,6 +261,20 @@ func TestAggregatorUpdate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func newAggregator(t *testing.T, ci *generators.CollInfo, config generators.Config) generators.Aggregator {
+	var content = map[string]generators.Config{
+		"key": config,
+	}
+	aggregators, err := ci.NewAggregatorSlice(content)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(aggregators) == 0 {
+		t.Error(fmt.Errorf("no aggregator created"))
+	}
+	return aggregators[0]
 }
 
 func createCollection(t *testing.T, session *mgo.Session, config generators.Config, baseDoc []interface{}) {
