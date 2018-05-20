@@ -6,7 +6,7 @@
 
 # mgodatagen 
 
-A small CLI tool to quickly generate millions of pseudo-random BSON documents and insert them into a Mongodb instance. Quickly test new data structure or how your application responds when your database grows! 
+A small CLI tool to quickly generate millions of pseudo-random BSON documents and insert them into a MongoDB instance. Quickly test new data structure or how your application responds when your database grows! 
 
 Try it online: [**mongoplayground**](https://mongoplayground.net/)
 
@@ -71,7 +71,7 @@ general:
 
 ```
 
-Only the configuration file need to be specified ( -f | --file flag). A basic usage of mgodatagen would be 
+Only the configuration file need to be specified ( **-f | --file flag**). A basic usage of mgodatagen would be 
 
 ```
 ./mgodatagen -f config.json 
@@ -86,7 +86,7 @@ If no host/port is specified, mgodatagen tries to connect to **`mongodb://127.0.
 The config file is an array of JSON documents, where each documents holds the configuration 
 for a collection to create 
 
-See **MongodB documentation** for details on parameters: 
+See **MongoDB documentation** for details on parameters: 
 
  - shardConfig: [**shardCollection**](https://docs.mongodb.com/manual/reference/command/shardCollection/)
  - indexes: [**indexes**](https://docs.mongodb.com/manual/reference/method/db.collection.createIndex/)
@@ -265,7 +265,7 @@ List of [Faker](https://github.com/manveru/faker) `<generator>` types:
 
 ### String
 
-Generate random string of a certain length. String is composed of char within this list: 
+Generates random string of a certain length. String is composed of char within this list: 
 `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_`
 
 ```JSON5
@@ -281,7 +281,7 @@ Generate random string of a certain length. String is composed of char within th
 
 #### Unique String
 
-if `unique` is set to true, the field will only contains unique strings. Unique strings 
+If `unique` is set to true, the field will only contains unique strings. Unique strings 
 have a **fixed length**, `minLength` is taken as length for the string. 
 There is  `64^x`  possible unique string for strings of length `x`. This number has to 
 be inferior or equal to the number of documents you want to generate. 
@@ -300,7 +300,7 @@ They will look like
 
 ### Int 
 
-Generate random int within bounds. 
+Generates random int within bounds. 
 
 ```JSON5
 "fieldName": {
@@ -314,7 +314,7 @@ Generate random int within bounds.
 
 ### Long 
 
-Generate random long within bounds. 
+Generates random long within bounds. 
 
 ```JSON5
 "fieldName": {
@@ -328,7 +328,7 @@ Generate random long within bounds.
 
 ### Double
 
-Generate random double within bounds. 
+Generates random double within bounds. 
 
 ```JSON5
 "fieldName": {
@@ -342,7 +342,7 @@ Generate random double within bounds.
 
 ### Decimal
 
-Generate random decimal128
+Generates random decimal128
 
 ```JSON5
 "fieldName": {
@@ -354,7 +354,7 @@ Generate random decimal128
 
 ### Boolean
 
-Generate random boolean
+Generates random boolean
 
 ```JSON5
 "fieldName": {
@@ -366,7 +366,7 @@ Generate random boolean
 
 ### ObjectId
 
-Generate random and unique objectId
+Generates random and unique objectId
 
 ```JSON5
 "fieldName": {
@@ -378,7 +378,7 @@ Generate random and unique objectId
 
 ### Array
 
-Generate a random array of bson object 
+Generates a random array of bson object 
 
 ```JSON5
 "fieldName": {
@@ -393,7 +393,7 @@ Generate a random array of bson object
 
 ### Object
 
-Generate random nested object
+Generates random nested object
 
 ```JSON5
 "fieldName": {
@@ -410,7 +410,7 @@ Generate random nested object
 
 ### Binary 
 
-Generate random binary data of length within bounds
+Generates random binary data of length within bounds
 
 ```JSON5
 "fieldName": {
@@ -424,7 +424,7 @@ Generate random binary data of length within bounds
 
 ### Date 
 
-Generate a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/reference/method/Date/) ) 
+Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/reference/method/Date/) ) 
 
 `startDate` and `endDate` are string representation of a Date following RFC3339: 
 
@@ -443,7 +443,7 @@ Generate a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/re
 
 ### Position
 
-Generate a random GPS position in Decimal Degrees ( WGS 84), 
+Generates a random GPS position in Decimal Degrees ( WGS 84), 
 eg : [40.741895, -73.989308]
 
 ```JSON5
@@ -469,7 +469,7 @@ Add the same value to each document
 
 ### Autoincrement
 
-Create an autoincremented field (type `<long>` or `<int>`)
+Generates an autoincremented value (type `<long>` or `<int>`)
 
 ```JSON5
 "fieldName": {
@@ -511,7 +511,7 @@ generator in other collections:
 
 ### FromArray
 
-Randomly pick value from an array as value for the field. Currently, object in the 
+Randomly pick value from an array as value for the field. Currently, objects in the 
 array have to be of the same type 
 
 

@@ -5,8 +5,7 @@
 //     http://bsonspec.org/#/specification
 //
 //
-// It was created as part of mgodatagen, but is standalone
-// and may be used on its own.
+// It was created as part of mgodatagen, but may be used on its own.
 package generators
 
 import (

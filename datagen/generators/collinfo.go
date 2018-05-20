@@ -131,7 +131,7 @@ const (
 	TypeFaker         = "faker"
 )
 
-// aggregator types
+// available aggregator types
 const (
 	TypeCountAggregator = "countAggregator"
 	TypeValueAggregator = "valueAggregator"

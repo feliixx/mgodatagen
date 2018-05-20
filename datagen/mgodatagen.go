@@ -539,7 +539,7 @@ const (
 	defaultTimeout    = 10 * time.Second
 )
 
-// Generate create a database according to specified options. Progress informations
+// Generate creates a database according to specified options. Progress informations
 // are send to out
 func Generate(options *Options, out io.Writer) error {
 	return run(options, out)
