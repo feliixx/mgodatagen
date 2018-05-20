@@ -97,14 +97,19 @@ func TestProgressOutput(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// skip the first lines as they depends on MongoDB version
-	expected := bytes.SplitN(b, []byte("+"), 2)
-	want := expected[1]
+	expectedLines := bytes.Split(b, []byte("\n"))
 
-	output := bytes.SplitN(buffer.Bytes(), []byte("+"), 2)
-	got := output[1]
-	if !bytes.Equal(want, got) {
-		t.Errorf("expected \n%s \n but got \n%s", want, got)
+	outputLines := bytes.Split(buffer.Bytes(), []byte("\n"))
+	// do not check line 1 and n-1 as they depends on MongoDB version
+	// and elapsed time respectively
+	for i, want := range expectedLines {
+		if i == 0 || i == len(expectedLines)-1 {
+			continue
+		}
+		got := outputLines[i]
+		if !bytes.Equal(want, got) {
+			t.Errorf("for output line %d, expected \n%s \n but got \n%s", i, want, got)
+		}
 	}
 }
 

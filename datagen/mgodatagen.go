@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -67,6 +68,7 @@ func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
 
 type dtg struct {
 	out        io.Writer
+	bar        *uiprogress.Bar
 	session    *mgo.Session
 	version    []int
 	mapRef     map[int][][]byte
@@ -78,61 +80,66 @@ func (d *dtg) generate(collection *Collection) error {
 
 	var steps = []struct {
 		name     string
-		stepFunc func(dtg *dtg, collection *Collection, bar *uiprogress.Bar) error
+		size     int
+		stepFunc func(dtg *dtg, collection *Collection) error
 	}{
 		{
 			name:     "creating",
+			size:     1,
 			stepFunc: (*dtg).createCollection,
 		},
 		{
 			name:     "generating",
+			size:     collection.Count,
 			stepFunc: (*dtg).fillCollection,
 		},
 		{
 			name:     "aggregating",
+			size:     1,
 			stepFunc: (*dtg).updateWithAggregators,
 		},
 		{
 			name:     "indexing",
+			size:     1,
 			stepFunc: (*dtg).ensureIndex,
 		},
 	}
 
 	progress := uiprogress.New()
 	progress.SetOut(d.out)
+	progress.SetRefreshInterval(50 * time.Millisecond)
 	progress.Start()
 	defer progress.Stop()
 
-	total := collection.Count + 3
-	progressBar := progress.AddBar(total).AppendCompleted().PrependElapsed().PrependFunc(func(b *uiprogress.Bar) string {
+	total := 0
+	bounds := make(sort.IntSlice, 0, len(steps))
+	for _, s := range steps {
+		total += s.size
+		bounds = append(bounds, total)
+	}
+
+	d.bar = progress.AddBar(total).AppendCompleted().PrependFunc(func(b *uiprogress.Bar) string {
 
 		current := b.Current()
 		stepName := "done"
-		switch {
-		case current <= 1:
-			stepName = steps[0].name
-		case current >= 2 && current < collection.Count+1:
-			stepName = steps[1].name
-		case current == collection.Count+1:
-			stepName = steps[2].name
-		case current == collection.Count+2:
-			stepName = steps[3].name
+		if current != total {
+			stepName = steps[bounds.Search(current)].name
 		}
-		return strutil.Resize("collection "+collection.Name+": "+stepName, 35)
+		return strutil.Resize(fmt.Sprintf("collection %s: %s", collection.Name, stepName), 35)
 	})
 
 	for _, s := range steps {
-		err := s.stepFunc(d, collection, progressBar)
+		err := s.stepFunc(d, collection)
 		if err != nil {
 			return err
 		}
+		d.bar.Set(d.bar.Current() + s.size)
 	}
 	return nil
 }
 
 // create a collection with specific options
-func (d *dtg) createCollection(coll *Collection, bar *uiprogress.Bar) error {
-	defer bar.Incr()
+func (d *dtg) createCollection(coll *Collection) error {
 	c := d.session.DB(coll.DB).C(coll.Name)
 
 	if d.Append || d.IndexOnly {
@@ -200,8 +207,7 @@ var pool = sync.Pool{
 	},
 }
 
-func (d *dtg) fillCollection(coll *Collection, bar *uiprogress.Bar) error {
-	defer bar.Set(coll.Count + 1)
+func (d *dtg) fillCollection(coll *Collection) error {
 
 	if d.IndexOnly {
 		return nil
@@ -274,13 +280,12 @@ func (d *dtg) fillCollection(coll *Collection, bar *uiprogress.Bar) error {
 			}
 		}()
 	}
-	count := 0
 	// start bson.Raw generation to feed the task channel
-Loop:
+	count := 0
 	for count < coll.Count {
 		select {
 		case <-ctx.Done(): // if an error occurred in one of the 'inserting' goroutines, close the channel
-			break Loop
+			break
 		default:
 		}
 		rc := pool.Get().(*rawChunk)
@@ -302,7 +307,7 @@ Loop:
 			copy(rc.documents[i].Data, ci.DocBuffer.Bytes())
 		}
 		count += rc.nbToInsert
-		bar.Set(bar.Current() + rc.nbToInsert)
+		d.bar.Set(d.bar.Current() + rc.nbToInsert)
 		task <- rc
 	}
 	close(task)
@@ -315,8 +320,7 @@ Loop:
 }
 
 // Update documents with pre-computed aggregations
-func (d *dtg) updateWithAggregators(coll *Collection, bar *uiprogress.Bar) error {
-	defer bar.Incr()
+func (d *dtg) updateWithAggregators(coll *Collection) error {
 
 	if d.IndexOnly {
 		return nil
@@ -336,43 +340,28 @@ func (d *dtg) updateWithAggregators(coll *Collection, bar *uiprogress.Bar) error
 
 	tasks := make(chan [2]bson.M, d.BatchSize)
 	errs := make(chan error)
+	collection := d.session.DB(coll.DB).C(coll.Name)
 
 	// run updates in a new goroutine
 	var wg sync.WaitGroup
 	wg.Add(1)
+
 	go func() {
 		defer wg.Done()
 		s := d.session.Copy()
 		defer s.Close()
-		coll := s.DB(coll.DB).C(coll.Name)
-		bulk := coll.Bulk()
-		bulk.Unordered()
-		count := 0
+		c := collection.With(s)
+
 		for t := range tasks {
-			count++
-			bulk.Update(t[0], t[1])
-			if count%d.BatchSize == 0 {
-				_, err := bulk.Run()
-				if err != nil {
-					errs <- fmt.Errorf("exception occurred during bulk insert:\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err)
-					return
-				}
-				bulk := coll.Bulk()
-				bulk.Unordered()
-				count = 0
-			}
-		}
-		if count > 0 {
-			_, err := bulk.Run()
+			err := c.Update(t[0], t[1])
 			if err != nil {
-				errs <- fmt.Errorf("exception occurred during bulk insert:\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err)
+				errs <- fmt.Errorf("exception occurred during update:\n  cause: %v", err)
+				return
 			}
 		}
 	}()
 
-	c := d.session.DB(coll.DB).C(coll.Name)
 	var aggregationError error
-
 Loop:
 	for _, aggregator := range aggregators {
 
@@ -380,8 +369,8 @@ Loop:
 		var result struct {
 			Values []interface{} `bson:"values"`
 		}
-		err := c.Database.Run(bson.D{
-			{Name: "distinct", Value: c.Name},
+		err := collection.Database.Run(bson.D{
+			{Name: "distinct", Value: coll.Name},
 			{Name: "key", Value: localVar},
 		}, &result)
 		if err != nil {
@@ -390,15 +379,13 @@ Loop:
 		}
 		for _, value := range result.Values {
 			select {
-			case err := <-errs:
-				aggregationError = err
+			case aggregationError = <-errs:
 				break Loop
 			default:
 			}
 
-			update, err := aggregator.Update(d.session, value)
-			if err != nil {
-				aggregationError = err
+			update, aggregationError := aggregator.Update(d.session, value)
+			if aggregationError != nil {
 				break Loop
 			}
 			tasks <- update
@@ -410,8 +397,7 @@ Loop:
 }
 
 // create index on generated collections
-func (d *dtg) ensureIndex(coll *Collection, bar *uiprogress.Bar) error {
-	defer bar.Incr()
+func (d *dtg) ensureIndex(coll *Collection) error {
 
 	if len(coll.Indexes) == 0 {
 		return nil
@@ -427,7 +413,7 @@ func (d *dtg) ensureIndex(coll *Collection, bar *uiprogress.Bar) error {
 
 	var r result
 	err = c.Database.Run(bson.D{
-		{Name: "createIndexes", Value: c.Name},
+		{Name: "createIndexes", Value: coll.Name},
 		{Name: "indexes", Value: coll.Indexes},
 	}, &r)
 	if err != nil || !r.Ok {
@@ -445,21 +431,21 @@ func (d *dtg) printStats(collections []Collection) error {
 	}
 	rows := make([][]string, 0, len(collections))
 
-	for _, collection := range collections {
-		c := d.session.DB(collection.DB).C(collection.Name)
+	for _, coll := range collections {
+		c := d.session.DB(coll.DB).C(coll.Name)
 		err := c.Database.Run(bson.D{
-			{Name: "collStats", Value: c.Name},
+			{Name: "collStats", Value: coll.Name},
 			{Name: "scale", Value: 1024},
 		}, &stats)
 		if err != nil {
-			return fmt.Errorf("couldn't get stats for collection %s \n  cause: %v ", c.Name, err)
+			return fmt.Errorf("couldn't get stats for collection %s \n  cause: %v ", coll.Name, err)
 		}
 		indexes := make([]string, 0, len(stats.IndexSizes))
 		for k, v := range stats.IndexSizes {
 			indexes = append(indexes, fmt.Sprintf("%s  %v kB", k, v))
 		}
 		rows = append(rows, []string{
-			c.Name,
+			coll.Name,
 			strconv.Itoa(stats.Count),
 			strconv.Itoa(stats.AvgObjSize),
 			strings.Join(indexes, "\n"),
@@ -609,6 +595,9 @@ func run(options *Options, out io.Writer) error {
 		Options:    *options,
 	}
 
+	start := time.Now()
+	defer printElapsedTime(out, start)
+
 	for _, collection := range collections {
 		err = dtg.generate(&collection)
 		if err != nil {
@@ -619,4 +608,9 @@ func run(options *Options, out io.Writer) error {
 		return dtg.printStats(collections)
 	}
 	return nil
+}
+
+func printElapsedTime(out io.Writer, start time.Time) {
+	elapsed := time.Now().Sub(start).Round(10 * time.Millisecond)
+	fmt.Fprintf(out, "\nrun finished in %s\n", elapsed.String())
 }
