@@ -103,7 +103,7 @@ func TestProgressOutput(t *testing.T) {
 	// do not check line 1 and n-1 as they depends on MongoDB version
 	// and elapsed time respectively
 	for i, want := range expectedLines {
-		if i == 0 || i == len(expectedLines)-1 {
+		if i == 1 || i == len(expectedLines)-1 {
 			continue
 		}
 		got := outputLines[i]
