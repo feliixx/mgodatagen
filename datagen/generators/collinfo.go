@@ -237,8 +237,8 @@ var fakerMethods = map[string]func(f *faker.Faker) string{
 // NewDocumentGenerator creates an object generator to generate valid bson documents
 func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGenerator, error) {
 	d := &DocumentGenerator{
-		buffer:     ci.DocBuffer,
-		generators: make([]Generator, 0, len(content)),
+		Buffer:     ci.DocBuffer,
+		Generators: make([]Generator, 0, len(content)),
 	}
 	for k, v := range content {
 		g, err := ci.newGenerator(k, &v)

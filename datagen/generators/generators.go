@@ -23,36 +23,36 @@ import (
 
 // DocumentGenerator is a Generator for creating random bson documents
 type DocumentGenerator struct {
-	buffer     *DocBuffer
-	generators []Generator
+	// Buffer holds the document bytes
+	Buffer *DocBuffer
+	// list of all generators used to create the document. The resulting document
+	// will have n keys where 0 < n < len(Generators)
+	Generators []Generator
 }
-
-// DocBuffer returns the DocumentGenerator DocBuffer
-func (g *DocumentGenerator) DocBuffer() *DocBuffer { return g.buffer }
 
 // Generate creates a new bson document and returns it as a slice of bytes
 func (g *DocumentGenerator) Generate() []byte {
-	g.buffer.Truncate(4)
-	for _, gen := range g.generators {
+	g.Buffer.Truncate(4)
+	for _, gen := range g.Generators {
 		if gen.Exists() {
 			if gen.Type() != bson.ElementNil {
-				g.buffer.WriteSingleByte(gen.Type())
-				g.buffer.Write(gen.Key())
-				g.buffer.WriteSingleByte(byte(0))
+				g.Buffer.WriteSingleByte(gen.Type())
+				g.Buffer.Write(gen.Key())
+				g.Buffer.WriteSingleByte(byte(0))
 			}
 			gen.Value()
 		}
 	}
-	g.buffer.WriteSingleByte(byte(0))
-	g.buffer.WriteAt(0, int32Bytes(int32(g.buffer.Len())))
-	return g.buffer.Bytes()
+	g.Buffer.WriteSingleByte(byte(0))
+	g.Buffer.WriteAt(0, int32Bytes(int32(g.Buffer.Len())))
+	return g.Buffer.Bytes()
 }
 
 // Add append a new Generator to the DocumentGenerator. The generator Value() method
 // must write to the same DocBuffer as the DocumentGenerator g
 func (g *DocumentGenerator) Add(generator Generator) {
 	if generator != nil {
-		g.generators = append(g.generators, generator)
+		g.Generators = append(g.Generators, generator)
 	}
 }
 
