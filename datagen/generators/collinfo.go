@@ -19,8 +19,6 @@ type CollInfo struct {
 	Version []int
 	// seed for random generation
 	Seed uint64
-	// buffer to hold bson document bytes
-	DocBuffer *DocBuffer
 	// map holding references values when using a reference generator
 	mapRef map[int][][]byte
 	// map holding references types when using a reference generator
@@ -40,7 +38,6 @@ func NewCollInfo(count int, version []int, seed uint64, mapRef map[int][][]byte,
 		Count:      count,
 		Version:    version,
 		Seed:       seed,
-		DocBuffer:  NewDocBuffer(),
 		mapRef:     mapRef,
 		mapRefType: mapRefType,
 		pcg32:      pcg.NewPCG32().Seed(seed, seed),
@@ -236,12 +233,13 @@ var fakerMethods = map[string]func(f *faker.Faker) string{
 
 // NewDocumentGenerator creates an object generator to generate valid bson documents
 func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGenerator, error) {
+	buffer := NewDocBuffer()
 	d := &DocumentGenerator{
-		Buffer:     ci.DocBuffer,
+		Buffer:     buffer,
 		Generators: make([]Generator, 0, len(content)),
 	}
 	for k, v := range content {
-		g, err := ci.newGenerator(k, &v)
+		g, err := ci.newGenerator(buffer, k, &v)
 		if err != nil {
 			return nil, fmt.Errorf("fail to create DocumentGenerator:\n\tcause: %v", err)
 		}
@@ -250,7 +248,7 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 	return d, nil
 }
 
-func (ci *CollInfo) newGenerator(key string, config *Config) (Generator, error) {
+func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) (Generator, error) {
 
 	if config.NullPercentage > 100 || config.NullPercentage < 0 {
 		return nil, fmt.Errorf("for field %s, null percentage has to be between 0 and 100", key)
@@ -266,7 +264,7 @@ func (ci *CollInfo) newGenerator(key string, config *Config) (Generator, error) 
 		return nil, fmt.Errorf("invalid type %v for field %v", config.Type, key)
 	}
 	nullPercentage := uint32(config.NullPercentage) * 10
-	base := newBase(key, nullPercentage, bsonType, ci.DocBuffer, ci.pcg32)
+	base := newBase(key, nullPercentage, bsonType, buffer, ci.pcg32)
 
 	if config.MaxDistinctValue != 0 {
 		size := config.MaxDistinctValue
@@ -355,7 +353,7 @@ func (ci *CollInfo) newGenerator(key string, config *Config) (Generator, error) 
 		if config.Size <= 0 {
 			return nil, fmt.Errorf("for field %s, make sure that 'size' >= 0", key)
 		}
-		g, err := ci.newGenerator("", config.ArrayContent)
+		g, err := ci.newGenerator(buffer, "", config.ArrayContent)
 		if err != nil {
 			return nil, fmt.Errorf("couldn't create new generator: %v", err)
 		}
@@ -398,7 +396,7 @@ func (ci *CollInfo) newGenerator(key string, config *Config) (Generator, error) 
 			generators: make([]Generator, 0, len(config.ObjectContent)),
 		}
 		for k, v := range config.ObjectContent {
-			g, err := ci.newGenerator(k, &v)
+			g, err := ci.newGenerator(buffer, k, &v)
 			if err != nil {
 				return nil, fmt.Errorf("for field %s: %v", key, err)
 			}
@@ -587,8 +585,9 @@ func uniqueValues(docCount int, stringSize int) ([][]byte, error) {
 // preGenerate generates `nb`values using a generator created from config
 func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]byte, bsonType byte, err error) {
 
+	buffer := NewDocBuffer()
 	tmpCi := NewCollInfo(ci.Count, ci.Version, ci.Seed, ci.mapRef, ci.mapRefType)
-	g, err := tmpCi.newGenerator(key, config)
+	g, err := tmpCi.newGenerator(buffer, key, config)
 	if err != nil {
 		return nil, bson.ElementNil, fmt.Errorf("for field %s, error while creating base array: %v", key, err)
 	}
@@ -596,10 +595,10 @@ func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]
 	values = make([][]byte, nb)
 	for i := 0; i < nb; i++ {
 		g.Value()
-		tmpArr := make([]byte, tmpCi.DocBuffer.Len())
-		copy(tmpArr, tmpCi.DocBuffer.Bytes())
+		tmpArr := make([]byte, buffer.Len())
+		copy(tmpArr, buffer.Bytes())
 		values[i] = tmpArr
-		tmpCi.DocBuffer.Truncate(0)
+		buffer.Truncate(0)
 	}
 	if nb > 1 {
 		if bytes.Equal(values[0], values[1]) {
