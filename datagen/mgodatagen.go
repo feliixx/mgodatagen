@@ -197,7 +197,7 @@ var pool = sync.Pool{
 		list := make([]bson.Raw, 1000)
 		for i := range list {
 			list[i] = bson.Raw{
-				Data: make([]byte, 0),
+				Data: make([]byte, 128),
 				Kind: bson.ElementDocument,
 			}
 		}
@@ -294,17 +294,14 @@ func (d *dtg) fillCollection(coll *Collection) error {
 			rc.nbToInsert = int(coll.Count - count)
 		}
 		for i := 0; i < rc.nbToInsert; i++ {
-			docGenerator.Value()
-			l := ci.DocBuffer.Len()
+			docBytes := docGenerator.Generate()
+
 			// if documents[i] is not large enough, grow it manually
-			if len(rc.documents[i].Data) < l {
-				for j := len(rc.documents[i].Data); j < l; j++ {
-					rc.documents[i].Data = append(rc.documents[i].Data, byte(0))
-				}
-			} else {
-				rc.documents[i].Data = rc.documents[i].Data[:l]
+			for len(rc.documents[i].Data) < len(docBytes) {
+				rc.documents[i].Data = append(rc.documents[i].Data, byte(0))
 			}
-			copy(rc.documents[i].Data, ci.DocBuffer.Bytes())
+			rc.documents[i].Data = rc.documents[i].Data[:len(docBytes)]
+			copy(rc.documents[i].Data, docBytes)
 		}
 		count += rc.nbToInsert
 		d.bar.Set(d.bar.Current() + rc.nbToInsert)

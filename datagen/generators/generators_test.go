@@ -68,8 +68,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 				t.Error(err)
 			}
 			for i := 0; i < ci.Count; i++ {
-				docGenerator.Value()
-				err := bson.Unmarshal(ci.DocBuffer.Bytes(), &tt.expected)
+				err := bson.Unmarshal(docGenerator.Generate(), &tt.expected)
 				if err != nil {
 					t.Errorf("fail to unmarshal doc: %v", err)
 				}
@@ -92,8 +91,7 @@ func TestBigArray(t *testing.T) {
 		Key []bool `bson:"key"`
 	}
 	for i := 0; i < 100; i++ {
-		docGenerator.Value()
-		err := bson.Unmarshal(ci.DocBuffer.Bytes(), &a)
+		err := bson.Unmarshal(docGenerator.Generate(), &a)
 		if err != nil {
 			t.Error(err)
 		}
@@ -117,8 +115,7 @@ func TestDocumentWithDecimal128(t *testing.T) {
 		Decimal bson.Decimal128 `bson:"decimal"`
 	}
 	for i := 0; i < 1000; i++ {
-		docGenerator.Value()
-		err := bson.Unmarshal(ci.DocBuffer.Bytes(), &d)
+		err := bson.Unmarshal(docGenerator.Generate(), &d)
 		if err != nil {
 			t.Error(err)
 		}
@@ -751,6 +748,6 @@ func BenchmarkGeneratorAll(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		docGenerator.Value()
+		docGenerator.Generate()
 	}
 }

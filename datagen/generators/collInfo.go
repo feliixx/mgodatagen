@@ -511,7 +511,7 @@ func (ci *CollInfo) NewGenerator(key string, config *Config) (Generator, error) 
 // DocumentGenerator creates an object generator to generate valid bson documents
 func (ci *CollInfo) DocumentGenerator(content map[string]Config) (*DocumentGenerator, error) {
 	d := &DocumentGenerator{
-		base:       newBase("", 0, bson.ElementDocument, ci.DocBuffer, ci.pcg32),
+		buffer:     ci.DocBuffer,
 		generators: make([]Generator, 0, len(content)),
 	}
 	for k, v := range content {

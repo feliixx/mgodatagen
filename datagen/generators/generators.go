@@ -21,6 +21,38 @@ import (
 	"github.com/manveru/faker"
 )
 
+// DocumentGenerator is a Generator for creating random bson documents
+type DocumentGenerator struct {
+	buffer     *DocBuffer
+	generators []Generator
+}
+
+// Generate create a new bson documents from Generators of g. Documents
+// bytes are written to the associated DocBuffer
+func (g *DocumentGenerator) Generate() []byte {
+	g.buffer.Truncate(4)
+	for _, gen := range g.generators {
+		if gen.Exists() {
+			if gen.Type() != bson.ElementNil {
+				g.buffer.WriteSingleByte(gen.Type())
+				g.buffer.Write(gen.Key())
+				g.buffer.WriteSingleByte(byte(0))
+			}
+			gen.Value()
+		}
+	}
+	g.buffer.WriteSingleByte(byte(0))
+	g.buffer.WriteAt(0, int32Bytes(int32(g.buffer.Len())))
+	return g.buffer.Bytes()
+}
+
+// Add append a new Generator to the DocumentGenerator
+func (g *DocumentGenerator) Add(generator Generator) {
+	if generator != nil {
+		g.generators = append(g.generators, generator)
+	}
+}
+
 // Generator is an interface for generator that can be used to
 // generate random value of a specific type, and encode them in bson
 // format
@@ -217,39 +249,11 @@ func (g *objectIDGenerator) Value() {
 	)
 }
 
-// DocumentGenerator is a Generator for creating random bson documents
-type DocumentGenerator struct {
+// Generator for creating embedded documents
+type embeddedObjectGenerator struct {
 	base
 	generators []Generator
 }
-
-// Value create a new bson documents from Generators of g. Documents
-// bytes are written to the associated DocBuffer
-func (g *DocumentGenerator) Value() {
-	g.buffer.Truncate(4)
-	for _, gen := range g.generators {
-		if gen.Exists() {
-			if gen.Type() != bson.ElementNil {
-				g.buffer.WriteSingleByte(gen.Type())
-				g.buffer.Write(gen.Key())
-				g.buffer.WriteSingleByte(byte(0))
-			}
-			gen.Value()
-		}
-	}
-	g.buffer.WriteSingleByte(byte(0))
-	g.buffer.WriteAt(0, int32Bytes(int32(g.buffer.Len())))
-}
-
-// Add append a new Generator to the DocumentGenerator
-func (g *DocumentGenerator) Add(generator Generator) {
-	if generator != nil {
-		g.generators = append(g.generators, generator)
-	}
-}
-
-// Generator for creating embedded documents
-type embeddedObjectGenerator DocumentGenerator
 
 func (g *embeddedObjectGenerator) Value() {
 	current := g.buffer.Len()
