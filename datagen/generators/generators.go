@@ -27,8 +27,10 @@ type DocumentGenerator struct {
 	generators []Generator
 }
 
-// Generate create a new bson documents from Generators of g. Documents
-// bytes are written to the associated DocBuffer
+// DocBuffer returns the DocumentGenerator DocBuffer
+func (g *DocumentGenerator) DocBuffer() *DocBuffer { return g.buffer }
+
+// Generate creates a new bson document and returns it as a slice of bytes
 func (g *DocumentGenerator) Generate() []byte {
 	g.buffer.Truncate(4)
 	for _, gen := range g.generators {
@@ -46,7 +48,8 @@ func (g *DocumentGenerator) Generate() []byte {
 	return g.buffer.Bytes()
 }
 
-// Add append a new Generator to the DocumentGenerator
+// Add append a new Generator to the DocumentGenerator. The generator Value() method
+// must write to the same DocBuffer as the DocumentGenerator g
 func (g *DocumentGenerator) Add(generator Generator) {
 	if generator != nil {
 		g.generators = append(g.generators, generator)
@@ -61,7 +64,7 @@ type Generator interface {
 	Key() []byte
 	// Type returns the bson type of the element as defined in bson spec: http://bsonspec.org/
 	Type() byte
-	// Value encode a value in bson format and append it to the generator buffer
+	// Value encodes a random value in bson and write it to a DocBuffer
 	Value()
 	// Exists returns true if the generation should be performed.
 	Exists() bool
