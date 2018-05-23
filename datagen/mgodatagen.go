@@ -429,8 +429,7 @@ func (d *dtg) printStats(collections []Collection) error {
 	rows := make([][]string, 0, len(collections))
 
 	for _, coll := range collections {
-		c := d.session.DB(coll.DB).C(coll.Name)
-		err := c.Database.Run(bson.D{
+		err := d.session.DB(coll.DB).Run(bson.D{
 			{Name: "collStats", Value: coll.Name},
 			{Name: "scale", Value: 1024},
 		}, &stats)
@@ -475,16 +474,20 @@ func createEmptyCfgFile(filename string) error {
 		return err
 	}
 	defer f.Close()
-	template := `[{
-"database": "dbName",
-"collection": "collectionName",
-"count": 1000,
-"content": {
-    
-  }
-}]
-`
-	_, err = f.Write([]byte(template))
+
+	templateByte := []byte(`
+[
+    {
+        "database": "dbName",
+        "collection": "collName",
+        "count": 1000,
+        "content": {
+
+        }
+    }
+]		
+`)
+	_, err = f.Write(templateByte[1:])
 	return err
 }
 

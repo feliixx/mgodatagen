@@ -2,6 +2,7 @@ package datagen_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -66,18 +67,13 @@ func TestCreateEmptyFile(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
-	want := `[{
-"database": "dbName",
-"collection": "collectionName",
-"count": 1000,
-"content": {
-    
-  }
-}]
-`
-	if got := string(content); want != got {
-		t.Errorf("expected \n%s\nbut got\n%s", want, got)
+	var collections []datagen.Collection
+	err = json.Unmarshal(content, &collections)
+	if err != nil {
+		t.Errorf("invalid template file: %v", err)
+	}
+	if len(collections) == 0 {
+		t.Errorf("expected at least one collection but got none")
 	}
 }
 
@@ -97,19 +93,14 @@ func TestProgressOutput(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	expectedLines := bytes.Split(b, []byte("\n"))
+	// only compare content of the stat table
+	// TODO find a cleaner way to do this
+	expected := bytes.SplitN(b, []byte("+"), 2)
+	output := bytes.SplitN(buffer.Bytes(), []byte("+"), 2)
 
-	outputLines := bytes.Split(buffer.Bytes(), []byte("\n"))
-	// do not check line 1 and n-1 as they depends on MongoDB version
-	// and elapsed time respectively
-	for i, want := range expectedLines {
-		if i == 1 || i == len(expectedLines)-1 {
-			continue
-		}
-		got := outputLines[i]
-		if !bytes.Equal(want, got) {
-			t.Errorf("for output line %d, expected \n%s \n but got \n%s", i, want, got)
-		}
+	want, got := expected[1][:45], output[1][:45]
+	if !bytes.Equal(want, got) {
+		t.Errorf("expected \n%s \n but got \n%s", want, got)
 	}
 }
 
