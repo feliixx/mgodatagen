@@ -343,15 +343,15 @@ func TestCollectionContentWithAggregation(t *testing.T) {
 		b := r["AG-CI"].(bson.M)
 		m := b["m"].(int)
 		if m < 0 || m > 100 {
-			t.Errorf("'m' field sould be 0 < m < 100, but was %d", m)
+			t.Errorf("'m' field should be 0 < m < 100, but was %d", m)
 		}
 		mM := b["M"].(int)
 		if mM < 9900 || mM > 10000 {
-			t.Errorf("'M' field sould be 900 < M < 1000, but was %d", mM)
+			t.Errorf("'M' field should be 900 < M < 1000, but was %d", mM)
 		}
 		agFI := r["AG-FI"].(int)
 		if agFI < 1450 || agFI > 1850 {
-			t.Errorf("'AG-FI' field sould be 1450 < AG-FI < 1850, but was %d", agFI)
+			t.Errorf("'AG-FI' field should be 1450 < AG-FI < 1850, but was %d", agFI)
 		}
 
 		vv := r["AG-VA"].([]interface{})
@@ -535,23 +535,6 @@ func TestGenerate(t *testing.T) {
 					Append:     true,
 				},
 				General: defaultGeneralOpts,
-			},
-			correct:       true,
-			errMsgRegex:   nil,
-			expectedNbDoc: 2000,
-		},
-		{
-			name: "print version",
-			options: datagen.Options{
-				Connection: defaultConnOpts,
-				Configuration: datagen.Configuration{
-					ConfigFile: "generators/testdata/full-bson.json",
-					BatchSize:  1000,
-				},
-				General: datagen.General{
-					Version: true,
-					Quiet:   true,
-				},
 			},
 			correct:       true,
 			errMsgRegex:   nil,

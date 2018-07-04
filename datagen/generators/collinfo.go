@@ -417,7 +417,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			if err != nil {
 				return nil, fmt.Errorf("for field %s, couldn't marshal value: %v", key, err)
 			}
-			// remove first 4 bytes (bson document size) adn last bytes (terminating 0x00
+			// remove first 4 bytes (bson document size) and last bytes (terminating 0x00
 			// indicating end of document) to keep only the bson content
 			array[i] = raw[4 : len(raw)-1]
 		}
@@ -460,7 +460,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		}
 		return &constGenerator{
 			base: base,
-			// remove first 4 bytes (bson document size) adn last bytes (terminating 0x00
+			// remove first 4 bytes (bson document size) and last bytes (terminating 0x00
 			// indicating end of document) to keep only the bson content
 			val: raw[4 : len(raw)-1],
 		}, nil

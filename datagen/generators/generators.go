@@ -70,7 +70,7 @@ type Generator interface {
 }
 
 // base implements Key(), Type() and Exists() methods. Intended to be
-// embeded in each generator
+// embedded in each generator
 type base struct {
 	key []byte
 	// probability that the element doesn't exist
@@ -114,7 +114,7 @@ type stringGenerator struct {
 	maxLength uint32
 }
 
-// folowing code is an adaptation of existing code from this question:
+// following code is an adaptation of existing code from this question:
 // https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-golang/
 const (
 	letterBytes   = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_"

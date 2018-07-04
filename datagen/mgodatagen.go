@@ -537,10 +537,7 @@ type Options struct {
 	General       `group:"general"`
 }
 
-const (
-	mgodatagenVersion = "0.7.2"
-	defaultTimeout    = 10 * time.Second
-)
+const defaultTimeout = 10 * time.Second
 
 // Generate creates a database according to specified options. Progress informations
 // are send to out
@@ -551,10 +548,6 @@ func Generate(options *Options, out io.Writer) error {
 func run(options *Options, out io.Writer) error {
 	if options.Quiet {
 		out = ioutil.Discard
-	}
-	if options.Version {
-		fmt.Fprintf(out, "mgodatagen version %s\n", mgodatagenVersion)
-		return nil
 	}
 	if options.New != "" {
 		err := createEmptyCfgFile(options.New)
