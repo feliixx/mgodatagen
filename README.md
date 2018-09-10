@@ -4,33 +4,31 @@
 [![codecov](https://codecov.io/gh/feliixx/mgodatagen/branch/master/graph/badge.svg)](https://codecov.io/gh/feliixx/mgodatagen)
 [![GoDoc](https://godoc.org/github.com/feliixx/mgodatagen?status.svg)](http://godoc.org/github.com/feliixx/mgodatagen)
 
-# mgodatagen 
+# mgodatagen
 
-A small CLI tool to quickly generate millions of pseudo-random BSON documents and insert them into a MongoDB instance. Quickly test new data structure or how your application responds when your database grows! 
+A small CLI tool to quickly generate millions of pseudo-random BSON documents and insert them into a MongoDB instance. Quickly test new data structure or how your application responds when your database grows!
 
 Try it online: [**mongoplayground**](https://mongoplayground.net/)
 
 ## Features
 
 - Support all bson types listed in [MongoDB bson types](https://docs.mongodb.com/manual/reference/bson-types/)
-- Generate *real* data using [faker](https://github.com/manveru/faker)
+- Generate _real_ data using [faker](https://github.com/manveru/faker)
 - Create referenced fields accross collections
-- Aggregate data accross collections
+- Aggregate data across collections
 - Create sharded collection
 - Create collections in multiple databases
 - Cross-plateform. Tested on Unix / OSX / windows
 
 ![Demo](demo.gif)
 
-
-
 ## installation
 
 Download the binary from the [release page](https://github.com/feliixx/mgodatagen/releases)
 
-or 
+or
 
-Build from source: 
+Build from source:
 
 First, make sure that go is installed on your machine (see [install go](https://golang.org/doc/install) for details ). Then, use `go get`:
 
@@ -40,7 +38,7 @@ go get -u "github.com/feliixx/mgodatagen"
 
 ## Options
 
-Several options are available (use `mgodatagen --help` to print this): 
+Several options are available (use `mgodatagen --help` to print this):
 
 ```
 Usage:
@@ -68,43 +66,39 @@ general:
       --help                   show this help message
   -v, --version                print the tool version and exit
   -q, --quiet                  quieter output
-
 ```
 
-Only the configuration file need to be specified ( **-f | --file flag**). A basic usage of mgodatagen would be 
+Only the configuration file need to be specified ( **-f | --file flag**). A basic usage of mgodatagen would be
 
 ```
-./mgodatagen -f config.json 
+./mgodatagen -f config.json
 ```
 
-If no host/port is specified, mgodatagen tries to connect to **`mongodb://127.0.0.1:27017`**. 
-
-
+If no host/port is specified, mgodatagen tries to connect to **`mongodb://127.0.0.1:27017`**.
 
 # Configuration file
 
-The config file is an array of JSON documents, where each documents holds the configuration 
-for a collection to create 
+The config file is an array of JSON documents, where each documents holds the configuration
+for a collection to create
 
-See **MongoDB documentation** for details on parameters: 
+See **MongoDB documentation** for details on parameters:
 
- - shardConfig: [**shardCollection**](https://docs.mongodb.com/manual/reference/command/shardCollection/)
- - indexes: [**indexes**](https://docs.mongodb.com/manual/reference/method/db.collection.createIndex/)
- - collation: [**collation**](https://docs.mongodb.com/manual/reference/bson-type-comparison-order/#collation)
+- shardConfig: [**shardCollection**](https://docs.mongodb.com/manual/reference/command/shardCollection/)
+- indexes: [**indexes**](https://docs.mongodb.com/manual/reference/method/db.collection.createIndex/)
+- collation: [**collation**](https://docs.mongodb.com/manual/reference/bson-type-comparison-order/#collation)
 
 ```JSON5
-
 [
-  // first collection to create 
-  {  
+  // first collection to create
+  {
    // REQUIRED FIELDS
-   // 
+   //
    "database": <string>,              // required, database name
    "collection": <string>,            // required, collection name
-   "count": <int>,                    // required, number of document to insert in the collection 
-   "content": {                       // required, the actual schema to generate documents   
+   "count": <int>,                    // required, number of document to insert in the collection
+   "content": {                       // required, the actual schema to generate documents
      "fieldName1": <generator>,       // optional, see Generator below
-     "fieldName2": <generator>,       
+     "fieldName2": <generator>,
      ...
    },
    // OPTIONAL FIELDS
@@ -113,17 +107,17 @@ See **MongoDB documentation** for details on parameters:
    // possible values:
    // - none
    // - snappy
-   // - zlib 
+   // - zlib
    "compressionLevel": <string>,      // optional, default: snappy
 
    // configuration for sharded collection
-   "shardConfig": {                   // optional 
+   "shardConfig": {                   // optional
       "shardCollection": <string>.<string>, // required. <database>.<collection>
       "key": <object>,                // required, shard key, eg: {"_id": "hashed"}
       "unique": <boolean>,            // optional, default: false
-      "numInitialChunks": <int>       // optional 
+      "numInitialChunks": <int>       // optional
 
-      "collation": {                  // optional 
+      "collation": {                  // optional
         "locale": <string>,
         "caseLevel": <boolean>,
         "caseFirst": <string>,
@@ -136,7 +130,7 @@ See **MongoDB documentation** for details on parameters:
    },
 
    // list of index to build
-   "indexes": [                       // optional  
+   "indexes": [                       // optional
       {
          "name": <string>,            // required, index name
          "key": <object>,             // required, index key, eg: {"name": 1}
@@ -148,13 +142,13 @@ See **MongoDB documentation** for details on parameters:
          "max": <double>,             // optional, for 2d index only, default: 180.0
          "bucketSize": <double>,      // optional, for geoHaystack indexes only
          "expireAfterSeconds": <int>, // optional, for TTL indexes only
-         "weights": <string>,         // optional, for text indexes only 
-         "defaultLanguage": <string>, // optional, for text index only 
+         "weights": <string>,         // optional, for text indexes only
+         "defaultLanguage": <string>, // optional, for text index only
          "languageOverride": <string>,// optional, for text index only
          "textIndexVersion": <int>,   // optional, for text index only
-         "partialFilterExpression": <object>, // optional 
+         "partialFilterExpression": <object>, // optional
 
-         "collation": {               // optional 
+         "collation": {               // optional
            "locale": <string>,
            "caseLevel": <boolean>,
            "caseFirst": <string>,
@@ -162,11 +156,11 @@ See **MongoDB documentation** for details on parameters:
            "numericOrdering": <boolean>,
            "alternate": <string>,
            "maxVariable": <string>,
-           "backwards": <boolean>                
+           "backwards": <boolean>
          }
    ]
   },
-  // second collection to create 
+  // second collection to create
   {
     ...
   }
@@ -175,34 +169,32 @@ See **MongoDB documentation** for details on parameters:
 
 ### Example
 
-A set of sample config files can be found in **datagen/testdata/**. To use it, 
+A set of sample config files can be found in **datagen/testdata/**. To use it,
 make sure that you have a mongodb instance running (on 127.0.0.1:27017 for example)
-and run 
+and run
 
 ```
 ./mgodatagen -f datagen/testdata/ref.json
 ```
 
-This will insert 1000 random documents in collections `test` and `link` of database 
-`datagen_it_test` with the structure defined in the config file. 
+This will insert 1000 random documents in collections `test` and `link` of database
+`datagen_it_test` with the structure defined in the config file.
 
+# Generator types
 
-# Generator types  
-
-
-Generators have a common structure: 
+Generators have a common structure:
 
 ```JSON5
 "fieldName": {                 // required, field name in generated document
-  "type": <string>,            // required, type of the field 
-  "nullPercentage": <int>,     // optional, int between 0 and 100. Percentage of documents 
+  "type": <string>,            // required, type of the field
+  "nullPercentage": <int>,     // optional, int between 0 and 100. Percentage of documents
                                // that will have this field
   "maxDistinctValue": <int>,   // optional, maximum number of distinct values for this field
   "typeParam": ...             // specific parameters for this type
 }
 ```
 
-List of main `<generator>` types: 
+List of main `<generator>` types:
 
 - [string](#string)
 - [int](#int)
@@ -213,10 +205,10 @@ List of main `<generator>` types:
 - [objectId](#objectid)
 - [array](#array)
 - [object](#object)
-- [binary](#binary) 
-- [date](#date) 
+- [binary](#binary)
+- [date](#date)
 
-List of custom `<generator>` types: 
+List of custom `<generator>` types:
 
 - [position](#position)
 - [constant](#constant)
@@ -227,7 +219,7 @@ List of custom `<generator>` types:
 - [valueAggregator](#valueAggregator)
 - [boundAggregator](#boundAggregator)
 
-List of [Faker](https://github.com/manveru/faker) `<generator>` types: 
+List of [Faker](https://github.com/manveru/faker) `<generator>` types:
 
 - [CellPhoneNumber](#faker)
 - [City](#faker)
@@ -261,34 +253,32 @@ List of [Faker](https://github.com/manveru/faker) `<generator>` types:
 - [URL](#faker)
 - [UserName](#faker)
 
-
-
 ### String
 
-Generates random string of a certain length. String is composed of char within this list: 
+Generates random string of a certain length. String is composed of char within this list:
 `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_`
 
 ```JSON5
 "fieldName": {
     "type": "string",          // required
-    "nullPercentage": <int>,   // optional 
+    "nullPercentage": <int>,   // optional
     "maxDistinctValue": <int>, // optional
-    "unique": <bool>,          // optional, see details below 
-    "minLength": <int>,        // required,  must be >= 0 
+    "unique": <bool>,          // optional, see details below
+    "minLength": <int>,        // required,  must be >= 0
     "maxLength": <int>         // required,  must be >= minLength
 }
 ```
 
 #### Unique String
 
-If `unique` is set to true, the field will only contains unique strings. Unique strings 
-have a **fixed length**, `minLength` is taken as length for the string. 
-There is  `64^x`  possible unique string for strings of length `x`. This number has to 
-be inferior or equal to the number of documents you want to generate. 
-For example, if you want unique strings of length 3, the is `64 * 64 * 64 = 262144` possible 
+If `unique` is set to true, the field will only contains unique strings. Unique strings
+have a **fixed length**, `minLength` is taken as length for the string.
+There is `64^x` possible unique string for strings of length `x`. This number has to
+be inferior or equal to the number of documents you want to generate.
+For example, if you want unique strings of length 3, the is `64 * 64 * 64 = 262144` possible
 strings
 
-They will look like 
+They will look like
 
 ```
 "aaa",
@@ -298,28 +288,28 @@ They will look like
 ...
 ```
 
-### Int 
+### Int
 
-Generates random int within bounds. 
+Generates random int within bounds.
 
 ```JSON5
 "fieldName": {
     "type": "int",             // required
-    "nullPercentage": <int>,   // optional 
+    "nullPercentage": <int>,   // optional
     "maxDistinctValue": <int>, // optional
     "minInt": <int>,           // required
     "maxInt": <int>            // required, must be >= minInt
 }
 ```
 
-### Long 
+### Long
 
-Generates random long within bounds. 
+Generates random long within bounds.
 
 ```JSON5
 "fieldName": {
     "type": "long",            // required
-    "nullPercentage": <int>,   // optional 
+    "nullPercentage": <int>,   // optional
     "maxDistinctValue": <int>, // optional
     "minLong": <long>,         // required
     "maxLong": <long>          // required, must be >= minLong
@@ -328,13 +318,13 @@ Generates random long within bounds.
 
 ### Double
 
-Generates random double within bounds. 
+Generates random double within bounds.
 
 ```JSON5
 "fieldName": {
     "type": "double",          // required
     "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>, // optional 
+    "maxDistinctValue": <int>, // optional
     "minDouble": <double>,     // required
     "maxDouble": <double>      // required, must be >= minDouble
 }
@@ -348,7 +338,7 @@ Generates random decimal128
 "fieldName": {
     "type": "decimal",         // required
     "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>, // optional 
+    "maxDistinctValue": <int>, // optional
 }
 ```
 
@@ -359,7 +349,7 @@ Generates random boolean
 ```JSON5
 "fieldName": {
     "type": "boolean",         // required
-    "nullPercentage": <int>,   // optional 
+    "nullPercentage": <int>,   // optional
     "maxDistinctValue": <int>  // optional
 }
 ```
@@ -372,20 +362,20 @@ Generates random and unique objectId
 "fieldName": {
     "type": "objectId",        // required
     "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>  // optional 
+    "maxDistinctValue": <int>  // optional
 }
 ```
 
 ### Array
 
-Generates a random array of bson object 
+Generates a random array of bson object
 
 ```JSON5
 "fieldName": {
     "type": "array",             // required
     "nullPercentage": <int>,     // optional
     "maxDistinctValue": <int>,   // optional
-    "size": <int>,               // required, size of the array 
+    "size": <int>,               // required, size of the array
     "arrayContent": <generator>  // genrator use to create element to fill the array.
                                  // can be of any type scpecified in generator types
 }
@@ -400,41 +390,40 @@ Generates random nested object
     "type": "object",                    // required
     "nullPercentage": <int>,             // optional
     "maxDistinctValue": <int>,           // optional
-    "objectContent": {                   // required, list of generator used to 
-       "nestedFieldName1": <generator>,  // generate the nested document 
+    "objectContent": {                   // required, list of generator used to
+       "nestedFieldName1": <generator>,  // generate the nested document
        "nestedFieldName2": <generator>,
        ...
     }
 }
 ```
 
-### Binary 
+### Binary
 
 Generates random binary data of length within bounds
 
 ```JSON5
 "fieldName": {
     "type": "binary",           // required
-    "nullPercentage": <int>,    // optional 
+    "nullPercentage": <int>,    // optional
     "maxDistinctValue": <int>,  // optional
-    "minLength": <int>,         // required,  must be >= 0 
+    "minLength": <int>,         // required,  must be >= 0
     "maxLength": <int>          // required,  must be >= minLength
 }
 ```
 
-### Date 
+### Date
 
-Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/reference/method/Date/) ) 
+Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/reference/method/Date/) )
 
-`startDate` and `endDate` are string representation of a Date following RFC3339: 
+`startDate` and `endDate` are string representation of a Date following RFC3339:
 
 **format**: "yyyy-MM-ddThh:mm:ss+00:00"
-
 
 ```JSON5
 "fieldName": {
     "type": "date",            // required
-    "nullPercentage": <int>,   // optional 
+    "nullPercentage": <int>,   // optional
     "maxDistinctValue": <int>, // optional
     "startDate": <string>,     // required
     "endDate": <string>        // required,  must be >= startDate
@@ -443,27 +432,27 @@ Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/r
 
 ### Position
 
-Generates a random GPS position in Decimal Degrees ( WGS 84), 
+Generates a random GPS position in Decimal Degrees ( WGS 84),
 eg : [40.741895, -73.989308]
 
 ```JSON5
 "fieldName": {
     "type": "position",         // required
-    "nullPercentage": <int>     // optional 
+    "nullPercentage": <int>     // optional
     "maxDistinctValue": <int>   // optional
 }
 ```
 
 ### Constant
 
-Add the same value to each document 
+Add the same value to each document
 
 ```JSON5
 "fieldName": {
     "type": "constant",       // required
     "nullPercentage": <int>,  // optional
     "constVal": <object>      // required, an be of any type including object and array
-                              // eg: {"k": 1, "v": "val"} 
+                              // eg: {"k": 1, "v": "val"}
 }
 ```
 
@@ -483,12 +472,12 @@ Generates an autoincremented value (type `<long>` or `<int>`)
 
 ### Ref
 
-If a field reference an other field in an other collection, you can use a ref generator. 
+If a field reference an other field in an other collection, you can use a ref generator.
 
-generator in first collection: 
+generator in first collection:
 
 ```JSON5
-"fieldName":{  
+"fieldName":{
     "type":"ref",               // required
     "nullPercentage": <int>,    // optional
     "maxDistinctValue": <int>,  // optional
@@ -498,54 +487,53 @@ generator in first collection:
 }
 ```
 
-generator in other collections: 
+generator in other collections:
 
 ```JSON5
 "fieldName": {
     "type": "ref",              // required
     "nullPercentage": <int>,    // optional
     "maxDistinctValue": <int>,  // optional
-    "id": <int>                 // required, same id as previous generator 
+    "id": <int>                 // required, same id as previous generator
 }
 ```
 
 ### FromArray
 
-Randomly pick value from an array as value for the field. Currently, objects in the 
-array have to be of the same type 
-
+Randomly pick value from an array as value for the field. Currently, objects in the
+array have to be of the same type
 
 ```JSON5
 "fieldName": {
     "type": "fromArray",      // required
-    "nullPercentage": <int>,  // optional   
-    "in": [                   // required. Can't be empty. An array of object of 
-      <object>,               // any type, including object and array. 
+    "nullPercentage": <int>,  // optional
+    "in": [                   // required. Can't be empty. An array of object of
+      <object>,               // any type, including object and array.
       <object>
       ...
     ]
 }
 ```
+
 ### CountAggregator
 
-Count documents from `<database>.<collection>` matching a specific query. To use a 
+Count documents from `<database>.<collection>` matching a specific query. To use a
 variable of the document in the query, prefix it with "$$"
 
 For the moment, the query can't be empty or null
-
-
 
 ```JSON5
 "fieldName": {
   "type": "countAggregator", // required
   "database": <string>,      // required, db to use to perform aggregation
   "collection": <string>,    // required, collection to use to perform aggregation
-  "query": <object>          // required, query that selects which documents to count in the collection 
+  "query": <object>          // required, query that selects which documents to count in the collection
 }
 ```
+
 **Example:**
 
-Assuming that the collection `first` contains: 
+Assuming that the collection `first` contains:
 
 ```JSON5
 {"_id": 1, "field1": 1, "field2": "a" }
@@ -553,7 +541,7 @@ Assuming that the collection `first` contains:
 {"_id": 3, "field1": 2, "field2": "c" }
 ```
 
-and that the generator for collection `second` is: 
+and that the generator for collection `second` is:
 
 ```JSON5
 {
@@ -578,17 +566,17 @@ and that the generator for collection `second` is:
 }
 ```
 
-The collection `second` will contain: 
+The collection `second` will contain:
 
 ```JSON5
 {"_id": 1, "count": 2}
 {"_id": 2, "count": 1}
 ```
 
-### ValueAggregator 
+### ValueAggregator
 
-Get distinct values for a specific field for documents from 
-`<database>.<collection>` matching a specific query. To use a variable of 
+Get distinct values for a specific field for documents from
+`<database>.<collection>` matching a specific query. To use a variable of
 the document in the query, prefix it with "$$"
 
 For the moment, the query can't be empty or null
@@ -598,15 +586,15 @@ For the moment, the query can't be empty or null
   "type": "valueAggregator", // required
   "database": <string>,      // required, db to use to perform aggregation
   "collection": <string>,    // required, collection to use to perform aggregation
-  "key": <string>,           // required, the field for which to return distinct values. 
-  "query": <object>          // required, query that specifies the documents from which 
+  "key": <string>,           // required, the field for which to return distinct values.
+  "query": <object>          // required, query that specifies the documents from which
                              // to retrieve the distinct values
 }
 ```
 
-**Example**: 
+**Example**:
 
-Assuming that the collection `first` contains: 
+Assuming that the collection `first` contains:
 
 ```JSON5
 {"_id": 1, "field1": 1, "field2": "a" }
@@ -614,7 +602,7 @@ Assuming that the collection `first` contains:
 {"_id": 3, "field1": 2, "field2": "c" }
 ```
 
-and that the generator for collection `second` is: 
+and that the generator for collection `second` is:
 
 ```JSON5
 {
@@ -640,18 +628,17 @@ and that the generator for collection `second` is:
 }
 ```
 
-The collection `second` will contain: 
+The collection `second` will contain:
 
 ```JSON5
 {"_id": 1, "values": ["a", "b"]}
 {"_id": 2, "values": ["c"]}
 ```
 
+### BoundAggregator
 
-### BoundAggregator 
-
-Get lower ang higher values for a specific field for documents from 
-`<database>.<collection>` matching a specific query. To use a variable of 
+Get lower ang higher values for a specific field for documents from
+`<database>.<collection>` matching a specific query. To use a variable of
 the document in the query, prefix it with "$$"
 
 For the moment, the query can't be empty or null
@@ -661,15 +648,15 @@ For the moment, the query can't be empty or null
   "type": "valueAggregator", // required
   "database": <string>,      // required, db to use to perform aggregation
   "collection": <string>,    // required, collection to use to perform aggregation
-  "key": <string>,           // required, the field for which to return distinct values. 
-  "query": <object>          // required, query that specifies the documents from which 
+  "key": <string>,           // required, the field for which to return distinct values.
+  "query": <object>          // required, query that specifies the documents from which
                              // to retrieve lower/higer value
 }
 ```
 
-**Example**: 
+**Example**:
 
-Assuming that the collection `first` contains: 
+Assuming that the collection `first` contains:
 
 ```JSON5
 {"_id": 1, "field1": 1, "field2": "0" }
@@ -680,7 +667,7 @@ Assuming that the collection `first` contains:
 {"_id": 6, "field1": 2, "field2": "200" }
 ```
 
-and that the generator for collection `second` is: 
+and that the generator for collection `second` is:
 
 ```JSON5
 {
@@ -706,7 +693,7 @@ and that the generator for collection `second` is:
 }
 ```
 
-The collection `second` will contain: 
+The collection `second` will contain:
 
 ```JSON5
 {"_id": 1, "values": {"m": 0, "M": 10}}
@@ -728,7 +715,7 @@ Generate 'real' data using [Faker library](https://github.com/manveru/faker)
 }
 ```
 
-If you're building large datasets (1000000+ items) you should avoid faker generators 
-and use main or custom generators instead, as faker generator are way slower. 
+If you're building large datasets (1000000+ items) you should avoid faker generators
+and use main or custom generators instead, as faker generator are way slower.
 
-Currently, only `"en"` locale is available  
+Currently, only `"en"` locale is available
