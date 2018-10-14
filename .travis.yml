@@ -2,7 +2,7 @@ language: go
 
 go:
   - 1.10.x
-  - 1.11
+  - 1.11.x
 
 os: 
   - linux
@@ -12,9 +12,9 @@ env:
   global:
     - FASTDL=http://downloads.mongodb.org
   matrix:
-    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.4.16
-    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.6.7
-    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=4.0.1
+    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.4.17
+    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.6.8
+    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=4.0.3
 
 before_script: 
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then DIST=""; SSL="-ssl" ; fi
