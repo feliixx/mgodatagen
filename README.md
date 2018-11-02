@@ -275,7 +275,7 @@ If `unique` is set to true, the field will only contains unique strings. Unique 
 have a **fixed length**, `minLength` is taken as length for the string.
 There is `64^x` possible unique string for strings of length `x`. This number has to
 be inferior or equal to the number of documents you want to generate.
-For example, if you want unique strings of length 3, the is `64 * 64 * 64 = 262144` possible
+For example, if you want unique strings of length 3, there is `64 * 64 * 64 = 262144` possible
 strings
 
 They will look like
@@ -451,7 +451,7 @@ Add the same value to each document
 "fieldName": {
     "type": "constant",       // required
     "nullPercentage": <int>,  // optional
-    "constVal": <object>      // required, an be of any type including object and array
+    "constVal": <object>      // required, can be of any type including object and array
                               // eg: {"k": 1, "v": "val"}
 }
 ```
@@ -466,7 +466,7 @@ Generates an autoincremented value (type `<long>` or `<int>`)
     "nullPercentage": <int>,  // optional
     "autoType": <string>,     // required, can be `int` or `long`
     "startLong": <long>,      // start value if autoType = long
-    "startInt": <int>       // start value if autoType = int
+    "startInt": <int>         // start value if autoType = int
 }
 ```
 
