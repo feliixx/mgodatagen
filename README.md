@@ -715,6 +715,42 @@ Generate 'real' data using [Faker library](https://github.com/manveru/faker)
 }
 ```
 
+List of faker methods:
+
+```
+"CellPhoneNumber"
+"City"
+"CityPrefix"
+"CitySuffix"
+"CompanyBs"
+"CompanyCatchPhrase"
+"CompanyName"
+"CompanySuffix"
+"Country"
+"DomainName"
+"DomainSuffix"
+"DomainWord"
+"Email"
+"FirstName"
+"FreeEmail"
+"JobTitle"
+"LastName"
+"Name"
+"NamePrefix"
+"NameSuffix"
+"PhoneNumber"
+"PostCode"
+"SafeEmail"
+"SecondaryAddress"
+"State"
+"StateAbbr"
+"StreetAddress"
+"StreetName"
+"StreetSuffix"
+"URL"
+"UserName"
+```
+
 If you're building large datasets (1000000+ items) you should avoid faker generators
 and use main or custom generators instead, as faker generator are way slower.
 
