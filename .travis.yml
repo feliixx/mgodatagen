@@ -12,9 +12,9 @@ env:
   global:
     - FASTDL=http://downloads.mongodb.org
   matrix:
-    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.4.17
-    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.6.8
-    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=4.0.3
+    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.4.18
+    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=3.6.9
+    - ARCH=x86_64 DIST=-ubuntu1404 VERSION=4.0.4
 
 before_script: 
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then DIST=""; SSL="-ssl" ; fi
