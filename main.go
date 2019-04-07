@@ -20,13 +20,12 @@ func main() {
 		os.Exit(1)
 	}
 	if options.Help {
-		fmt.Printf("mgodatagen version %s", version)
 		p.WriteHelp(os.Stdout)
 		os.Exit(0)
 	}
 
 	if options.Version {
-		fmt.Printf("mgodatagen version %s", version)
+		fmt.Printf("mgodatagen version %s\n", version)
 		os.Exit(0)
 	}
 
