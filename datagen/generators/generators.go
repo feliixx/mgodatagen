@@ -18,6 +18,7 @@ import (
 	"github.com/MichaelTJones/pcg"
 	"github.com/globalsign/mgo/bson"
 	"github.com/manveru/faker"
+	"github.com/satori/go.uuid"
 )
 
 // DocumentGenerator is a Generator for creating random bson documents
@@ -424,6 +425,19 @@ func (g *fromArrayGenerator) Value() {
 	}
 	g.buffer.Write(g.array[g.index])
 	g.index++
+}
+
+type uuidGenerator struct {
+	base
+}
+
+func (g *uuidGenerator) Value() {
+	uuid, _ := uuid.NewV4()
+	strUUID := uuid.String()
+
+	g.buffer.Write(int32Bytes(int32(len(strUUID) + 1)))
+	g.buffer.Write([]byte(strUUID))
+	g.buffer.WriteSingleByte(byte(0))
 }
 
 // Generator for creating random string using faker library

@@ -128,6 +128,7 @@ const (
 	TypeAutoincrement = "autoincrement"
 	TypeBinary        = "binary"
 	TypeDate          = "date"
+	TypeUUID          = "uuid"
 	TypeFaker         = "faker"
 )
 
@@ -190,6 +191,7 @@ var mapTypes = map[string]byte{
 	TypeAutoincrement: bson.ElementNil, // type bson.ElementInt32 or bson.ElementInt64
 	TypeBinary:        bson.ElementBinary,
 	TypeDate:          bson.ElementDatetime,
+	TypeUUID:          bson.ElementString,
 	TypeFaker:         bson.ElementString,
 
 	TypeCountAggregator: bson.ElementNil,
@@ -482,6 +484,9 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		default:
 			return nil, fmt.Errorf("invalid type %v for field %v", config.Type, key)
 		}
+
+	case TypeUUID:
+		return &uuidGenerator{base: base}, nil
 
 	case TypeFaker:
 		// TODO: use "en" locale for now, but should be configurable

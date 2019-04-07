@@ -18,6 +18,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 
 	var expectedDoc struct {
 		ID         bson.ObjectId `bson:"_id"`
+		UUID       string        `bson:"uuid"`
 		Name       string        `bson:"name"`
 		C32        int32         `bson:"c32"`
 		C64        int64         `bson:"c64"`

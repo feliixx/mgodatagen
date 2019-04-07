@@ -215,6 +215,7 @@ List of custom `<generator>` types:
 - [autoincrement](#autoincrement)
 - [reference](#ref)
 - [fromArray](#fromarray)
+- [UUID](#uuid)
 - [countAggregator](#countAggregator)
 - [valueAggregator](#valueAggregator)
 - [boundAggregator](#boundAggregator)
@@ -512,6 +513,17 @@ array have to be of the same type
       <object>
       ...
     ]
+}
+```
+
+### UUID
+
+Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github.com/satori/go.uuid#NewV4))
+
+```JSON5
+"fieldName": {
+    "type": "uuid",      // required
+    "nullPercentage": <int>  // optional
 }
 ```
 

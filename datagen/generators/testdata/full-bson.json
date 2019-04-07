@@ -11,6 +11,9 @@
           "type": "objectId"
         }
       },
+      "uuid": {
+        "type": "uuid"
+      },
       "name": {
         "type": "string",
         "maxDistinctValue": 500,

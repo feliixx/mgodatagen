@@ -125,6 +125,7 @@ func TestCollectionContent(t *testing.T) {
 
 	var results []struct {
 		ID         bson.ObjectId `bson:"_id"`
+		UUID       string        `bson:"uuid"`
 		Name       string        `bson:"name"`
 		C32        int32         `bson:"c32"`
 		C64        int64         `bson:"c64"`
@@ -163,6 +164,12 @@ func TestCollectionContent(t *testing.T) {
 	}
 	count := 0
 	for i, r := range results {
+
+		// uuid
+		if len(r.UUID) != 36 {
+			t.Errorf("len(uuid) should be 16, but was %d", len(r.UUID))
+		}
+
 		// string
 		if len(r.Name) < 15 || len(r.Name) > 20 {
 			t.Errorf("'name' should be 15 < name < 20 but was %d", len(r.Name))
