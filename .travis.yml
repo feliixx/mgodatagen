@@ -7,7 +7,6 @@ os:
 dist: xenial
 
 go:
-  - 1.11.x
   - 1.12.x
 
 env:
@@ -15,8 +14,8 @@ env:
     - FASTDL=http://downloads.mongodb.org
   matrix:
     - ARCH=x86_64 DIST=-ubuntu1604 VERSION=3.4.19
-    - ARCH=x86_64 DIST=-ubuntu1604 VERSION=3.6.10
-    - ARCH=x86_64 DIST=-ubuntu1604 VERSION=4.0.6
+    - ARCH=x86_64 DIST=-ubuntu1604 VERSION=3.6.12
+    - ARCH=x86_64 DIST=-ubuntu1604 VERSION=4.0.9
 
 before_script: 
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then DIST=""; SSL="-ssl" ; fi
