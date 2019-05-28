@@ -14,18 +14,18 @@
       "uuid": {
         "type": "uuid"
       },
-      "name": {
+      "string": {
         "type": "string",
         "maxDistinctValue": 500,
         "minLength": 15,
         "maxLength": 20
       },
-      "c32": {
+      "int32": {
         "type": "int",
         "minInt": 10,
         "maxInt": 20
       },
-      "c64": {
+      "int64": {
         "type": "long",
         "nullPercentage": 10,
         "minLong": 100,
@@ -36,13 +36,24 @@
         "minDouble": 1.0,
         "maxDouble": 10.0
       },
-      "verified": {
+      "constInt32": {
+        "type": "int"
+      },
+      "constInt64": {
+        "type": "long",
+        "minLong": -100020,
+        "maxLong": -100020
+      },
+      "constFloat": {
+        "type": "double"
+      },
+      "boolean": {
         "type": "boolean"
       },
       "position": {
         "type": "position"
       },
-      "dt": {
+      "stringFromArray": {
         "type": "fromArray",
         "in": [
           "2012-10-10",
@@ -51,7 +62,7 @@
           "2016-05-05"
         ]
       },
-      "afa": {
+      "arrayFromArray": {
         "type": "array",
         "size": 6,
         "arrayContent": {
@@ -64,7 +75,7 @@
           ]
         }
       },
-      "ac": {
+      "constArray": {
         "type": "array",
         "size": 2,
         "arrayContent": {
@@ -76,19 +87,19 @@
         "type": "faker",
         "method": "City"
       },
-      "cst": {
+      "constant": {
         "type": "constant",
         "constVal": 2
       },
-      "nb": {
-        "type": "autoincrement",
-        "autoType": "long",
-        "startLong": 0
-      },
-      "nnb": {
+      "autoIncrementInt32": {
         "type": "autoincrement",
         "autoType": "int",
         "startInt": 0
+      },
+      "autoIncrementInt64": {
+        "type": "autoincrement",
+        "autoType": "long",
+        "startLong": 18
       },
       "date": {
         "type": "date",
@@ -100,7 +111,7 @@
         "minLength": 24,
         "maxLength": 40
       },
-      "list": {
+      "arrayInt32": {
         "type": "array",
         "size": 3,
         "arrayContent": {

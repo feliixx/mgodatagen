@@ -17,24 +17,28 @@ const defaultSeed = 0
 func TestIsDocumentCorrect(t *testing.T) {
 
 	var expectedDoc struct {
-		ID         bson.ObjectId `bson:"_id"`
-		UUID       string        `bson:"uuid"`
-		Name       string        `bson:"name"`
-		C32        int32         `bson:"c32"`
-		C64        int64         `bson:"c64"`
-		Float      float64       `bson:"float"`
-		Verified   bool          `bson:"verified"`
-		Position   []float64     `bson:"position"`
-		Dt         string        `bson:"dt"`
-		Afa        []string      `bson:"afa"`
-		Fake       string        `bson:"faker"`
-		Cst        int32         `bson:"cst"`
-		Nb         int64         `bson:"nb"`
-		Nnb        int32         `bson:"nnb"`
-		Date       time.Time     `bson:"date"`
-		BinaryData []byte        `bson:"binaryData"`
-		List       []int32       `bson:"list"`
-		Object     struct {
+		ID                 bson.ObjectId `bson:"_id"`
+		UUID               string        `bson:"uuid"`
+		String             string        `bson:"string"`
+		Int32              int32         `bson:"int32"`
+		Int64              int64         `bson:"int64"`
+		Float              float64       `bson:"float"`
+		ConstInt32         int32         `bson:"constInt32"`
+		ConstInt64         int64         `bson:"constInt64"`
+		ConstFloat         float64       `bson:"constFloat"`
+		Boolean            bool          `bson:"boolean"`
+		Position           []float64     `bson:"position"`
+		StringFromArray    string        `bson:"stringFromArray"`
+		ArrayFromArray     []string      `bson:"arrayFromArray"`
+		ConstArray         []string      `bson:"constArray"`
+		Fake               string        `bson:"faker"`
+		Constant           int32         `bson:"constant"`
+		AutoIncrementInt32 int32         `bson:"autoIncrementInt32"`
+		AutoIncrementInt64 int64         `bson:"autoIncrementInt64"`
+		Date               time.Time     `bson:"date"`
+		BinaryData         []byte        `bson:"binaryData"`
+		ArrayInt32         []int32       `bson:"arrayInt32"`
+		Object             struct {
 			K1    string `bson:"k1"`
 			K2    int32  `bson:"k2"`
 			Subob struct {
@@ -183,16 +187,15 @@ func TestNewGenerator(t *testing.T) {
 			version: []int{3, 6},
 		},
 		{
-			name: "int with invalid minInt32",
+			name: "int with missing MinInt and MaxInt",
 			config: generators.Config{
-				Type:   generators.TypeInt,
-				MinInt: -1,
+				Type: generators.TypeInt,
 			},
-			correct: false,
+			correct: true,
 			version: []int{3, 6},
 		},
 		{
-			name: "int with invalid maxInt32",
+			name: "int with MaxInt < MinInt",
 			config: generators.Config{
 				Type:   generators.TypeInt,
 				MinInt: 10,
@@ -202,16 +205,15 @@ func TestNewGenerator(t *testing.T) {
 			version: []int{3, 6},
 		},
 		{
-			name: "long with invalid minInt64",
+			name: "long with missing MinLong and MaxLong",
 			config: generators.Config{
-				Type:    generators.TypeLong,
-				MinLong: -1,
+				Type: generators.TypeLong,
 			},
-			correct: false,
+			correct: true,
 			version: []int{3, 6},
 		},
 		{
-			name: "long with invalid MaxInt64",
+			name: "long with MaxLong < MinLong",
 			config: generators.Config{
 				Type:    generators.TypeLong,
 				MinLong: 10,
@@ -221,16 +223,15 @@ func TestNewGenerator(t *testing.T) {
 			version: []int{3, 6},
 		},
 		{
-			name: "double with invalid minFloat",
+			name: "double with missing MinDouble and MaxDouble",
 			config: generators.Config{
-				Type:      generators.TypeDouble,
-				MinDouble: -1,
+				Type: generators.TypeDouble,
 			},
-			correct: false,
+			correct: true,
 			version: []int{3, 6},
 		},
 		{
-			name: "double with invalid MaxFloat",
+			name: "double with MaxFloat < MinFloat",
 			config: generators.Config{
 				Type:      generators.TypeDouble,
 				MinDouble: 10,

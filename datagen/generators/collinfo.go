@@ -308,8 +308,11 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		}, nil
 
 	case TypeInt:
-		if config.MaxInt == 0 || config.MaxInt <= config.MinInt {
-			return nil, fmt.Errorf("for field %s, make sure that 'maxInt' > 'minInt'", key)
+		if config.MaxInt < config.MinInt {
+			return nil, fmt.Errorf("for field %s, make sure that 'maxInt' >= 'minInt'", key)
+		}
+		if config.MinInt == config.MaxInt {
+			return constGeneratorFromValue(base, config.MaxInt)
 		}
 		return &int32Generator{
 			base: base,
@@ -318,8 +321,11 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		}, nil
 
 	case TypeLong:
-		if config.MaxLong == 0 || config.MaxLong <= config.MinLong {
-			return nil, fmt.Errorf("for field %s, make sure that 'maxLong' > 'minLong'", key)
+		if config.MaxLong < config.MinLong {
+			return nil, fmt.Errorf("for field %s, make sure that 'maxLong' >= 'minLong'", key)
+		}
+		if config.MinLong == config.MaxLong {
+			return constGeneratorFromValue(base, config.MaxLong)
 		}
 		return &int64Generator{
 			base:  base,
@@ -329,8 +335,11 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		}, nil
 
 	case TypeDouble:
-		if config.MaxDouble == 0 || config.MaxDouble <= config.MinDouble {
-			return nil, fmt.Errorf("for field %s, make sure that 'maxDouble' > 'minDouble'", key)
+		if config.MaxDouble < config.MinDouble {
+			return nil, fmt.Errorf("for field %s, make sure that 'maxDouble' >= 'minDouble'", key)
+		}
+		if config.MinDouble == config.MaxDouble {
+			return constGeneratorFromValue(base, config.MaxDouble)
 		}
 		return &float64Generator{
 			base:   base,
@@ -414,14 +423,11 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		}
 		array := make([][]byte, len(config.In))
 		for i, v := range config.In {
-			m := bson.M{key: v}
-			raw, err := bson.Marshal(m)
+			raw, err := bsonValue(key, v)
 			if err != nil {
-				return nil, fmt.Errorf("for field %s, couldn't marshal value: %v", key, err)
+				return nil, err
 			}
-			// remove first 4 bytes (bson document size) and last bytes (terminating 0x00
-			// indicating end of document) to keep only the bson content
-			array[i] = raw[4 : len(raw)-1]
+			array[i] = raw
 		}
 		return &fromArrayGenerator{
 			base:  base,
@@ -455,17 +461,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		return &positionGenerator{base: base, pcg64: ci.pcg64}, nil
 
 	case TypeConstant:
-		m := bson.M{key: config.ConstVal}
-		raw, err := bson.Marshal(m)
-		if err != nil {
-			return nil, fmt.Errorf("for field %s, couldn't marshal value: %v", key, err)
-		}
-		return &constGenerator{
-			base: base,
-			// remove first 4 bytes (bson document size) and last bytes (terminating 0x00
-			// indicating end of document) to keep only the bson content
-			val: raw[4 : len(raw)-1],
-		}, nil
+		return constGeneratorFromValue(base, config.ConstVal)
 
 	case TypeAutoincrement:
 		switch config.AutoType {
@@ -524,6 +520,29 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		}, nil
 	}
 	return nil, nil
+}
+
+func constGeneratorFromValue(base base, value interface{}) (Generator, error) {
+	raw, err := bsonValue(string(base.Key()), value)
+	if err != nil {
+		return nil, err
+	}
+	// the bson type is already included in raw, so make sure that it's 'unset' from base
+	base.bsonType = bson.ElementNil
+	return &constGenerator{
+		base: base,
+		val:  raw,
+	}, nil
+}
+
+func bsonValue(key string, val interface{}) ([]byte, error) {
+	raw, err := bson.Marshal(bson.M{key: val})
+	if err != nil {
+		return nil, fmt.Errorf("for field %s, couldn't marshal value: %v", key, err)
+	}
+	// remove first 4 bytes (bson document size) and last bytes (terminating 0x00
+	// indicating end of document) to keep only the bson content
+	return raw[4 : len(raw)-1], nil
 }
 
 // check if current version of mongodb is greater or at least equal
