@@ -298,8 +298,8 @@ Generates random int within bounds.
     "type": "int",             // required
     "nullPercentage": <int>,   // optional
     "maxDistinctValue": <int>, // optional
-    "minInt": <int>,           // required
-    "maxInt": <int>            // required, must be >= minInt
+    "minInt": <int>,           // optional
+    "maxInt": <int>            // optional, must be >= minInt
 }
 ```
 
@@ -312,8 +312,8 @@ Generates random long within bounds.
     "type": "long",            // required
     "nullPercentage": <int>,   // optional
     "maxDistinctValue": <int>, // optional
-    "minLong": <long>,         // required
-    "maxLong": <long>          // required, must be >= minLong
+    "minLong": <long>,         // optional
+    "maxLong": <long>          // optional, must be >= minLong
 }
 ```
 
@@ -326,8 +326,8 @@ Generates random double within bounds.
     "type": "double",          // required
     "nullPercentage": <int>,   // optional
     "maxDistinctValue": <int>, // optional
-    "minDouble": <double>,     // required
-    "maxDouble": <double>      // required, must be >= minDouble
+    "minDouble": <double>,     // optional
+    "maxDouble": <double>      // optional, must be >= minDouble
 }
 ```
 
@@ -408,8 +408,8 @@ Generates random binary data of length within bounds
     "type": "binary",           // required
     "nullPercentage": <int>,    // optional
     "maxDistinctValue": <int>,  // optional
-    "minLength": <int>,         // required,  must be >= 0
-    "maxLength": <int>          // required,  must be >= minLength
+    "minLength": <int>,         // required, must be >= 0
+    "maxLength": <int>          // required, must be >= minLength
 }
 ```
 
@@ -427,7 +427,7 @@ Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/r
     "nullPercentage": <int>,   // optional
     "maxDistinctValue": <int>, // optional
     "startDate": <string>,     // required
-    "endDate": <string>        // required,  must be >= startDate
+    "endDate": <string>        // required, must be >= startDate
 }
 ```
 
@@ -466,8 +466,8 @@ Generates an autoincremented value (type `<long>` or `<int>`)
     "type": "autoincrement",  // required
     "nullPercentage": <int>,  // optional
     "autoType": <string>,     // required, can be `int` or `long`
-    "startLong": <long>,      // start value if autoType = long
-    "startInt": <int>         // start value if autoType = int
+    "startLong": <long>,      // optional, start value if autoType = long
+    "startInt": <int>         // optional, start value if autoType = int
 }
 ```
 
@@ -522,7 +522,7 @@ Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github
 
 ```JSON5
 "fieldName": {
-    "type": "uuid",      // required
+    "type": "uuid",          // required
     "nullPercentage": <int>  // optional
 }
 ```
@@ -539,7 +539,8 @@ For the moment, the query can't be empty or null
   "type": "countAggregator", // required
   "database": <string>,      // required, db to use to perform aggregation
   "collection": <string>,    // required, collection to use to perform aggregation
-  "query": <object>          // required, query that selects which documents to count in the collection
+  "query": <object>          // required, query that selects which documents to count in the 
+                             // collection
 }
 ```
 

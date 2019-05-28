@@ -124,25 +124,28 @@ func TestCollectionContent(t *testing.T) {
 	}
 
 	var results []struct {
-		ID         bson.ObjectId `bson:"_id"`
-		UUID       string        `bson:"uuid"`
-		Name       string        `bson:"name"`
-		C32        int32         `bson:"c32"`
-		C64        int64         `bson:"c64"`
-		Float      float64       `bson:"float"`
-		Verified   bool          `bson:"verified"`
-		Position   []float64     `bson:"position"`
-		Dt         string        `bson:"dt"`
-		Afa        []string      `bson:"afa"`
-		Ac         []string      `bson:"ac"`
-		Fake       string        `bson:"faker"`
-		Cst        int32         `bson:"cst"`
-		Nb         int64         `bson:"nb"`
-		Nnb        int32         `bson:"nnb"`
-		Date       time.Time     `bson:"date"`
-		BinaryData []byte        `bson:"binaryData"`
-		List       []int32       `bson:"list"`
-		Object     struct {
+		ID                 bson.ObjectId `bson:"_id"`
+		UUID               string        `bson:"uuid"`
+		String             string        `bson:"string"`
+		Int32              int32         `bson:"int32"`
+		Int64              int64         `bson:"int64"`
+		Float              float64       `bson:"float"`
+		ConstInt32         int32         `bson:"constInt32"`
+		ConstInt64         int64         `bson:"constInt64"`
+		ConstFloat         float64       `bson:"constFloat"`
+		Boolean            bool          `bson:"boolean"`
+		Position           []float64     `bson:"position"`
+		StringFromArray    string        `bson:"stringFromArray"`
+		ArrayFromArray     []string      `bson:"arrayFromArray"`
+		ConstArray         []string      `bson:"constArray"`
+		Fake               string        `bson:"faker"`
+		Constant           int32         `bson:"constant"`
+		AutoIncrementInt32 int32         `bson:"autoIncrementInt32"`
+		AutoIncrementInt64 int64         `bson:"autoIncrementInt64"`
+		Date               time.Time     `bson:"date"`
+		BinaryData         []byte        `bson:"binaryData"`
+		ArrayInt32         []int32       `bson:"arrayInt32"`
+		Object             struct {
 			K1    string `bson:"k1"`
 			K2    int32  `bson:"k2"`
 			Subob struct {
@@ -165,74 +168,72 @@ func TestCollectionContent(t *testing.T) {
 	count := 0
 	for i, r := range results {
 
-		// uuid
 		if len(r.UUID) != 36 {
 			t.Errorf("len(uuid) should be 16, but was %d", len(r.UUID))
 		}
 
-		// string
-		if len(r.Name) < 15 || len(r.Name) > 20 {
-			t.Errorf("'name' should be 15 < name < 20 but was %d", len(r.Name))
+		if len(r.String) < 15 || len(r.String) > 20 {
+			t.Errorf("expected 15 < len(String) < 20, but was %d", len(r.String))
 		}
-		// int32
-		if r.C32 < 10 || r.C32 > 20 {
-			t.Errorf("'c32' should be 10 < c32 < 20 but was %d", r.C64)
+		if r.Int32 < 10 || r.Int32 > 20 {
+			t.Errorf("expected 10 < Int32 < 20, but was %d", r.Int32)
 		}
-		// int64
-		if r.C64 == 0 {
+		if r.ConstInt32 != 0 {
+			t.Errorf("ConstInt32 should always be 0, but was %d", r.ConstInt32)
+		}
+		if r.Int64 == 0 {
 			count++
 		} else {
-			if r.C64 < 100 || r.C64 > 200 {
-				t.Errorf("'c64' should be 100 < c64 < 200 but was %d", r.C64)
+			if r.Int64 < 100 || r.Int64 > 200 {
+				t.Errorf("expected 100 < Int64 < 200, but was %d", r.Int64)
 			}
 		}
-		// float
-		if r.Float < 0 || r.Float > 10 {
-			t.Errorf("'float' should be 0 < float < 10, but was %f", r.Float)
+		if r.ConstInt64 != -100020 {
+			t.Errorf("ConstInt64 should always be -100020, but was %d", r.ConstInt64)
 		}
-		// position testing
+		if r.Float < 0 || r.Float > 10 {
+			t.Errorf("expected 0 < Float < 10, but was %f", r.Float)
+		}
+		if r.ConstFloat != 0.0 {
+			t.Errorf("ConstFloat should always be 0.0, but was %f", r.ConstFloat)
+		}
 		if r.Position[0] < -90 || r.Position[0] > 90 {
-			t.Errorf("'pos[0]' should be -90 < pos[0] < 90, but was %f", r.Position[0])
+			t.Errorf("expected -90 < pos[0] < 90, but was %f", r.Position[0])
 		}
 		if r.Position[1] < -180 || r.Position[1] > 180 {
-			t.Errorf("'pos[1]' should be -180 < pos[1] < 180, but was %f", r.Position[1])
+			t.Errorf("expected -180 < pos[1] < 180, but was %f", r.Position[1])
 		}
-		// fromArray
-		idx := fromArr.Search(r.Dt)
-		if idx == len(fromArr) || fromArr[idx] != r.Dt {
-			t.Errorf("'dt' should be on of the values of fromArray, but was %s", r.Dt)
+		idx := fromArr.Search(r.StringFromArray)
+		if idx == len(fromArr) || fromArr[idx] != r.StringFromArray {
+			t.Errorf("StringFromArray should be in %v, but was %s", r.StringFromArray, fromArr)
 		}
-		// cst
-		if r.Cst != int32(2) {
-			t.Errorf("'cst' field should be int32(2), but was %v", r.Cst)
+		if r.Constant != int32(2) {
+			t.Errorf("'Constant' field should be int32(2), but was %v", r.Constant)
 		}
-		// autoincrement
-		if r.Nb != int64(i) {
-			t.Errorf("'nb' field should be %d, but was %d", int64(i), r.Nb)
+		if r.AutoIncrementInt32 != int32(i) {
+			t.Errorf("'AutoIncrementInt32' field should be %d, but was %d", int32(i), r.AutoIncrementInt32)
 		}
-		// Date
+		if r.AutoIncrementInt64 != int64(i+18) {
+			t.Errorf("'AutoIncrementInt64' field should be %d, but was %d", int64(i+18), r.AutoIncrementInt64)
+		}
+
 		dt := expectedDate.Sub(r.Date)
 		delta := time.Second * 60 * 60 * 24 * 365 * 4
 		if dt < -delta || dt > delta {
 			t.Errorf("'date' should be within %v, but was %v", delta, r.Date)
 		}
-		// binary data
 		if len(r.BinaryData) < 24 || len(r.BinaryData) > 40 {
-			t.Errorf("'binaryData' len should be 4 < len < 40, but was %d", len(r.BinaryData))
+			t.Errorf("expected 4 < len(BinaryData) < 40, but was %d", len(r.BinaryData))
 		}
-		// array
-		if len(r.List) != 3 {
-			t.Errorf("'list' should have 3 items but got only %d", len(r.List))
+		if len(r.ArrayInt32) != 3 {
+			t.Errorf("'ArrayInt32' should have 3 items but got only %d", len(r.ArrayInt32))
 		}
-		// array of fromArray
-		if len(r.Afa) != 6 {
-			t.Errorf("'afa' should have 6 items but got only %d", len(r.Afa))
+		if len(r.ArrayFromArray) != 6 {
+			t.Errorf("'ArrayFromArray' should have 6 items but got only %d", len(r.ArrayFromArray))
 		}
-		// array of const
-		if len(r.Ac) != 2 {
-			t.Errorf("'ac' should have 2 items but got only %d", len(r.Ac))
+		if len(r.ConstArray) != 2 {
+			t.Errorf("'ConstArray' should have 2 items but got only %d", len(r.ConstArray))
 		}
-		// object
 		if len(r.Object.K1) != 3 {
 			t.Errorf("'object.k1' should have 3 items but got only %d", len(r.Object.K1))
 		}
@@ -245,7 +246,7 @@ func TestCollectionContent(t *testing.T) {
 	}
 	// null percentage test, allow 2.5% error
 	if count < 75 || count > 125 {
-		t.Errorf("doc nb with c64 == null should be 75 < count < 125 (2.5percent) but was %d", count)
+		t.Errorf("doc nb with int64 == null should be 75 < count < 125 (2.5percent) but was %d", count)
 	}
 
 	// we expect fixed values for those keys
@@ -255,15 +256,15 @@ func TestCollectionContent(t *testing.T) {
 		// test unique option
 		"object.k1": 1000,
 		// test value distribution
-		"dt":       4,
-		"_id":      1000,
-		"c32":      11,
-		"list":     11,
-		"nnb":      1000,
-		"nb":       1000,
-		"verified": 2,
-		"float":    1000,
-		"position": 2000,
+		"stringFromArray":    4,
+		"_id":                1000,
+		"int32":              11,
+		"arrayInt32":         11,
+		"autoIncrementInt32": 1000,
+		"autoIncrementInt64": 1000,
+		"boolean":            2,
+		"float":              1000,
+		"position":           2000,
 	}
 	var result distinctResult
 	for key, value := range maxDistinctValuesTests {
@@ -275,7 +276,7 @@ func TestCollectionContent(t *testing.T) {
 	// distinct count may be different from one run to another due
 	// to nullPercentage != 0
 	maxDistinctValuesNullPercentageTests := map[string]int{
-		"c64": 80,
+		"int64": 80,
 	}
 
 	for key, value := range maxDistinctValuesNullPercentageTests {
