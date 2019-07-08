@@ -291,7 +291,7 @@ They will look like
 
 ### Int
 
-Generates random int within bounds.
+Generates a random `int` within bounds.
 
 ```JSON5
 "fieldName": {
@@ -305,7 +305,7 @@ Generates random int within bounds.
 
 ### Long
 
-Generates random long within bounds.
+Generates a random `long` within bounds.
 
 ```JSON5
 "fieldName": {
@@ -319,7 +319,7 @@ Generates random long within bounds.
 
 ### Double
 
-Generates random double within bounds.
+Generates a random `double` within bounds.
 
 ```JSON5
 "fieldName": {
@@ -333,7 +333,7 @@ Generates random double within bounds.
 
 ### Decimal
 
-Generates random decimal128
+Generates a random `decimal128`.
 
 ```JSON5
 "fieldName": {
@@ -345,7 +345,7 @@ Generates random decimal128
 
 ### Boolean
 
-Generates random boolean
+Generates a random `boolean`.
 
 ```JSON5
 "fieldName": {
@@ -357,7 +357,7 @@ Generates random boolean
 
 ### ObjectId
 
-Generates random and unique objectId
+Generates a random and unique `objectId`
 
 ```JSON5
 "fieldName": {
@@ -369,7 +369,7 @@ Generates random and unique objectId
 
 ### Array
 
-Generates a random array of bson object
+Generates a random array of bson object.
 
 ```JSON5
 "fieldName": {
@@ -384,7 +384,7 @@ Generates a random array of bson object
 
 ### Object
 
-Generates random nested object
+Generates random nested object.
 
 ```JSON5
 "fieldName": {
@@ -401,7 +401,7 @@ Generates random nested object
 
 ### Binary
 
-Generates random binary data of length within bounds
+Generates random binary data of length within bounds.
 
 ```JSON5
 "fieldName": {
@@ -415,7 +415,7 @@ Generates random binary data of length within bounds
 
 ### Date
 
-Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/reference/method/Date/) )
+Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/reference/method/Date/) ).
 
 `startDate` and `endDate` are string representation of a Date following RFC3339:
 
@@ -446,7 +446,7 @@ eg : [40.741895, -73.989308]
 
 ### Constant
 
-Add the same value to each document
+Add the same value to each document.
 
 ```JSON5
 "fieldName": {
@@ -459,7 +459,7 @@ Add the same value to each document
 
 ### Autoincrement
 
-Generates an autoincremented value (type `<long>` or `<int>`)
+Generates an autoincremented value (type `<long>` or `<int>`).
 
 ```JSON5
 "fieldName": {
@@ -501,8 +501,9 @@ generator in other collections:
 
 ### FromArray
 
-Randomly pick value from an array as value for the field. Currently, objects in the
-array have to be of the same type
+Pick an object from an array as value for the field. Currently, objects in the
+array have to be of the same type. By default, items are picked from the array 
+in the order where they appear.
 
 ```JSON5
 "fieldName": {
@@ -514,13 +515,13 @@ array have to be of the same type
       ...
     ], 
     "randomOrder": <bool>     // optional. If set to true, objects will be picked 
-                              // from the array in random order. Default to false
+                              // from the array in random order.
 }
 ```
 
 ### UUID
 
-Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github.com/satori/go.uuid#NewV4))
+Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github.com/satori/go.uuid#NewV4)).
 
 ```JSON5
 "fieldName": {
@@ -532,9 +533,9 @@ Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github
 ### CountAggregator
 
 Count documents from `<database>.<collection>` matching a specific query. To use a
-variable of the document in the query, prefix it with "$$"
+variable of the document in the query, prefix it with "$$".
 
-For the moment, the query can't be empty or null
+The query can't be empty or null.
 
 ```JSON5
 "fieldName": {
@@ -592,9 +593,9 @@ The collection `second` will contain:
 
 Get distinct values for a specific field for documents from
 `<database>.<collection>` matching a specific query. To use a variable of
-the document in the query, prefix it with "$$"
+the document in the query, prefix it with "$$".
 
-For the moment, the query can't be empty or null
+The query can't be empty or null.
 
 ```JSON5
 "fieldName": {
@@ -656,7 +657,7 @@ Get lower ang higher values for a specific field for documents from
 `<database>.<collection>` matching a specific query. To use a variable of
 the document in the query, prefix it with "$$"
 
-For the moment, the query can't be empty or null
+The query can't be empty or null
 
 ```JSON5
 "fieldName": {
@@ -715,11 +716,11 @@ The collection `second` will contain:
 {"_id": 2, "values": {"m": 15, "M": 200}}
 ```
 
-where `m` is the min value, and `M` the max value
+where `m` is the min value, and `M` the max value.
 
 ### Faker
 
-Generate 'real' data using [Faker library](https://github.com/manveru/faker)
+Generate 'real' data using [Faker library](https://github.com/manveru/faker).
 
 ```JSON5
 "fieldName": {
@@ -769,4 +770,4 @@ List of faker methods:
 If you're building large datasets (1000000+ items) you should avoid faker generators
 and use main or custom generators instead, as faker generator are way slower.
 
-Currently, only `"en"` locale is available
+Currently, only `"en"` locale is available.
