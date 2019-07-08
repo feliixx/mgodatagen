@@ -56,21 +56,21 @@ type Config struct {
 	// For `string` type only. If set to 'true', string will be unique
 	Unique bool `json:"unique"`
 	// For `string` and `binary` type only. Specify the Min length of the object to generate
-	MinLength int `json:"MinLength"`
+	MinLength int `json:"minLength"`
 	// For `string` and `binary` type only. Specify the Max length of the object to generate
-	MaxLength int `json:"MaxLength"`
+	MaxLength int `json:"maxLength"`
 	// For `int` type only. Lower bound for the int32 to generate
-	MinInt int32 `json:"MinInt"`
+	MinInt int32 `json:"minInt"`
 	// For `int` type only. Higher bound for the int32 to generate
-	MaxInt int32 `json:"MaxInt"`
+	MaxInt int32 `json:"maxInt"`
 	// For `long` type only. Lower bound for the int64 to generate
-	MinLong int64 `json:"MinLong"`
+	MinLong int64 `json:"minLong"`
 	// For `long` type only. Higher bound for the int64 to generate
-	MaxLong int64 `json:"MaxLong"`
+	MaxLong int64 `json:"maxLong"`
 	// For `double` type only. Lower bound for the float64 to generate
-	MinDouble float64 `json:"MinDouble"`
+	MinDouble float64 `json:"minDouble"`
 	// For `double` type only. Higher bound for the float64 to generate
-	MaxDouble float64 `json:"MaxDouble"`
+	MaxDouble float64 `json:"maxDouble"`
 	// For `array` only. Size of the array
 	Size int `json:"size"`
 	// For `array` only. Config to fill the array. Need to
@@ -84,7 +84,7 @@ type Config struct {
 	// For `fromArray` only. If set to true, items are picked from the array in random order
 	RandomOrder bool `json:"randomOrder"`
 	// For `date` only. Lower bound for the date to generate
-	StartDate time.Time `json:"StartDate"`
+	StartDate time.Time `json:"startDate"`
 	// For `date` only. Higher bound for the date to generate
 	EndDate time.Time `json:"endDate"`
 	// For `constant` type only. Value of the constant field
