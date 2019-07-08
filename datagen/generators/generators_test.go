@@ -17,28 +17,29 @@ const defaultSeed = 0
 func TestIsDocumentCorrect(t *testing.T) {
 
 	var expectedDoc struct {
-		ID                 bson.ObjectId `bson:"_id"`
-		UUID               string        `bson:"uuid"`
-		String             string        `bson:"string"`
-		Int32              int32         `bson:"int32"`
-		Int64              int64         `bson:"int64"`
-		Float              float64       `bson:"float"`
-		ConstInt32         int32         `bson:"constInt32"`
-		ConstInt64         int64         `bson:"constInt64"`
-		ConstFloat         float64       `bson:"constFloat"`
-		Boolean            bool          `bson:"boolean"`
-		Position           []float64     `bson:"position"`
-		StringFromArray    string        `bson:"stringFromArray"`
-		ArrayFromArray     []string      `bson:"arrayFromArray"`
-		ConstArray         []string      `bson:"constArray"`
-		Fake               string        `bson:"faker"`
-		Constant           int32         `bson:"constant"`
-		AutoIncrementInt32 int32         `bson:"autoIncrementInt32"`
-		AutoIncrementInt64 int64         `bson:"autoIncrementInt64"`
-		Date               time.Time     `bson:"date"`
-		BinaryData         []byte        `bson:"binaryData"`
-		ArrayInt32         []int32       `bson:"arrayInt32"`
-		Object             struct {
+		ID                      bson.ObjectId `bson:"_id"`
+		UUID                    string        `bson:"uuid"`
+		String                  string        `bson:"string"`
+		Int32                   int32         `bson:"int32"`
+		Int64                   int64         `bson:"int64"`
+		Float                   float64       `bson:"float"`
+		ConstInt32              int32         `bson:"constInt32"`
+		ConstInt64              int64         `bson:"constInt64"`
+		ConstFloat              float64       `bson:"constFloat"`
+		Boolean                 bool          `bson:"boolean"`
+		Position                []float64     `bson:"position"`
+		StringFromArray         string        `bson:"stringFromArray"`
+		IntFromArrayRandomOrder int           `bson:"intFromArrayRandomOrder"`
+		ArrayFromArray          []string      `bson:"arrayFromArray"`
+		ConstArray              []string      `bson:"constArray"`
+		Fake                    string        `bson:"faker"`
+		Constant                int32         `bson:"constant"`
+		AutoIncrementInt32      int32         `bson:"autoIncrementInt32"`
+		AutoIncrementInt64      int64         `bson:"autoIncrementInt64"`
+		Date                    time.Time     `bson:"date"`
+		BinaryData              []byte        `bson:"binaryData"`
+		ArrayInt32              []int32       `bson:"arrayInt32"`
+		Object                  struct {
 			K1    string `bson:"k1"`
 			K2    int32  `bson:"k2"`
 			Subob struct {

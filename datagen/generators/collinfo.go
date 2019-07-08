@@ -81,6 +81,8 @@ type Config struct {
 	ObjectContent map[string]Config `json:"objectContent"`
 	// For `fromArray` only. If specified, the generator pick one of the item of the array
 	In []interface{} `json:"in"`
+	// For `fromArray` only. If set to true, items are picked from the array in random order
+	RandomOrder bool `json:"randomOrder"`
 	// For `date` only. Lower bound for the date to generate
 	StartDate time.Time `json:"StartDate"`
 	// For `date` only. Higher bound for the date to generate
@@ -430,10 +432,11 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			array[i] = raw
 		}
 		return &fromArrayGenerator{
-			base:  base,
-			array: array,
-			size:  len(config.In),
-			index: 0,
+			base:        base,
+			array:       array,
+			size:        len(config.In),
+			index:       0,
+			randomOrder: config.RandomOrder,
 		}, nil
 
 	case TypeBinary:

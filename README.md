@@ -512,7 +512,9 @@ array have to be of the same type
       <object>,               // any type, including object and array.
       <object>
       ...
-    ]
+    ], 
+    "randomOrder": <bool>     // optional. If set to true, objects will be picked 
+                              // from the array in random order. Default to false
 }
 ```
 

@@ -62,6 +62,19 @@
           "2016-05-05"
         ]
       },
+      "intFromArrayRandomOrder": {
+        "type": "fromArray",
+        "in": [
+          1,
+          4, 
+          12,
+          22, 
+          484844,
+          3747, 
+          222
+        ], 
+        "randomOrder": true
+      },
       "arrayFromArray": {
         "type": "array",
         "size": 6,

@@ -124,28 +124,29 @@ func TestCollectionContent(t *testing.T) {
 	}
 
 	var results []struct {
-		ID                 bson.ObjectId `bson:"_id"`
-		UUID               string        `bson:"uuid"`
-		String             string        `bson:"string"`
-		Int32              int32         `bson:"int32"`
-		Int64              int64         `bson:"int64"`
-		Float              float64       `bson:"float"`
-		ConstInt32         int32         `bson:"constInt32"`
-		ConstInt64         int64         `bson:"constInt64"`
-		ConstFloat         float64       `bson:"constFloat"`
-		Boolean            bool          `bson:"boolean"`
-		Position           []float64     `bson:"position"`
-		StringFromArray    string        `bson:"stringFromArray"`
-		ArrayFromArray     []string      `bson:"arrayFromArray"`
-		ConstArray         []string      `bson:"constArray"`
-		Fake               string        `bson:"faker"`
-		Constant           int32         `bson:"constant"`
-		AutoIncrementInt32 int32         `bson:"autoIncrementInt32"`
-		AutoIncrementInt64 int64         `bson:"autoIncrementInt64"`
-		Date               time.Time     `bson:"date"`
-		BinaryData         []byte        `bson:"binaryData"`
-		ArrayInt32         []int32       `bson:"arrayInt32"`
-		Object             struct {
+		ID                      bson.ObjectId `bson:"_id"`
+		UUID                    string        `bson:"uuid"`
+		String                  string        `bson:"string"`
+		Int32                   int32         `bson:"int32"`
+		Int64                   int64         `bson:"int64"`
+		Float                   float64       `bson:"float"`
+		ConstInt32              int32         `bson:"constInt32"`
+		ConstInt64              int64         `bson:"constInt64"`
+		ConstFloat              float64       `bson:"constFloat"`
+		Boolean                 bool          `bson:"boolean"`
+		Position                []float64     `bson:"position"`
+		StringFromArray         string        `bson:"stringFromArray"`
+		IntFromArrayRandomOrder int           `bson:"intFromArrayRandomOrder"`
+		ArrayFromArray          []string      `bson:"arrayFromArray"`
+		ConstArray              []string      `bson:"constArray"`
+		Fake                    string        `bson:"faker"`
+		Constant                int32         `bson:"constant"`
+		AutoIncrementInt32      int32         `bson:"autoIncrementInt32"`
+		AutoIncrementInt64      int64         `bson:"autoIncrementInt64"`
+		Date                    time.Time     `bson:"date"`
+		BinaryData              []byte        `bson:"binaryData"`
+		ArrayInt32              []int32       `bson:"arrayInt32"`
+		Object                  struct {
 			K1    string `bson:"k1"`
 			K2    int32  `bson:"k2"`
 			Subob struct {
@@ -256,15 +257,16 @@ func TestCollectionContent(t *testing.T) {
 		// test unique option
 		"object.k1": 1000,
 		// test value distribution
-		"stringFromArray":    4,
-		"_id":                1000,
-		"int32":              11,
-		"arrayInt32":         11,
-		"autoIncrementInt32": 1000,
-		"autoIncrementInt64": 1000,
-		"boolean":            2,
-		"float":              1000,
-		"position":           2000,
+		"stringFromArray":         4,
+		"intFromArrayRandomOrder": 7,
+		"_id":                     1000,
+		"int32":                   11,
+		"arrayInt32":              11,
+		"autoIncrementInt32":      1000,
+		"autoIncrementInt64":      1000,
+		"boolean":                 2,
+		"float":                   1000,
+		"position":                2000,
 	}
 	var result distinctResult
 	for key, value := range maxDistinctValuesTests {

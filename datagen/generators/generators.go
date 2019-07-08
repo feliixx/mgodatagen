@@ -416,13 +416,18 @@ type fromArrayGenerator struct {
 	size          int
 	array         [][]byte
 	index         int
+	randomOrder   bool
 	doNotTruncate bool
 }
 
 func (g *fromArrayGenerator) Value() {
-	if g.index == g.size {
+
+	if g.randomOrder {
+		g.index = int(g.base.pcg32.Bounded(uint32(g.size)))
+	} else if g.index == g.size {
 		g.index = 0
 	}
+
 	g.buffer.Write(g.array[g.index])
 	g.index++
 }
