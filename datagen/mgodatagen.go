@@ -419,7 +419,11 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 	return nil
 }
 
-func (d *dtg) printStats(collections []Collection) error {
+func (d *dtg) printStats(collections []Collection) {
+
+	if d.Options.Quiet {
+		return
+	}
 
 	var stats struct {
 		Count      int    `bson:"count"`
@@ -429,13 +433,12 @@ func (d *dtg) printStats(collections []Collection) error {
 	rows := make([][]string, 0, len(collections))
 
 	for _, coll := range collections {
-		err := d.session.DB(coll.DB).Run(bson.D{
+
+		d.session.DB(coll.DB).Run(bson.D{
 			{Name: "collStats", Value: coll.Name},
 			{Name: "scale", Value: 1024},
 		}, &stats)
-		if err != nil {
-			return fmt.Errorf("couldn't get stats for collection %s \n  cause: %v ", coll.Name, err)
-		}
+
 		indexes := make([]string, 0, len(stats.IndexSizes))
 		for k, v := range stats.IndexSizes {
 			indexes = append(indexes, fmt.Sprintf("%s  %v kB", k, v))
@@ -453,7 +456,6 @@ func (d *dtg) printStats(collections []Collection) error {
 	table.SetHeader([]string{"collection", "count", "avg object size", "indexes"})
 	table.AppendBulk(rows)
 	table.Render()
-	return nil
 }
 
 func createEmptyCfgFile(filename string) error {
@@ -597,9 +599,8 @@ func run(options *Options, out io.Writer) error {
 			return err
 		}
 	}
-	if !options.Quiet {
-		return dtg.printStats(collections)
-	}
+	dtg.printStats(collections)
+
 	return nil
 }
 
