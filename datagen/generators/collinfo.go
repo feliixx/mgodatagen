@@ -2,6 +2,7 @@ package generators
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math"
 	"time"
@@ -275,7 +276,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		config.MaxDistinctValue = 0
 		values, bsonType, err := ci.preGenerate(key, config, size)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("for field %s, %v", key, err)
 		}
 		base.bsonType = bsonType
 		return &fromArrayGenerator{
@@ -612,11 +613,15 @@ func uniqueValues(docCount int, stringSize int) ([][]byte, error) {
 // preGenerate generates `nb`values using a generator created from config
 func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]byte, bsonType byte, err error) {
 
+	if nb < 0 {
+		return nil, bson.ElementNil, errors.New("maxDistinctValue can't be negative")
+	}
+
 	buffer := NewDocBuffer()
 	tmpCi := NewCollInfo(ci.Count, ci.Version, ci.Seed, ci.mapRef, ci.mapRefType)
 	g, err := tmpCi.newGenerator(buffer, key, config)
 	if err != nil {
-		return nil, bson.ElementNil, fmt.Errorf("for field %s, error while creating base array: %v", key, err)
+		return nil, bson.ElementNil, fmt.Errorf("error while creating base array: %v", err)
 	}
 
 	values = make([][]byte, nb)
@@ -629,7 +634,7 @@ func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]
 	}
 	if nb > 1 {
 		if bytes.Equal(values[0], values[1]) {
-			return nil, bson.ElementNil, fmt.Errorf("for field %s, couldn't generate enough unique values", key)
+			return nil, bson.ElementNil, errors.New("couldn't generate enough unique values")
 		}
 	}
 	return values, g.Type(), nil

@@ -416,6 +416,15 @@ func TestNewGenerator(t *testing.T) {
 			correct: true,
 			version: []int{3, 4},
 		},
+		{
+			name: "negative maxDistinctValue",
+			config: generators.Config{
+				Type:             generators.TypeBoolean,
+				MaxDistinctValue: -1,
+			},
+			correct: false,
+			version: []int{3, 4},
+		},
 	}
 	// all possible faker methods
 	fakerVal := []string{

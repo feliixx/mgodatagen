@@ -1,0 +1,11 @@
+[{
+"database": "dbName",
+"collection": "collectionName",
+"count": 1000,
+"content": {
+  "f": {
+   "type": "boolean",
+   "maxDistinctValue": -1
+  }    
+  }
+}]
