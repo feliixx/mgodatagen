@@ -256,7 +256,7 @@ List of [Faker](https://github.com/manveru/faker) `<generator>` types:
 
 ### String
 
-Generates random string of a certain length. String is composed of char within this list:
+Generates a random string of a certain length. String is composed of char within this list:
 `abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_`
 
 ```JSON5
@@ -357,7 +357,7 @@ Generates a random `boolean`.
 
 ### ObjectId
 
-Generates a random and unique `objectId`
+Generates a random `objectId`.
 
 ```JSON5
 "fieldName": {
@@ -473,7 +473,7 @@ Generates an autoincremented value (type `<long>` or `<int>`).
 
 ### Ref
 
-If a field reference an other field in an other collection, you can use a ref generator.
+If a field reference an other field in a different collection, you can use a ref generator.
 
 generator in first collection:
 
@@ -653,7 +653,7 @@ The collection `second` will contain:
 
 ### BoundAggregator
 
-Get lower ang higher values for a specific field for documents from
+Get the lowest and highest value for a specific field of documents in
 `<database>.<collection>` matching a specific query. To use a variable of
 the document in the query, prefix it with "$$"
 
