@@ -246,7 +246,7 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 	for k, v := range content {
 		g, err := ci.newGenerator(buffer, k, &v)
 		if err != nil {
-			return nil, fmt.Errorf("fail to create DocumentGenerator:\n\tcause: %v", err)
+			return nil, fmt.Errorf("fail to create DocumentGenerator:\n\tcause: for field %s, %v", k, err)
 		}
 		d.Add(g)
 	}
@@ -256,7 +256,7 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) (Generator, error) {
 
 	if config.NullPercentage > 100 || config.NullPercentage < 0 {
-		return nil, fmt.Errorf("for field %s, null percentage has to be between 0 and 100", key)
+		return nil, errors.New("null percentage has to be between 0 and 100")
 	}
 	// use a default key of length 1. This can happen for a generator of type fromArray
 	// used as generator of an ArrayGenerator
@@ -266,7 +266,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	bsonType, ok := mapTypes[config.Type]
 	if !ok {
-		return nil, fmt.Errorf("invalid type %v for field %v", config.Type, key)
+		return nil, fmt.Errorf("invalid type %v", config.Type)
 	}
 	nullPercentage := uint32(config.NullPercentage) * 10
 	base := newBase(key, nullPercentage, bsonType, buffer, ci.pcg32)
@@ -276,7 +276,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		config.MaxDistinctValue = 0
 		values, bsonType, err := ci.preGenerate(key, config, size)
 		if err != nil {
-			return nil, fmt.Errorf("for field %s, %v", key, err)
+			return nil, err
 		}
 		base.bsonType = bsonType
 		return &fromArrayGenerator{
@@ -290,12 +290,12 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 	switch config.Type {
 	case TypeString:
 		if config.MinLength < 0 || config.MinLength > config.MaxLength {
-			return nil, fmt.Errorf("for field %s, make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'", key)
+			return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'")
 		}
 		if config.Unique {
 			values, err := uniqueValues(ci.Count, int(config.MaxLength))
 			if err != nil {
-				return nil, fmt.Errorf("for field %s, %v", key, err)
+				return nil, err
 			}
 			return &fromArrayGenerator{
 				base:  base,
@@ -312,7 +312,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	case TypeInt:
 		if config.MaxInt < config.MinInt {
-			return nil, fmt.Errorf("for field %s, make sure that 'maxInt' >= 'minInt'", key)
+			return nil, errors.New("make sure that 'maxInt' >= 'minInt'")
 		}
 		if config.MinInt == config.MaxInt {
 			return constGeneratorFromValue(base, config.MaxInt)
@@ -325,7 +325,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	case TypeLong:
 		if config.MaxLong < config.MinLong {
-			return nil, fmt.Errorf("for field %s, make sure that 'maxLong' >= 'minLong'", key)
+			return nil, errors.New("make sure that 'maxLong' >= 'minLong'")
 		}
 		if config.MinLong == config.MaxLong {
 			return constGeneratorFromValue(base, config.MaxLong)
@@ -339,7 +339,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	case TypeDouble:
 		if config.MaxDouble < config.MinDouble {
-			return nil, fmt.Errorf("for field %s, make sure that 'maxDouble' >= 'minDouble'", key)
+			return nil, errors.New("make sure that 'maxDouble' >= 'minDouble'")
 		}
 		if config.MinDouble == config.MaxDouble {
 			return constGeneratorFromValue(base, config.MaxDouble)
@@ -353,7 +353,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	case TypeDecimal:
 		if !ci.versionAtLeast(3, 4) {
-			return nil, fmt.Errorf("for field %s, decimal type (bson decimal128) requires mongodb 3.4 at least", key)
+			return nil, errors.New("decimal type (bson decimal128) requires mongodb 3.4 at least")
 		}
 		return &decimal128Generator{base: base, pcg64: ci.pcg64}, nil
 
@@ -365,11 +365,11 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	case TypeArray:
 		if config.Size <= 0 {
-			return nil, fmt.Errorf("for field %s, make sure that 'size' >= 0", key)
+			return nil, errors.New("make sure that 'size' >= 0")
 		}
 		g, err := ci.newGenerator(buffer, "", config.ArrayContent)
 		if err != nil {
-			return nil, fmt.Errorf("couldn't create new generator: %v", err)
+			return nil, err
 		}
 
 		// if the generator is of type FromArrayGenerator,
@@ -412,7 +412,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		for k, v := range config.ObjectContent {
 			g, err := ci.newGenerator(buffer, k, &v)
 			if err != nil {
-				return nil, fmt.Errorf("for field %s: %v", key, err)
+				return nil, err
 			}
 			if g != nil {
 				emg.generators = append(emg.generators, g)
@@ -422,7 +422,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	case TypeFromArray:
 		if len(config.In) == 0 {
-			return nil, fmt.Errorf("for field %s, 'in' array can't be null or empty", key)
+			return nil, errors.New("'in' array can't be null or empty")
 		}
 		array := make([][]byte, len(config.In))
 		for i, v := range config.In {
@@ -442,7 +442,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	case TypeBinary:
 		if config.MinLength < 0 || config.MinLength > config.MaxLength {
-			return nil, fmt.Errorf("for field %s, make sure that 'minLength' >= 0 and 'minLength' < 'maxLength'", key)
+			return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' < 'maxLength'")
 		}
 		return &binaryDataGenerator{
 			base:      base,
@@ -452,7 +452,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	case TypeDate:
 		if config.StartDate.Unix() > config.EndDate.Unix() {
-			return nil, fmt.Errorf("for field %s, make sure that 'startDate' < 'endDate'", key)
+			return nil, errors.New("make sure that 'startDate' < 'endDate'")
 		}
 		return &dateGenerator{
 			base:      base,
@@ -482,7 +482,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 				counter: config.StartLong,
 			}, nil
 		default:
-			return nil, fmt.Errorf("invalid type %v for field %v", config.Type, key)
+			return nil, fmt.Errorf("invalid type %v", config.Type)
 		}
 
 	case TypeUUID:
@@ -496,7 +496,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		}
 		method, ok := fakerMethods[config.Method]
 		if !ok {
-			return nil, fmt.Errorf("invalid Faker method for key %v: %v", key, config.Method)
+			return nil, fmt.Errorf("invalid Faker method: %v", config.Method)
 		}
 		return &fakerGenerator{
 			base:  base,
@@ -542,7 +542,7 @@ func constGeneratorFromValue(base base, value interface{}) (Generator, error) {
 func bsonValue(key string, val interface{}) ([]byte, error) {
 	raw, err := bson.Marshal(bson.M{key: val})
 	if err != nil {
-		return nil, fmt.Errorf("for field %s, couldn't marshal value: %v", key, err)
+		return nil, fmt.Errorf("couldn't marshal value: %v", err)
 	}
 	// remove first 4 bytes (bson document size) and last bytes (terminating 0x00
 	// indicating end of document) to keep only the bson content
@@ -652,7 +652,7 @@ func (ci *CollInfo) newAggregatorFromMap(content map[string]Config) ([]Aggregato
 		case TypeCountAggregator, TypeValueAggregator, TypeBoundAggregator:
 			a, err := ci.newAggregator(k, &v)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("for field %s, %v", k, err)
 			}
 			agArr = append(agArr, a)
 		default:
@@ -664,13 +664,13 @@ func (ci *CollInfo) newAggregatorFromMap(content map[string]Config) ([]Aggregato
 func (ci *CollInfo) newAggregator(key string, config *Config) (Aggregator, error) {
 
 	if config.Query == nil || len(config.Query) == 0 {
-		return nil, fmt.Errorf("for field %v, 'query' can't be null or empty", key)
+		return nil, errors.New("'query' can't be null or empty")
 	}
 	if config.Database == "" {
-		return nil, fmt.Errorf("for field %v, 'database' can't be null or empty", key)
+		return nil, errors.New("'database' can't be null or empty")
 	}
 	if config.Collection == "" {
-		return nil, fmt.Errorf("for field %v, 'collection' can't be null or empty", key)
+		return nil, errors.New("'collection' can't be null or empty")
 	}
 
 	localVar := "_id"
@@ -694,13 +694,13 @@ func (ci *CollInfo) newAggregator(key string, config *Config) (Aggregator, error
 
 	case TypeValueAggregator:
 		if config.Field == "" {
-			return nil, fmt.Errorf("for field %v, 'field' can't be null or empty", key)
+			return nil, errors.New("'field' can't be null or empty")
 		}
 		return &valueAggregator{baseAggregator: base, field: config.Field}, nil
 
 	case TypeBoundAggregator:
 		if config.Field == "" {
-			return nil, fmt.Errorf("for field %v, 'field' can't be null or empty", key)
+			return nil, errors.New("'field' can't be null or empty")
 		}
 		return &boundAggregator{baseAggregator: base, field: config.Field}, nil
 	}
