@@ -7,7 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 )
@@ -17,28 +19,28 @@ const defaultSeed = 0
 func TestIsDocumentCorrect(t *testing.T) {
 
 	var expectedDoc struct {
-		ID                      bson.ObjectId `bson:"_id"`
-		UUID                    string        `bson:"uuid"`
-		String                  string        `bson:"string"`
-		Int32                   int32         `bson:"int32"`
-		Int64                   int64         `bson:"int64"`
-		Float                   float64       `bson:"float"`
-		ConstInt32              int32         `bson:"constInt32"`
-		ConstInt64              int64         `bson:"constInt64"`
-		ConstFloat              float64       `bson:"constFloat"`
-		Boolean                 bool          `bson:"boolean"`
-		Position                []float64     `bson:"position"`
-		StringFromArray         string        `bson:"stringFromArray"`
-		IntFromArrayRandomOrder int           `bson:"intFromArrayRandomOrder"`
-		ArrayFromArray          []string      `bson:"arrayFromArray"`
-		ConstArray              []string      `bson:"constArray"`
-		Fake                    string        `bson:"faker"`
-		Constant                int32         `bson:"constant"`
-		AutoIncrementInt32      int32         `bson:"autoIncrementInt32"`
-		AutoIncrementInt64      int64         `bson:"autoIncrementInt64"`
-		Date                    time.Time     `bson:"date"`
-		BinaryData              []byte        `bson:"binaryData"`
-		ArrayInt32              []int32       `bson:"arrayInt32"`
+		ID                      primitive.ObjectID `bson:"_id"`
+		UUID                    string             `bson:"uuid"`
+		String                  string             `bson:"string"`
+		Int32                   int32              `bson:"int32"`
+		Int64                   int64              `bson:"int64"`
+		Float                   float64            `bson:"float"`
+		ConstInt32              int32              `bson:"constInt32"`
+		ConstInt64              int64              `bson:"constInt64"`
+		ConstFloat              float64            `bson:"constFloat"`
+		Boolean                 bool               `bson:"boolean"`
+		Position                []float64          `bson:"position"`
+		StringFromArray         string             `bson:"stringFromArray"`
+		IntFromArrayRandomOrder int                `bson:"intFromArrayRandomOrder"`
+		ArrayFromArray          []string           `bson:"arrayFromArray"`
+		ConstArray              []string           `bson:"constArray"`
+		Fake                    string             `bson:"faker"`
+		Constant                int32              `bson:"constant"`
+		AutoIncrementInt32      int32              `bson:"autoIncrementInt32"`
+		AutoIncrementInt64      int64              `bson:"autoIncrementInt64"`
+		Date                    time.Time          `bson:"date"`
+		BinaryData              []byte             `bson:"binaryData"`
+		ArrayInt32              []int32            `bson:"arrayInt32"`
 		Object                  struct {
 			K1    string `bson:"k1"`
 			K2    int32  `bson:"k2"`
@@ -65,7 +67,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 		},
 	}
 
-	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed, map[int][][]byte{}, map[int]byte{})
+	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed, map[int][][]byte{}, map[int]bsontype.Type{})
 
 	for _, tt := range fullDocumentTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -118,7 +120,7 @@ func TestDocumentWithDecimal128(t *testing.T) {
 	}
 
 	var d struct {
-		Decimal bson.Decimal128 `bson:"decimal"`
+		Decimal primitive.Decimal128 `bson:"decimal"`
 	}
 	for i := 0; i < 1000; i++ {
 		err := bson.Unmarshal(docGenerator.Generate(), &d)
@@ -272,19 +274,6 @@ func TestNewGenerator(t *testing.T) {
 			version: []int{3, 6},
 		},
 		{
-			name: "fromArray with invalid BSON values",
-			config: generators.Config{
-				Type: generators.TypeFromArray,
-				In: []interface{}{
-					bson.M{
-						"_id": bson.ObjectId("aaaa"),
-					},
-				},
-			},
-			correct: false,
-			version: []int{3, 6},
-		},
-		{
 			name: "binary with invalid minLength",
 			config: generators.Config{
 				Type:      generators.TypeBinary,
@@ -309,17 +298,6 @@ func TestNewGenerator(t *testing.T) {
 				Type:      generators.TypeDate,
 				StartDate: time.Now(),
 				EndDate:   time.Unix(10, 10),
-			},
-			correct: false,
-			version: []int{3, 6},
-		},
-		{
-			name: "constant with invalid BSON value",
-			config: generators.Config{
-				Type: generators.TypeConstant,
-				ConstVal: bson.M{
-					"_id": bson.ObjectId("aaaa"),
-				},
 			},
 			correct: false,
 			version: []int{3, 6},
@@ -473,7 +451,7 @@ func TestNewGenerator(t *testing.T) {
 		})
 	}
 
-	ci := generators.NewCollInfo(100, nil, defaultSeed, map[int][][]byte{}, map[int]byte{})
+	ci := generators.NewCollInfo(100, nil, defaultSeed, map[int][][]byte{}, map[int]bsontype.Type{})
 
 	for _, tt := range newGeneratorTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -486,7 +464,7 @@ func TestNewGenerator(t *testing.T) {
 				t.Errorf("expected no error for generator with config %v \nbut got \n%v", tt.config, err)
 			}
 			if !tt.correct && err == nil {
-				t.Errorf("expected no error for generator with config %v", tt.config)
+				t.Errorf("generator with config %v should fail", tt.config)
 			}
 		})
 	}
@@ -525,7 +503,7 @@ func TestNewGeneratorFromMap(t *testing.T) {
 		},
 	}
 
-	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed, map[int][][]byte{}, map[int]byte{})
+	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed, map[int][][]byte{}, map[int]bsontype.Type{})
 
 	for _, tt := range generatorFromMapTests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -564,7 +542,7 @@ func BenchmarkGeneratorAll(b *testing.B) {
 
 	contentList := loadCollConfig(nil, "ref.json")
 
-	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed, map[int][][]byte{}, map[int]byte{})
+	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed, map[int][][]byte{}, map[int]bsontype.Type{})
 	docGenerator, err := ci.NewDocumentGenerator(contentList[0])
 	if err != nil {
 		b.Fail()

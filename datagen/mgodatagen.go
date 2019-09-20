@@ -21,6 +21,7 @@ import (
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/olekukonko/tablewriter"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 )
@@ -72,7 +73,7 @@ type dtg struct {
 	session    *mgo.Session
 	version    []int
 	mapRef     map[int][][]byte
-	mapRefType map[int]byte
+	mapRefType map[int]bsontype.Type
 	Options
 }
 
@@ -586,7 +587,7 @@ func run(options *Options, out io.Writer) error {
 		session:    session,
 		version:    version,
 		mapRef:     make(map[int][][]byte, 0),
-		mapRefType: make(map[int]byte, 0),
+		mapRefType: make(map[int]bsontype.Type, 0),
 		Options:    *options,
 	}
 

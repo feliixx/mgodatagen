@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 func Example() {
