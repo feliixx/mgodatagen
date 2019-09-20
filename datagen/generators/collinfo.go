@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/MichaelTJones/pcg"
-	"github.com/globalsign/mgo/bson"
+	oldbson "github.com/globalsign/mgo/bson"
 	"github.com/manveru/faker"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
 
 // CollInfo stores global info on the collection to generate
@@ -23,7 +25,7 @@ type CollInfo struct {
 	// map holding references values when using a reference generator
 	mapRef map[int][][]byte
 	// map holding references types when using a reference generator
-	mapRefType map[int]byte
+	mapRefType map[int]bsontype.Type
 	pcg32      *pcg.PCG32
 	pcg64      *pcg.PCG64
 }
@@ -31,7 +33,7 @@ type CollInfo struct {
 // NewCollInfo returns a new CollInfo.
 // mapRef is a map holding bson-encoded values for references fields.
 // mapRefType is a map holding bson type for references fields.
-func NewCollInfo(count int, version []int, seed uint64, mapRef map[int][][]byte, mapRefType map[int]byte) *CollInfo {
+func NewCollInfo(count int, version []int, seed uint64, mapRef map[int][][]byte, mapRefType map[int]bsontype.Type) *CollInfo {
 	if count <= 0 {
 		count = 1
 	}
@@ -110,7 +112,7 @@ type Config struct {
 	// For `boundAggregator` and `valueAggregator` only
 	Field string `json:"field"`
 	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
-	Query bson.M `json:"query"`
+	Query oldbson.M `json:"query"`
 }
 
 // available generator types, see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
@@ -177,29 +179,29 @@ const (
 	MethodUserName           = "UserName"
 )
 
-var mapTypes = map[string]byte{
-	TypeString:        bson.ElementString,
-	TypeInt:           bson.ElementInt32,
-	TypeLong:          bson.ElementInt64,
-	TypeDouble:        bson.ElementFloat64,
-	TypeDecimal:       bson.ElementDecimal128,
-	TypeBoolean:       bson.ElementBool,
-	TypeObjectID:      bson.ElementObjectId,
-	TypeArray:         bson.ElementArray,
-	TypePosition:      bson.ElementArray,
-	TypeObject:        bson.ElementDocument,
-	TypeFromArray:     bson.ElementNil, // can be of any bson type
-	TypeConstant:      bson.ElementNil, // can be of any bson type
-	TypeRef:           bson.ElementNil, // can be of any bson type
-	TypeAutoincrement: bson.ElementNil, // type bson.ElementInt32 or bson.ElementInt64
-	TypeBinary:        bson.ElementBinary,
-	TypeDate:          bson.ElementDatetime,
-	TypeUUID:          bson.ElementString,
-	TypeFaker:         bson.ElementString,
+var mapTypes = map[string]bsontype.Type{
+	TypeString:        bson.TypeString,
+	TypeInt:           bson.TypeInt32,
+	TypeLong:          bson.TypeInt64,
+	TypeDouble:        bson.TypeDouble,
+	TypeDecimal:       bson.TypeDecimal128,
+	TypeBoolean:       bson.TypeBoolean,
+	TypeObjectID:      bson.TypeObjectID,
+	TypeArray:         bson.TypeArray,
+	TypePosition:      bson.TypeArray,
+	TypeObject:        bson.TypeEmbeddedDocument,
+	TypeFromArray:     bson.TypeNull, // can be of any bson type
+	TypeConstant:      bson.TypeNull, // can be of any bson type
+	TypeRef:           bson.TypeNull, // can be of any bson type
+	TypeAutoincrement: bson.TypeNull, // type bson.ElementInt32 or bson.ElementInt64
+	TypeBinary:        bson.TypeBinary,
+	TypeDate:          bson.TypeDateTime,
+	TypeUUID:          bson.TypeString,
+	TypeFaker:         bson.TypeString,
 
-	TypeCountAggregator: bson.ElementNil,
-	TypeValueAggregator: bson.ElementNil,
-	TypeBoundAggregator: bson.ElementNil,
+	TypeCountAggregator: bson.TypeNull,
+	TypeValueAggregator: bson.TypeNull,
+	TypeBoundAggregator: bson.TypeNull,
 }
 
 var fakerMethods = map[string]func(f *faker.Faker) string{
@@ -382,7 +384,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			g := g.(*fromArrayGenerator)
 			// if array is generated with preGenerate(), this step is not needed
 			if !g.doNotTruncate {
-				g.bsonType = g.array[0][0]
+				g.bsonType = bsontype.Type(g.array[0][0])
 				// do not write first 3 bytes, ie
 				// bson type, byte("k"), byte(0) to avoid conflict with
 				// array index, because index is the key
@@ -392,7 +394,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			}
 		case *constGenerator:
 			g := g.(*constGenerator)
-			g.bsonType = g.val[0]
+			g.bsonType = bsontype.Type(g.val[0])
 			// 2: 1 for bson type, and 1 for terminating byte 0x00 after element key
 			g.val = g.val[2+len(g.Key()):]
 		default:
@@ -470,13 +472,13 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 	case TypeAutoincrement:
 		switch config.AutoType {
 		case TypeInt:
-			base.bsonType = bson.ElementInt32
+			base.bsonType = bson.TypeInt32
 			return &autoIncrementGenerator32{
 				base:    base,
 				counter: config.StartInt,
 			}, nil
 		case TypeLong:
-			base.bsonType = bson.ElementInt64
+			base.bsonType = bson.TypeInt64
 			return &autoIncrementGenerator64{
 				base:    base,
 				counter: config.StartLong,
@@ -532,7 +534,7 @@ func constGeneratorFromValue(base base, value interface{}) (Generator, error) {
 		return nil, err
 	}
 	// the bson type is already included in raw, so make sure that it's 'unset' from base
-	base.bsonType = bson.ElementNil
+	base.bsonType = bson.TypeNull
 	return &constGenerator{
 		base: base,
 		val:  raw,
@@ -611,17 +613,17 @@ func uniqueValues(docCount int, stringSize int) ([][]byte, error) {
 }
 
 // preGenerate generates `nb`values using a generator created from config
-func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]byte, bsonType byte, err error) {
+func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]byte, bsonType bsontype.Type, err error) {
 
 	if nb < 0 {
-		return nil, bson.ElementNil, errors.New("maxDistinctValue can't be negative")
+		return nil, bson.TypeNull, errors.New("maxDistinctValue can't be negative")
 	}
 
 	buffer := NewDocBuffer()
 	tmpCi := NewCollInfo(ci.Count, ci.Version, ci.Seed, ci.mapRef, ci.mapRefType)
 	g, err := tmpCi.newGenerator(buffer, key, config)
 	if err != nil {
-		return nil, bson.ElementNil, fmt.Errorf("error while creating base array: %v", err)
+		return nil, bson.TypeNull, fmt.Errorf("error while creating base array: %v", err)
 	}
 
 	values = make([][]byte, nb)
@@ -634,7 +636,7 @@ func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]
 	}
 	if nb > 1 {
 		if bytes.Equal(values[0], values[1]) {
-			return nil, bson.ElementNil, errors.New("couldn't generate enough unique values")
+			return nil, bson.TypeNull, errors.New("couldn't generate enough unique values")
 		}
 	}
 	return values, g.Type(), nil

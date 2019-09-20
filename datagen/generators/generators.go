@@ -16,9 +16,10 @@ import (
 	"time"
 
 	"github.com/MichaelTJones/pcg"
-	"github.com/globalsign/mgo/bson"
 	"github.com/manveru/faker"
 	uuid "github.com/satori/go.uuid"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
 
 // DocumentGenerator is a Generator for creating random bson documents
@@ -35,8 +36,8 @@ func (g *DocumentGenerator) Generate() []byte {
 	g.Buffer.Truncate(4)
 	for _, gen := range g.Generators {
 		if gen.Exists() {
-			if gen.Type() != bson.ElementNil {
-				g.Buffer.WriteSingleByte(gen.Type())
+			if gen.Type() != bson.TypeNull {
+				g.Buffer.WriteSingleByte(byte(gen.Type()))
 				g.Buffer.Write(gen.Key())
 				g.Buffer.WriteSingleByte(byte(0))
 			}
@@ -63,7 +64,7 @@ type Generator interface {
 	// Key returns the element key
 	Key() []byte
 	// Type returns the bson type of the element as defined in bson spec: http://bsonspec.org/
-	Type() byte
+	Type() bsontype.Type
 	// Value encodes a random value in bson and write it to a DocBuffer
 	Value()
 	// Exists returns true if the generation should be performed.
@@ -76,13 +77,13 @@ type base struct {
 	key []byte
 	// probability that the element doesn't exist
 	nullPercentage uint32
-	bsonType       byte
+	bsonType       bsontype.Type
 	buffer         *DocBuffer
 	pcg32          *pcg.PCG32
 }
 
 // newBase returns a new base
-func newBase(key string, nullPercentage uint32, bsonType byte, out *DocBuffer, pcg32 *pcg.PCG32) base {
+func newBase(key string, nullPercentage uint32, bsonType bsontype.Type, out *DocBuffer, pcg32 *pcg.PCG32) base {
 	return base{
 		key:            []byte(key),
 		nullPercentage: nullPercentage,
@@ -106,7 +107,7 @@ func (g *base) Exists() bool {
 }
 
 // Type return the bson type of the element created by the generator
-func (g *base) Type() byte { return g.bsonType }
+func (g *base) Type() bsontype.Type { return g.bsonType }
 
 // Generator for creating random string of a length within [`MinLength`, `MaxLength`]
 type stringGenerator struct {
@@ -263,8 +264,8 @@ func (g *embeddedObjectGenerator) Value() {
 	g.buffer.Reserve()
 	for _, gen := range g.generators {
 		if gen.Exists() {
-			if gen.Type() != bson.ElementNil {
-				g.buffer.WriteSingleByte(gen.Type())
+			if gen.Type() != bson.TypeNull {
+				g.buffer.WriteSingleByte(byte(gen.Type()))
 				g.buffer.Write(gen.Key())
 				g.buffer.WriteSingleByte(byte(0))
 			}
@@ -307,7 +308,7 @@ func (g *arrayGenerator) Value() {
 	// size (byte(index) byte(0) value)... byte(0)
 	// where index is a string: ["1", "2", "3"...]
 	for i := 0; i < g.size; i++ {
-		g.buffer.WriteSingleByte(g.generator.Type())
+		g.buffer.WriteSingleByte(byte(g.generator.Type()))
 		if i < 10 {
 			g.buffer.WriteSingleByte(indexesBytes[i])
 		} else {
@@ -319,6 +320,9 @@ func (g *arrayGenerator) Value() {
 	g.buffer.WriteSingleByte(byte(0))
 	g.buffer.WriteAt(current, int32Bytes(int32(g.buffer.Len()-current)))
 }
+
+// legacy type binary instead of 0x05
+const genericBinaryType = 0x00
 
 // Generator for creating random binary data
 type binaryDataGenerator struct {
@@ -333,7 +337,7 @@ func (g *binaryDataGenerator) Value() {
 		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
 	}
 	g.buffer.Write(uint32Bytes(length))
-	g.buffer.WriteSingleByte(bson.BinaryGeneric)
+	g.buffer.WriteSingleByte(genericBinaryType)
 	end := 4
 	for count := 0; count < int(length); count += 4 {
 		b := uint32Bytes(g.pcg32.Random())
@@ -344,7 +348,7 @@ func (g *binaryDataGenerator) Value() {
 	}
 }
 
-// Generator for creatingrandom date within bounds
+// Generator for creating random date within bounds
 type dateGenerator struct {
 	base
 	startDate uint64
@@ -367,7 +371,7 @@ func (g *positionGenerator) Value() {
 	current := g.buffer.Len()
 	g.buffer.Reserve()
 	for i := 0; i < 2; i++ {
-		g.buffer.WriteSingleByte(bson.ElementFloat64)
+		g.buffer.WriteSingleByte(byte(bson.TypeDouble))
 		g.buffer.WriteSingleByte(indexesBytes[i])
 		g.buffer.WriteSingleByte(byte(0))
 		// 90*(i+1)(2*[0,1] - 1) ==> pos[0] in [-90, 90], pos[1] in [-180, 180]
