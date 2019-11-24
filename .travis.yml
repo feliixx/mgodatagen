@@ -9,9 +9,9 @@ env:
   global:
     - FASTDL=http://downloads.mongodb.org
   matrix:
-    - VERSION=3.6.14
-    - VERSION=4.0.12
-    - VERSION=4.2.0
+    - VERSION=3.6.15
+    - VERSION=4.0.13
+    - VERSION=4.2.1
 
 before_script: 
   - wget $FASTDL/linux/mongodb-linux-x86_64-ubuntu1604-$VERSION.tgz
