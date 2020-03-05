@@ -18,7 +18,7 @@ import (
 	"github.com/MichaelTJones/pcg"
 	"github.com/globalsign/mgo/bson"
 	"github.com/manveru/faker"
-	"github.com/satori/go.uuid"
+	uuid "github.com/satori/go.uuid"
 )
 
 // DocumentGenerator is a Generator for creating random bson documents
