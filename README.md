@@ -1,4 +1,3 @@
-[![Build Status](https://travis-ci.org/feliixx/mgodatagen.svg?branch=master)](https://travis-ci.org/feliixx/mgodatagen)
 [![Go Report Card](https://goreportcard.com/badge/github.com/feliixx/mgodatagen)](https://goreportcard.com/report/github.com/feliixx/mgodatagen)
 [![codecov](https://codecov.io/gh/feliixx/mgodatagen/branch/master/graph/badge.svg)](https://codecov.io/gh/feliixx/mgodatagen)
 [![GoDoc](https://godoc.org/github.com/feliixx/mgodatagen?status.svg)](http://godoc.org/github.com/feliixx/mgodatagen)
