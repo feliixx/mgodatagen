@@ -586,8 +586,8 @@ func run(options *Options, out io.Writer) error {
 		out:        out,
 		session:    session,
 		version:    version,
-		mapRef:     make(map[int][][]byte, 0),
-		mapRefType: make(map[int]bsontype.Type, 0),
+		mapRef:     make(map[int][][]byte),
+		mapRefType: make(map[int]bsontype.Type),
 		Options:    *options,
 	}
 
@@ -606,6 +606,6 @@ func run(options *Options, out io.Writer) error {
 }
 
 func printElapsedTime(out io.Writer, start time.Time) {
-	elapsed := time.Now().Sub(start).Round(10 * time.Millisecond)
+	elapsed := time.Since(start).Round(10 * time.Millisecond)
 	fmt.Fprintf(out, "\nrun finished in %s\n", elapsed.String())
 }

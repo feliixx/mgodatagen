@@ -379,9 +379,8 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		// for the generator
 		// => fromArrayGenerator currently has to contain object of
 		// the same type, otherwise bson object will be incorrect
-		switch g.(type) {
+		switch g := g.(type) {
 		case *fromArrayGenerator:
-			g := g.(*fromArrayGenerator)
 			// if array is generated with preGenerate(), this step is not needed
 			if !g.doNotTruncate {
 				g.bsonType = bsontype.Type(g.array[0][0])
@@ -393,7 +392,6 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 				}
 			}
 		case *constGenerator:
-			g := g.(*constGenerator)
 			g.bsonType = bsontype.Type(g.val[0])
 			// 2: 1 for bson type, and 1 for terminating byte 0x00 after element key
 			g.val = g.val[2+len(g.Key()):]
