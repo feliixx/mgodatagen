@@ -1,0 +1,64 @@
+name: Upload binary to release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  TZ: Pacific/Noumea
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.14
+
+      - name: Create linux binary
+        run: |
+          env GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o mgodatagen
+          tar -cvzf mgodatagen_linux_x86_64.tar.gz mgodatagen
+
+      - name: Upload linux binary
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: mgodatagen_linux_x86_64.tar.gz
+          asset_name: mgodatagen_linux_x86_64.tar.gz
+          tag: ${{ github.ref }}
+          overwrite: true
+
+      - name: Create macOSX binary
+        run: |
+          rm -f mgodatagen
+          env GOOS=darwin GOARCH=amd64 go build -ldflags="-w -s" -o mgodatagen
+          tar -cvzf mgodatagen_macOSX_x86_64.tar.gz mgodatagen
+
+      - name: Upload macOSX binary
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: mgodatagen_macOSX_x86_64.tar.gz
+          asset_name: mgodatagen_macOSX_x86_64.tar.gz
+          tag: ${{ github.ref }}
+          overwrite: true
+
+      - name: Create windows binary
+        run: |
+          env GOOS=windows GOARCH=amd64 go build -ldflags="-w -s" -o mgodatagen.exe
+          zip mgodatagen_windows_x86_64.zip mgodatagen.exe
+
+      - name: Upload windows binary
+        uses: svenstaro/upload-release-action@v1-release
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: mgodatagen_windows_x86_64.zip
+          asset_name: mgodatagen_windows_x86_64.zip
+          tag: ${{ github.ref }}
+          overwrite: true
