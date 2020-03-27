@@ -466,7 +466,7 @@ func createEmptyCfgFile(filename string) error {
 		response := make([]byte, 2)
 		_, err := os.Stdin.Read(response)
 		if err != nil {
-			return fmt.Errorf("couldn't read from user, aborting")
+			return fmt.Errorf("couldn't read from user, aborting %v", err)
 		}
 		if string(response[0]) != "y" {
 			return nil
