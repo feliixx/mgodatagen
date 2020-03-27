@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"regexp"
 	"sort"
@@ -63,6 +64,50 @@ func TestCreateEmptyFile(t *testing.T) {
 	}
 	defer os.Remove(filename)
 
+	testNewFileContent(t, filename)
+}
+
+func TestCreateEmptyFileOverwrite(t *testing.T) {
+
+	filename := "testFileAlreadyExist.json"
+
+	_, err := os.Create(filename)
+	if err != nil {
+		t.Errorf("fail to create file: %v", err)
+	}
+	defer os.Remove(filename)
+
+	fakeUsrInput, err := ioutil.TempFile("", "fake_user_input")
+	if err != nil {
+		t.Error(err)
+	}
+	defer os.Remove(fakeUsrInput.Name())
+
+	if _, err := fakeUsrInput.Write([]byte("y")); err != nil {
+		log.Fatal(err)
+	}
+	if _, err := fakeUsrInput.Seek(0, 0); err != nil {
+		log.Fatal(err)
+	}
+
+	oldStdin := os.Stdin
+	defer func() { os.Stdin = oldStdin }()
+
+	os.Stdin = fakeUsrInput
+
+	options := &datagen.Options{
+		Template: datagen.Template{
+			New: filename,
+		},
+	}
+	err = datagen.Generate(options, ioutil.Discard)
+	if err != nil {
+		t.Errorf("expected no error for creating empty file but got %v", err)
+	}
+	testNewFileContent(t, filename)
+}
+
+func testNewFileContent(t *testing.T, filename string) {
 	content, err := ioutil.ReadFile(filename)
 	if err != nil {
 		t.Error(err)
