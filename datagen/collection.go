@@ -54,7 +54,6 @@ type Index struct {
 type ShardingConfig struct {
 	ShardCollection  string         `bson:"shardCollection"`
 	Key              bson.M         `bson:"key"`
-	unique           bool           `bson:"unique"`
 	NumInitialChunks int            `bson:"numInitialChunks,omitempty"`
 	Collation        *mgo.Collation `bson:"collation,omitempty"`
 }
