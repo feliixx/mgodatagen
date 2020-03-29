@@ -11,12 +11,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson/mgocompat"
+
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/olekukonko/tablewriter"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 )
@@ -24,7 +26,7 @@ import (
 type dtg struct {
 	out        io.Writer
 	bar        *uiprogress.Bar
-	session    *mgo.Session
+	session    *mongo.Client
 	version    []int
 	mapRef     map[int][][]byte
 	mapRefType map[int]bsontype.Type
@@ -95,28 +97,33 @@ func (d *dtg) generate(collection *Collection) error {
 
 // create a collection with specific options
 func (d *dtg) createCollection(coll *Collection) error {
-	c := d.session.DB(coll.DB).C(coll.Name)
+	c := d.session.Database(coll.DB).Collection(coll.Name)
 
 	if d.Append || d.IndexOnly {
 		return nil
 	}
-	c.DropCollection()
+	err := c.Drop(context.Background())
+	if err != nil {
+		return fmt.Errorf("fail to drop collection %s: %v", coll.Name, err)
+	}
 
 	if coll.CompressionLevel != "" {
-		err := c.Create(&mgo.CollectionInfo{StorageEngine: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
+		err = d.session.Database(coll.DB).RunCommand(context.Background(), bson.D{
+			{"create", coll.Name},
+			{"storageEngine", bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}},
+		}).Err()
 		if err != nil {
 			return fmt.Errorf("coulnd't create collection with compression level %s:\n  cause: %v", coll.CompressionLevel, err)
 		}
 	}
 	if coll.ShardConfig.ShardCollection != "" {
-		nm := c.Database.Name + "." + c.Name
+		nm := coll.DB + "." + coll.Name
 		if coll.ShardConfig.ShardCollection != nm {
 			return fmt.Errorf("wrong value for 'shardConfig.shardCollection', should be <database>.<collection>: found %s, expected %s", coll.ShardConfig.ShardCollection, nm)
 		}
 		if len(coll.ShardConfig.Key) == 0 {
 			return fmt.Errorf("wrong value for 'shardConfig.key', can't be null and must be an object like {'_id': 'hashed'}, found: %v", coll.ShardConfig.Key)
 		}
-		var r result
 		// index to shard the collection
 		// if shard key is '_id', no need to rebuild the index
 		if coll.ShardConfig.Key["_id"] == 1 {
@@ -124,24 +131,24 @@ func (d *dtg) createCollection(coll *Collection) error {
 				Name: "shardKey",
 				Key:  coll.ShardConfig.Key,
 			}
-			err := c.Database.Run(bson.D{
-				{Name: "createIndexes", Value: c.Name},
-				{Name: "indexes", Value: [1]Index{index}},
-			}, &r)
-			if err != nil || !r.Ok {
-				return handleCommandError(fmt.Sprintf("couldn't create shard key with index config %v", index.Key), err, &r)
+			err := c.Database().RunCommand(context.Background(), bson.D{
+				{"createIndexes", c.Name},
+				{"indexes", [1]Index{index}},
+			}).Err()
+			if err != nil {
+				return fmt.Errorf("couldn't create shard key with index config %v\n cause: %s", index.Key, err)
 			}
 		}
-		err := d.session.Run(coll.ShardConfig, &r)
-		if err != nil || !r.Ok {
-			return handleCommandError("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details", err, &r)
+		err := d.session.Database("admin").RunCommand(context.Background(), coll.ShardConfig).Err()
+		if err != nil {
+			return fmt.Errorf("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details\n cause: %v", err)
 		}
 	}
 	return nil
 }
 
 type rawChunk struct {
-	documents  []bson.Raw
+	documents  [][]byte
 	nbToInsert int
 }
 
@@ -149,12 +156,9 @@ type rawChunk struct {
 // also reduce the nb of items to send to the channel
 var pool = sync.Pool{
 	New: func() interface{} {
-		list := make([]bson.Raw, 1000)
+		list := make([][]byte, 1000)
 		for i := range list {
-			list[i] = bson.Raw{
-				Data: make([]byte, 128),
-				Kind: bson.ElementDocument,
-			}
+			list[i] = make([]byte, 128)
 		}
 		return &rawChunk{
 			documents: list,
@@ -198,10 +202,8 @@ func (d *dtg) fillCollection(coll *Collection) error {
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		go func() {
 			defer wg.Done()
-			//use session.Copy() so each connection use a distinct socket
-			s := d.session.Copy()
-			defer s.Close()
-			c := s.DB(coll.DB).C(coll.Name)
+
+			c := d.session.Database(coll.DB).Collection(coll.Name)
 
 			for t := range tasks {
 				// if an error occurs in one of the goroutine, 'return' is called which trigger
@@ -211,13 +213,13 @@ func (d *dtg) fillCollection(coll *Collection) error {
 					return
 				default:
 				}
-				bulk := c.Bulk()
-				bulk.Unordered()
 
-				for i := 0; i < t.nbToInsert; i++ {
-					bulk.Insert(t.documents[i])
+				docs := make([]interface{}, 0, t.nbToInsert)
+				for _, doc := range t.documents[:t.nbToInsert] {
+					docs = append(docs, doc)
 				}
-				_, err := bulk.Run()
+
+				_, err = c.InsertMany(ctx, docs)
 				if err != nil {
 					// if the bulk insert fails, push the error to the error channel
 					// so that we can use it from the main thread
@@ -262,12 +264,12 @@ func (d *dtg) generateDocument(ctx context.Context, tasks chan *rawChunk, nbDoc 
 		for i := 0; i < rc.nbToInsert; i++ {
 			docBytes := docGenerator.Generate()
 
-			// if documents[i] is not large enough, grow it manually
-			for len(rc.documents[i].Data) < len(docBytes) {
-				rc.documents[i].Data = append(rc.documents[i].Data, byte(0))
+			// if doc is not large enough, grow it manually
+			for len(rc.documents[i]) < len(docBytes) {
+				rc.documents[i] = append(rc.documents[i], byte(0))
 			}
-			rc.documents[i].Data = rc.documents[i].Data[:len(docBytes)]
-			copy(rc.documents[i].Data, docBytes)
+			rc.documents[i] = rc.documents[i][:len(docBytes)]
+			copy(rc.documents[i], docBytes)
 		}
 		count += rc.nbToInsert
 		d.bar.Set(d.bar.Current() + rc.nbToInsert)
@@ -293,11 +295,12 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	}
 
 	// aggregation might be very long, so make sure the connection won't timeout
-	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
+	// TODO check this
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Minute)
 
 	tasks := make(chan [2]bson.M, d.BatchSize)
 	errs := make(chan error)
-	collection := d.session.DB(coll.DB).C(coll.Name)
+	collection := d.session.Database(coll.DB).Collection(coll.Name)
 
 	// run updates in a new goroutine
 	var wg sync.WaitGroup
@@ -305,12 +308,9 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 
 	go func() {
 		defer wg.Done()
-		s := d.session.Copy()
-		defer s.Close()
-		c := collection.With(s)
 
 		for t := range tasks {
-			err := c.Update(t[0], t[1])
+			_, err := collection.UpdateMany(ctx, t[0], t[1])
 			if err != nil {
 				errs <- fmt.Errorf("exception occurred during update:\n  cause: %v", err)
 				return
@@ -323,18 +323,23 @@ Loop:
 	for _, aggregator := range aggregators {
 
 		localVar := aggregator.LocalVar()
-		var result struct {
-			Values []interface{} `bson:"values"`
+		var distinct struct {
+			Values []interface{}
 		}
-		err := collection.Database.Run(bson.D{
-			{Name: "distinct", Value: coll.Name},
-			{Name: "key", Value: localVar},
-		}, &result)
-		if err != nil {
+		result := d.session.Database(coll.DB).RunCommand(ctx, bson.D{
+			{"distinct", coll.Name},
+			{"key", localVar},
+		})
+		if err := result.Err(); err != nil {
 			aggregationError = fmt.Errorf("fail to get distinct values for local field %v: %v", localVar, err)
 			break Loop
 		}
-		for _, value := range result.Values {
+		if err := result.Decode(&distinct); err != nil {
+			aggregationError = fmt.Errorf("fail to decode distinct values for local field %v: %v", localVar, err)
+			break Loop
+		}
+
+		for _, value := range distinct.Values {
 			select {
 			case aggregationError = <-errs:
 				break Loop
@@ -360,21 +365,27 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 		return nil
 	}
 
-	c := d.session.DB(coll.DB).C(coll.Name)
-	err := c.DropAllIndexes()
+	_, err := d.session.Database(coll.DB).Collection(coll.Name).Indexes().DropAll(context.Background())
 	if err != nil {
 		return fmt.Errorf("error while dropping index for collection %s:\n  cause: %v", coll.Name, err)
 	}
-	// avoid timeout when building indexes
-	d.session.SetSocketTimeout(time.Duration(30) * time.Minute)
 
-	var r result
-	err = c.Database.Run(bson.D{
-		{Name: "createIndexes", Value: coll.Name},
-		{Name: "indexes", Value: coll.Indexes},
-	}, &r)
-	if err != nil || !r.Ok {
-		return handleCommandError(fmt.Sprintf("error while building indexes for collection %s", coll.Name), err, &r)
+	mgoRegistry := mgocompat.NewRespectNilValuesRegistryBuilder().Build()
+	cmd := bson.D{
+		{"createIndexes", coll.Name},
+		{"indexes", coll.Indexes},
+	}
+
+	_, cmdBytes, err := bson.MarshalValueWithRegistry(mgoRegistry, cmd)
+	if err != nil {
+		return fmt.Errorf("fait to generate command to create indexes: %v", err)
+	}
+
+	// avoid timeout when building indexes
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Minute)
+	err = d.session.Database(coll.DB).RunCommand(ctx, cmdBytes).Err()
+	if err != nil {
+		return fmt.Errorf("error while building indexes for collection %s\n cause: %v", coll.Name, err)
 	}
 	return nil
 }
@@ -394,10 +405,14 @@ func (d *dtg) printStats(collections []Collection) {
 
 	for _, coll := range collections {
 
-		d.session.DB(coll.DB).Run(bson.D{
-			{Name: "collStats", Value: coll.Name},
-			{Name: "scale", Value: 1024},
-		}, &stats)
+		result := d.session.Database(coll.DB).RunCommand(context.Background(), bson.D{
+			{"collStats", coll.Name},
+			{"scale", 1024},
+		})
+		err := result.Decode(&stats)
+		if err != nil {
+			fmt.Fprintf(d.out, "fail to parse stats result: %v", err)
+		}
 
 		indexes := make([]string, 0, len(stats.IndexSizes))
 		for k, v := range stats.IndexSizes {

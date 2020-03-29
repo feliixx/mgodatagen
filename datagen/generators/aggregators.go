@@ -1,11 +1,12 @@
 package generators
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Aggregator is a type of generator that use another collection
@@ -21,7 +22,7 @@ type Aggregator interface {
 	// for example:
 	//
 	//  { "_id": 1 }, { "$set": { "newField": ["a", "c", "f"] } }
-	Update(session *mgo.Session, value interface{}) ([2]bson.M, error)
+	Update(session *mongo.Client, value interface{}) ([2]bson.M, error)
 }
 
 type baseAggregator struct {
@@ -39,23 +40,17 @@ type countAggregator struct {
 	baseAggregator
 }
 
-func (a *countAggregator) Update(session *mgo.Session, value interface{}) ([2]bson.M, error) {
-	command := bson.D{{Name: "count", Value: a.collection}}
+func (a *countAggregator) Update(session *mongo.Client, value interface{}) ([2]bson.M, error) {
+	query := bson.M{}
 	if a.query != nil {
-		query := createQuery(a.query, value)
-		command = append(command, bson.DocElem{Name: "query", Value: query})
+		query = createQuery(a.query, value)
 	}
 
-	var update [2]bson.M
-	var r struct {
-		N int32 `bson:"n"`
-	}
-	err := session.DB(a.database).Run(command, &r)
+	count, err := session.Database(a.database).Collection(a.collection).CountDocuments(context.Background(), query)
 	if err != nil {
-		return update, fmt.Errorf("couldn't count documents for key%v: %v", a.key, err)
+		return [2]bson.M{}, fmt.Errorf("couldn't count documents for key%v: %v", a.key, err)
 	}
-	update = [2]bson.M{{a.localVar: value}, {"$set": bson.M{a.key: r.N}}}
-	return update, nil
+	return [2]bson.M{{a.localVar: value}, {"$set": bson.M{a.key: count}}}, nil
 }
 
 type valueAggregator struct {
@@ -63,23 +58,24 @@ type valueAggregator struct {
 	field string
 }
 
-func (a *valueAggregator) Update(session *mgo.Session, value interface{}) ([2]bson.M, error) {
+func (a *valueAggregator) Update(session *mongo.Client, value interface{}) ([2]bson.M, error) {
 	query := createQuery(a.query, value)
 
-	var update [2]bson.M
-	var result struct {
-		Values []interface{} `bson:"values"`
+	var distinct struct {
+		Values []interface{}
 	}
-	err := session.DB(a.database).Run(bson.D{
-		{Name: "distinct", Value: a.collection},
-		{Name: "key", Value: a.field},
-		{Name: "query", Value: query}}, &result)
-
-	if err != nil {
-		return update, fmt.Errorf("aggregation failed (distinct values) for field %v: %v", a.key, err)
+	result := session.Database(a.database).RunCommand(context.Background(), bson.D{
+		{"distinct", a.collection},
+		{"key", a.field},
+		{"query", query}},
+	)
+	if err := result.Err(); err != nil {
+		return [2]bson.M{}, fmt.Errorf("aggregation failed (get distinct values) for field %v: %v", a.key, err)
 	}
-	update = [2]bson.M{{a.localVar: value}, {"$set": bson.M{a.key: result.Values}}}
-	return update, nil
+	if err := result.Decode(&distinct); err != nil {
+		return [2]bson.M{}, fmt.Errorf("aggregation failed (decode distinct values) for field %v: %v", a.key, err)
+	}
+	return [2]bson.M{{a.localVar: value}, {"$set": bson.M{a.key: distinct.Values}}}, nil
 }
 
 type boundAggregator struct {
@@ -87,35 +83,41 @@ type boundAggregator struct {
 	field string
 }
 
-func (a *boundAggregator) Update(session *mgo.Session, value interface{}) ([2]bson.M, error) {
+func (a *boundAggregator) Update(session *mongo.Client, value interface{}) ([2]bson.M, error) {
 
 	query := createQuery(a.query, value)
 	query[a.field] = bson.M{"$ne": nil}
 
-	var update [2]bson.M
-	var res bson.M
 	pipeline := []bson.M{{"$match": query},
 		{"$sort": bson.M{a.field: 1}},
 		{"$limit": 1},
 		{"$project": bson.M{"min": "$" + a.field}}}
-	err := session.DB(a.database).C(a.collection).Pipe(pipeline).One(&res)
+
+	cursor, err := session.Database(a.database).Collection(a.collection).Aggregate(context.Background(), pipeline)
 	if err != nil {
-		return update, fmt.Errorf("aggregation failed (lower bound) for field %v: %v", a.key, err)
+		return [2]bson.M{}, fmt.Errorf("aggregation failed (lower bound) for field %v: %v", a.key, err)
 	}
+	cursor.Next(context.Background())
+	var result bson.M
+	cursor.Decode(&result)
+	cursor.Close(context.Background())
 
 	bound := bson.M{}
-	bound["m"] = res["min"]
+	bound["m"] = result["min"]
 	pipeline = []bson.M{{"$match": query},
 		{"$sort": bson.M{a.field: -1}},
 		{"$limit": 1},
 		{"$project": bson.M{"max": "$" + a.field}}}
-	err = session.DB(a.database).C(a.collection).Pipe(pipeline).One(&res)
+	cursor, err = session.Database(a.database).Collection(a.collection).Aggregate(context.Background(), pipeline)
 	if err != nil {
-		return update, fmt.Errorf("aggregation failed (higher bound) for field %v: %v", a.key, err)
+		return [2]bson.M{}, fmt.Errorf("aggregation failed (higher bound) for field %v: %v", a.key, err)
 	}
-	bound["M"] = res["max"]
-	update = [2]bson.M{{a.localVar: value}, {"$set": bson.M{a.key: bound}}}
-	return update, nil
+	cursor.Next(context.Background())
+	cursor.Decode(&result)
+	cursor.Close(context.Background())
+
+	bound["M"] = result["max"]
+	return [2]bson.M{{a.localVar: value}, {"$set": bson.M{a.key: bound}}}, nil
 }
 
 func createQuery(formatQuery bson.M, value interface{}) bson.M {

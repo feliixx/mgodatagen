@@ -3,6 +3,7 @@
 package datagen
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,9 +13,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 const defaultTimeout = 10 * time.Second
@@ -44,7 +49,7 @@ func run(options *Options, out io.Writer) error {
 	}
 	content, err := ioutil.ReadFile(options.ConfigFile)
 	if err != nil {
-		return fmt.Errorf("File error: %v", err)
+		return fmt.Errorf("file error: %v", err)
 	}
 	collections, err := ParseConfig(content, false)
 	if err != nil {
@@ -57,7 +62,7 @@ func run(options *Options, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer session.Close()
+	defer session.Disconnect(context.Background())
 
 	dtg := &dtg{
 		out:        out,
@@ -78,54 +83,61 @@ func run(options *Options, out io.Writer) error {
 		}
 	}
 	dtg.printStats(collections)
-
 	return nil
 }
 
-type result struct {
-	Ok     bool
-	ErrMsg string
-	Shards []bson.M
-}
-
-func handleCommandError(msg string, err error, r *result) error {
-	m := err.Error()
-	if !r.Ok {
-		m = r.ErrMsg
-	}
-	return fmt.Errorf("%s\n  cause: %s", msg, m)
-}
-
 // get a connection from Connection args
-func connectToDB(conn *Connection, out io.Writer) (*mgo.Session, []int, error) {
-	fmt.Fprintf(out, "Connecting to mongodb://%s:%s\n", conn.Host, conn.Port)
-	url := "mongodb://"
+func connectToDB(conn *Connection, out io.Writer) (*mongo.Client, []int, error) {
+
+	url := fmt.Sprintf("mongodb://%s:%s", conn.Host, conn.Port)
+	fmt.Fprintf(out, "Connecting to %s", url)
+
 	if conn.UserName != "" && conn.Password != "" {
-		url += conn.UserName + ":" + conn.Password + "@"
+		url = fmt.Sprintf("mongodb://%s:%s@%s:%s", conn.UserName, conn.Password, conn.Host, conn.Port)
+		fmt.Fprintf(out, " as %s", conn.UserName)
 	}
-	session, err := mgo.DialWithTimeout(url+conn.Host+":"+conn.Port, conn.Timeout)
+	session, err := mongo.Connect(context.Background(), options.Client().
+		ApplyURI(url).
+		SetConnectTimeout(conn.Timeout).
+		SetServerSelectionTimeout(conn.Timeout))
+	if err != nil {
+		return nil, nil, fmt.Errorf("fail to create mongo client from uri %s: %v", url, err)
+	}
+
+	err = session.Ping(context.Background(), readpref.Primary())
 	if err != nil {
 		return nil, nil, fmt.Errorf("connection failed\n  cause: %v", err)
 	}
-	infos, _ := session.BuildInfo()
-	fmt.Fprintf(out, "MongoDB server version %s\n\n", infos.Version)
 
-	version := strings.Split(infos.Version, ".")
+	result := session.Database("admin").RunCommand(context.Background(), bson.M{"buildInfo": 1})
+	var buildInfo struct {
+		Version string
+	}
+	err = result.Decode(&buildInfo)
+	if err != nil {
+		buildInfo.Version = "3.4.0"
+	}
+
+	version := strings.Split(buildInfo.Version, ".")
 	versionInt := make([]int, len(version))
 
 	for i := range version {
 		v, _ := strconv.Atoi(version[i])
 		versionInt[i] = v
 	}
+	fmt.Fprintf(out, "\nMongoDB server version %s\n\n", buildInfo.Version)
 
-	var r result
+	var shardConfig struct {
+		Shards []bson.M
+	}
 	// if it's a sharded cluster, print the list of shards. Don't bother with the error
 	// if cluster is not sharded / user not allowed to run command against admin db
-	err = session.Run(bson.M{"listShards": 1}, &r)
-	if err == nil && r.ErrMsg == "" {
-		json, err := json.MarshalIndent(r.Shards, "", "  ")
+	result = session.Database("admin").RunCommand(context.Background(), bson.M{"listShards": 1})
+	err = result.Decode(&shardConfig)
+	if err == nil && result.Err() == nil {
+		shardList, err := json.MarshalIndent(shardConfig.Shards, "", "  ")
 		if err == nil {
-			fmt.Fprintf(out, "shard list: %v\n", string(json))
+			fmt.Fprintf(out, "shard list: %v\n", string(shardList))
 		}
 	}
 	return session, versionInt, nil

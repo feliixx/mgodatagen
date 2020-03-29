@@ -4,8 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 )
@@ -31,31 +32,31 @@ type Collection struct {
 
 // Index struct used to create an index from `db.runCommand({"createIndexes": "collName", ...})`
 type Index struct {
-	Name                    string         `bson:"name"`
-	Key                     bson.M         `bson:"key"`
-	Unique                  bool           `bson:"unique,omitempty"`
-	DropDups                bool           `bson:"dropDups,omitempty"`
-	Background              bool           `bson:"background,omitempty"`
-	Sparse                  bool           `bson:"sparse,omitempty"`
-	Bits                    int            `bson:"bits,omitempty"`
-	Min                     float64        `bson:"min,omitempty"`
-	Max                     float64        `bson:"max,omitempty"`
-	BucketSize              float64        `bson:"bucketSize,omitempty"`
-	ExpireAfter             int            `bson:"expireAfterSeconds,omitempty"`
-	Weights                 bson.M         `bson:"weights,omitempty"`
-	DefaultLanguage         string         `bson:"default_language,omitempty"`
-	LanguageOverride        string         `bson:"language_override,omitempty"`
-	TextIndexVersion        int            `bson:"textIndexVersion,omitempty"`
-	PartialFilterExpression bson.M         `bson:"partialFilterExpression,omitempty"`
-	Collation               *mgo.Collation `bson:"collation,omitempty"`
+	Name                    string            `bson:"name"`
+	Key                     bson.M            `bson:"key"`
+	Unique                  bool              `bson:"unique,omitempty"`
+	DropDups                bool              `bson:"dropDups,omitempty"`
+	Background              bool              `bson:"background,omitempty"`
+	Sparse                  bool              `bson:"sparse,omitempty"`
+	Bits                    int               `bson:"bits,omitempty"`
+	Min                     float64           `bson:"min,omitempty"`
+	Max                     float64           `bson:"max,omitempty"`
+	BucketSize              float64           `bson:"bucketSize,omitempty"`
+	ExpireAfter             int               `bson:"expireAfterSeconds,omitempty"`
+	Weights                 bson.M            `bson:"weights,omitempty"`
+	DefaultLanguage         string            `bson:"default_language,omitempty"`
+	LanguageOverride        string            `bson:"language_override,omitempty"`
+	TextIndexVersion        int               `bson:"textIndexVersion,omitempty"`
+	PartialFilterExpression bson.M            `bson:"partialFilterExpression,omitempty"`
+	Collation               options.Collation `bson:"collation,omitempty"`
 }
 
 // ShardingConfig struct that holds information to shard the collection
 type ShardingConfig struct {
-	ShardCollection  string         `bson:"shardCollection"`
-	Key              bson.M         `bson:"key"`
-	NumInitialChunks int            `bson:"numInitialChunks,omitempty"`
-	Collation        *mgo.Collation `bson:"collation,omitempty"`
+	ShardCollection  string            `bson:"shardCollection"`
+	Key              bson.M            `bson:"key"`
+	NumInitialChunks int               `bson:"numInitialChunks,omitempty"`
+	Collation        options.Collation `bson:"collation,omitempty"`
 }
 
 // ParseConfig returns a list of Collection to create from a
