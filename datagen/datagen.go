@@ -109,8 +109,8 @@ func (d *dtg) createCollection(coll *Collection) error {
 
 	if coll.CompressionLevel != "" {
 		err = d.session.Database(coll.DB).RunCommand(context.Background(), bson.D{
-			{"create", coll.Name},
-			{"storageEngine", bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}},
+			bson.E{Key: "create", Value: coll.Name},
+			bson.E{Key: "storageEngine", Value: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}},
 		}).Err()
 		if err != nil {
 			return fmt.Errorf("coulnd't create collection with compression level %s:\n  cause: %v", coll.CompressionLevel, err)
@@ -132,8 +132,8 @@ func (d *dtg) createCollection(coll *Collection) error {
 				Key:  coll.ShardConfig.Key,
 			}
 			err := c.Database().RunCommand(context.Background(), bson.D{
-				{"createIndexes", c.Name},
-				{"indexes", [1]Index{index}},
+				bson.E{Key: "createIndexes", Value: c.Name},
+				bson.E{Key: "indexes", Value: [1]Index{index}},
 			}).Err()
 			if err != nil {
 				return fmt.Errorf("couldn't create shard key with index config %v\n cause: %s", index.Key, err)
@@ -295,8 +295,8 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	}
 
 	// aggregation might be very long, so make sure the connection won't timeout
-	// TODO check this
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
 
 	tasks := make(chan [2]bson.M, d.BatchSize)
 	errs := make(chan error)
@@ -327,8 +327,8 @@ Loop:
 			Values []interface{}
 		}
 		result := d.session.Database(coll.DB).RunCommand(ctx, bson.D{
-			{"distinct", coll.Name},
-			{"key", localVar},
+			bson.E{Key: "distinct", Value: coll.Name},
+			bson.E{Key: "key", Value: localVar},
 		})
 		if err := result.Err(); err != nil {
 			aggregationError = fmt.Errorf("fail to get distinct values for local field %v: %v", localVar, err)
@@ -370,10 +370,14 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 		return fmt.Errorf("error while dropping index for collection %s:\n  cause: %v", coll.Name, err)
 	}
 
+	// With the default registry, index.Collation is kept event when it's empty,
+	// and it make the command fail
+	// to fix this, marshal the command to a bson.Raw with the mgocompat registry
+	// providing the same behavior that the old mgo driver
 	mgoRegistry := mgocompat.NewRespectNilValuesRegistryBuilder().Build()
 	cmd := bson.D{
-		{"createIndexes", coll.Name},
-		{"indexes", coll.Indexes},
+		bson.E{Key: "createIndexes", Value: coll.Name},
+		bson.E{Key: "indexes", Value: coll.Indexes},
 	}
 
 	_, cmdBytes, err := bson.MarshalValueWithRegistry(mgoRegistry, cmd)
@@ -382,7 +386,9 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 	}
 
 	// avoid timeout when building indexes
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+
 	err = d.session.Database(coll.DB).RunCommand(ctx, cmdBytes).Err()
 	if err != nil {
 		return fmt.Errorf("error while building indexes for collection %s\n cause: %v", coll.Name, err)
@@ -406,8 +412,8 @@ func (d *dtg) printStats(collections []Collection) {
 	for _, coll := range collections {
 
 		result := d.session.Database(coll.DB).RunCommand(context.Background(), bson.D{
-			{"collStats", coll.Name},
-			{"scale", 1024},
+			bson.E{Key: "collStats", Value: coll.Name},
+			bson.E{Key: "scale", Value: 1024},
 		})
 		err := result.Decode(&stats)
 		if err != nil {
