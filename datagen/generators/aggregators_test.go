@@ -1,12 +1,15 @@
 package generators_test
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"testing"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 )
@@ -168,7 +171,7 @@ func TestAggregatorUpdate(t *testing.T) {
 			},
 			expectedUpdate: [2]bson.M{
 				{"_id": 1},
-				{"$set": bson.M{"key": int32(2)}},
+				{"$set": bson.M{"key": int64(2)}},
 			},
 		},
 		{
@@ -189,7 +192,7 @@ func TestAggregatorUpdate(t *testing.T) {
 			},
 			expectedUpdate: [2]bson.M{
 				{"_id": 1},
-				{"$set": bson.M{"key": []interface{}{1, 2}}},
+				{"$set": bson.M{"key": []interface{}{int32(1), int32(2)}}},
 			},
 		},
 		{
@@ -210,7 +213,7 @@ func TestAggregatorUpdate(t *testing.T) {
 			},
 			expectedUpdate: [2]bson.M{
 				{"_id": 1},
-				{"$set": bson.M{"key": bson.M{"m": 2, "M": 3}}},
+				{"$set": bson.M{"key": bson.M{"m": int32(2), "M": int32(3)}}},
 			},
 		},
 		{
@@ -229,13 +232,13 @@ func TestAggregatorUpdate(t *testing.T) {
 			},
 			expectedUpdate: [2]bson.M{
 				{"_id": 1},
-				{"$set": bson.M{"key": int32(1)}},
+				{"$set": bson.M{"key": int64(1)}},
 			},
 		},
 	}
 
 	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed, nil, nil)
-	session, err := mgo.Dial("mongodb://")
+	session, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -277,10 +280,10 @@ func newAggregator(t *testing.T, ci *generators.CollInfo, config generators.Conf
 	return aggregators[0]
 }
 
-func createCollection(t *testing.T, session *mgo.Session, config generators.Config, baseDoc []interface{}) {
-	coll := session.DB(config.Database).C(config.Collection)
-	coll.RemoveAll(nil)
-	err := coll.Insert(baseDoc...)
+func createCollection(t *testing.T, session *mongo.Client, config generators.Config, baseDoc []interface{}) {
+	coll := session.Database(config.Database).Collection(config.Collection)
+	coll.DeleteMany(context.Background(), bson.M{})
+	_, err := coll.InsertMany(context.Background(), baseDoc)
 	if err != nil {
 		t.Error(err)
 	}

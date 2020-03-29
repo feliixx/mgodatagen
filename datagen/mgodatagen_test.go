@@ -2,6 +2,7 @@ package datagen_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -13,14 +14,18 @@ import (
 	"testing"
 	"time"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/feliixx/mgodatagen/datagen"
 )
 
 var (
-	session         *mgo.Session
+	session         *mongo.Client
 	defaultConnOpts = datagen.Connection{
 		Host: "127.0.0.1",
 		Port: "27017",
@@ -31,17 +36,18 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	s, err := mgo.Dial("mongodb://127.0.0.1:27017")
+
+	s, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
 	if err != nil {
-		fmt.Printf("couldn't connect to db: %v\n", err)
+		fmt.Printf("fail to connect to mongodb: %v", err)
 		os.Exit(1)
 	}
-	defer s.Close()
 	session = s
+	defer s.Disconnect(context.Background())
 
 	retCode := m.Run()
 
-	err = s.DB("datagen_it_test").DropDatabase()
+	err = session.Database("datagen_it_test").Drop(context.Background())
 	if err != nil {
 		fmt.Printf("couldn't drop db: %v\n", err)
 		os.Exit(1)
@@ -53,12 +59,12 @@ func TestCreateEmptyFile(t *testing.T) {
 
 	filename := "testNewFile.json"
 
-	options := &datagen.Options{
+	opts := &datagen.Options{
 		Template: datagen.Template{
 			New: filename,
 		},
 	}
-	err := datagen.Generate(options, ioutil.Discard)
+	err := datagen.Generate(opts, ioutil.Discard)
 	if err != nil {
 		t.Errorf("expected no error for creating empty file but got %v", err)
 	}
@@ -125,11 +131,11 @@ func testNewFileContent(t *testing.T, filename string) {
 func TestProgressOutput(t *testing.T) {
 
 	configFile := "testdata/empty.json"
-	options := defaultOpts(configFile)
-	options.Quiet = false
+	opts := defaultOpts(configFile)
+	opts.Quiet = false
 
 	var buffer bytes.Buffer
-	err := datagen.Generate(&options, &buffer)
+	err := datagen.Generate(&opts, &buffer)
 	if err != nil {
 		t.Error(err)
 	}
@@ -153,44 +159,45 @@ func TestCollectionContent(t *testing.T) {
 
 	configFile := "generators/testdata/full-bson.json"
 	collections := parseConfig(t, configFile)
-	options := defaultOpts(configFile)
-	err := datagen.Generate(&options, ioutil.Discard)
+
+	opts := defaultOpts(configFile)
+	err := datagen.Generate(&opts, ioutil.Discard)
 	if err != nil {
 		t.Error(err)
 	}
 
-	c := session.DB(collections[0].DB).C(collections[0].Name)
-	docCount, err := c.Count()
+	c := session.Database(collections[0].DB).Collection(collections[0].Name)
+	docCount, err := c.CountDocuments(context.Background(), bson.M{})
 	if err != nil {
 		t.Error(err)
 	}
-	if want, got := int(collections[0].Count), docCount; want != got {
+	if want, got := int64(collections[0].Count), docCount; want != got {
 		t.Errorf("expected %d documents but got %d", want, got)
 	}
 
 	var results []struct {
-		ID                      bson.ObjectId `bson:"_id"`
-		UUID                    string        `bson:"uuid"`
-		String                  string        `bson:"string"`
-		Int32                   int32         `bson:"int32"`
-		Int64                   int64         `bson:"int64"`
-		Float                   float64       `bson:"float"`
-		ConstInt32              int32         `bson:"constInt32"`
-		ConstInt64              int64         `bson:"constInt64"`
-		ConstFloat              float64       `bson:"constFloat"`
-		Boolean                 bool          `bson:"boolean"`
-		Position                []float64     `bson:"position"`
-		StringFromArray         string        `bson:"stringFromArray"`
-		IntFromArrayRandomOrder int           `bson:"intFromArrayRandomOrder"`
-		ArrayFromArray          []string      `bson:"arrayFromArray"`
-		ConstArray              []string      `bson:"constArray"`
-		Fake                    string        `bson:"faker"`
-		Constant                int32         `bson:"constant"`
-		AutoIncrementInt32      int32         `bson:"autoIncrementInt32"`
-		AutoIncrementInt64      int64         `bson:"autoIncrementInt64"`
-		Date                    time.Time     `bson:"date"`
-		BinaryData              []byte        `bson:"binaryData"`
-		ArrayInt32              []int32       `bson:"arrayInt32"`
+		ID                      primitive.ObjectID `bson:"_id"`
+		UUID                    string             `bson:"uuid"`
+		String                  string             `bson:"string"`
+		Int32                   int32              `bson:"int32"`
+		Int64                   int64              `bson:"int64"`
+		Float                   float64            `bson:"float"`
+		ConstInt32              int32              `bson:"constInt32"`
+		ConstInt64              int64              `bson:"constInt64"`
+		ConstFloat              float64            `bson:"constFloat"`
+		Boolean                 bool               `bson:"boolean"`
+		Position                []float64          `bson:"position"`
+		StringFromArray         string             `bson:"stringFromArray"`
+		IntFromArrayRandomOrder int                `bson:"intFromArrayRandomOrder"`
+		ArrayFromArray          []string           `bson:"arrayFromArray"`
+		ConstArray              []string           `bson:"constArray"`
+		Fake                    string             `bson:"faker"`
+		Constant                int32              `bson:"constant"`
+		AutoIncrementInt32      int32              `bson:"autoIncrementInt32"`
+		AutoIncrementInt64      int64              `bson:"autoIncrementInt64"`
+		Date                    time.Time          `bson:"date"`
+		BinaryData              []byte             `bson:"binaryData"`
+		ArrayInt32              []int32            `bson:"arrayInt32"`
 		Object                  struct {
 			K1    string `bson:"k1"`
 			K2    int32  `bson:"k2"`
@@ -199,7 +206,11 @@ func TestCollectionContent(t *testing.T) {
 			} `bson:"sub-ob"`
 		} `bson:"object"`
 	}
-	err = c.Find(nil).All(&results)
+	cursor, err := c.Find(context.Background(), bson.M{})
+	if err != nil {
+		t.Error(err)
+	}
+	err = cursor.All(context.Background(), &results)
 	if err != nil {
 		t.Error(err)
 	}
@@ -313,21 +324,20 @@ func TestCollectionContent(t *testing.T) {
 		"float":                   1000,
 		"position":                2000,
 	}
-	var result distinctResult
 	for key, value := range maxDistinctValuesTests {
-		nb := distinct(t, collections[0].DB, collections[0].Name, key, result)
+		nb := nbDistinctValue(t, collections[0].DB, collections[0].Name, key)
 		if value != nb {
 			t.Errorf("for field %s, expected %d distinct values but got %d", key, value, nb)
 		}
 	}
-	// distinct count may be different from one run to another due
+	// nbDistinctValue count may be different from one run to another due
 	// to nullPercentage != 0
 	maxDistinctValuesNullPercentageTests := map[string]int{
 		"int64": 80,
 	}
 
 	for key, value := range maxDistinctValuesNullPercentageTests {
-		nb := distinct(t, collections[0].DB, collections[0].Name, key, result)
+		nb := nbDistinctValue(t, collections[0].DB, collections[0].Name, key)
 		if value > nb {
 			t.Errorf("for field %s, expected %d max distinct values but got %d", key, value, nb)
 		}
@@ -338,38 +348,43 @@ func TestCollectionWithRef(t *testing.T) {
 
 	configFile := "generators/testdata/ref.json"
 	collections := parseConfig(t, configFile)
-	options := defaultOpts(configFile)
-	err := datagen.Generate(&options, ioutil.Discard)
+	opts := defaultOpts(configFile)
+	err := datagen.Generate(&opts, ioutil.Discard)
 	if err != nil {
 		t.Error(err)
 	}
 
 	var distinct struct {
-		Values []bson.ObjectId `bson:"values"`
-		Ok     bool            `bson:"ok"`
+		Values []primitive.ObjectID
 	}
-
-	err = session.DB(collections[0].DB).Run(bson.D{
-		{Name: "distinct", Value: collections[0].Name},
-		{Name: "key", Value: "_id"},
-	}, &distinct)
-	if err != nil {
+	result := session.Database(collections[0].DB).RunCommand(context.Background(), bson.D{
+		{"distinct", collections[0].Name},
+		{"key", "_id"},
+	})
+	if err := result.Err(); err != nil {
+		t.Error(err)
+	}
+	if err := result.Decode(&distinct); err != nil {
 		t.Error(err)
 	}
 
-	c := session.DB(collections[1].DB).C(collections[1].Name)
-	var result []struct {
-		ID  bson.ObjectId `bson:"_id"`
-		Ref bson.ObjectId `bson:"ref"`
+	c := session.Database(collections[1].DB).Collection(collections[1].Name)
+	var refResult []struct {
+		ID  primitive.ObjectID
+		Ref primitive.ObjectID
 	}
-	err = c.Find(nil).Sort("_id").All(&result)
+	cursor, err := c.Find(context.Background(), bson.M{}, options.Find().SetSort(bson.M{"_id": 1}))
+	if err != nil {
+		t.Error(err)
+	}
+	err = cursor.All(context.Background(), &refResult)
 	if err != nil {
 		t.Error(err)
 	}
 
 	for _, r := range distinct.Values {
-		i := sort.Search(len(result), func(i int) bool { return result[i].Ref.String() >= r.String() })
-		if i == len(result) || result[i].Ref.String() != r.String() {
+		i := sort.Search(len(refResult), func(i int) bool { return refResult[i].Ref.String() >= r.String() })
+		if i == len(refResult) || refResult[i].Ref.String() != r.String() {
 			t.Errorf("%v not found in result", r.String())
 		}
 	}
@@ -379,15 +394,19 @@ func TestCollectionContentWithAggregation(t *testing.T) {
 
 	configFile := "generators/testdata/full-aggregation.json"
 	collections := parseConfig(t, configFile)
-	options := defaultOpts(configFile)
-	err := datagen.Generate(&options, ioutil.Discard)
+	opts := defaultOpts(configFile)
+	err := datagen.Generate(&opts, ioutil.Discard)
 	if err != nil {
 		t.Error(err)
 	}
 
-	c := session.DB(collections[1].DB).C(collections[1].Name)
+	c := session.Database(collections[1].DB).Collection(collections[1].Name)
 	var results []bson.M
-	err = c.Find(nil).All(&results)
+	cursor, err := c.Find(context.Background(), bson.M{})
+	if err != nil {
+		t.Error(err)
+	}
+	err = cursor.All(context.Background(), &results)
 	if err != nil {
 		t.Error(err)
 	}
@@ -396,20 +415,20 @@ func TestCollectionContentWithAggregation(t *testing.T) {
 
 	for _, r := range results {
 		b := r["AG-CI"].(bson.M)
-		m := b["m"].(int)
+		m := b["m"].(int32)
 		if m < 0 || m > 100 {
 			t.Errorf("'m' field should be 0 < m < 100, but was %d", m)
 		}
-		mM := b["M"].(int)
+		mM := b["M"].(int32)
 		if mM < 9900 || mM > 10000 {
 			t.Errorf("'M' field should be 900 < M < 1000, but was %d", mM)
 		}
-		agFI := r["AG-FI"].(int)
+		agFI := r["AG-FI"].(int64)
 		if agFI < 1450 || agFI > 1850 {
 			t.Errorf("'AG-FI' field should be 1450 < AG-FI < 1850, but was %d", agFI)
 		}
 
-		vv := r["AG-VA"].([]interface{})
+		vv := r["AG-VA"].(primitive.A)
 		if len(vv) == 0 {
 			t.Errorf("'AG-VA' field should be a non empty array, but was %v", vv)
 		}
@@ -456,7 +475,7 @@ func TestCollectionCompression(t *testing.T) {
 		},
 	}
 
-	var result struct {
+	var stats struct {
 		WiredTiger struct {
 			CreationString string `bson:"creationString"`
 		} `bson:"wiredTiger"`
@@ -470,12 +489,17 @@ func TestCollectionCompression(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no error for config %v: \n%v", tt.options, err)
 				}
-				err = session.DB(collections[0].DB).Run(bson.D{{Name: "collStats", Value: collections[0].Name}}, &result)
-				if err != nil {
+				result := session.Database(collections[0].DB).RunCommand(context.Background(), bson.D{
+					{"collStats", collections[0].Name},
+				})
+				if err := result.Err(); err != nil {
 					t.Error(err)
 				}
-				if !strings.Contains(result.WiredTiger.CreationString, "block_compressor="+tt.compressionLevel) {
-					t.Errorf("block_compressor should be %s, but result was %s", tt.compressionLevel, result.WiredTiger.CreationString)
+				if err := result.Decode(&stats); err != nil {
+					t.Error(err)
+				}
+				if !strings.Contains(stats.WiredTiger.CreationString, "block_compressor="+tt.compressionLevel) {
+					t.Errorf("block_compressor should be %s, but result was %s", tt.compressionLevel, stats.WiredTiger.CreationString)
 				}
 			} else {
 				if err == nil {
@@ -528,30 +552,45 @@ func TestCollectionWithIndexes(t *testing.T) {
 				},
 			},
 			correct:     false,
-			errMsgRegex: regexp.MustCompile("^error while building indexes for collection.*\n  cause.*"),
+			errMsgRegex: regexp.MustCompile("^error while building indexes for collection.*\n cause.*"),
 		},
 	}
 
 	for _, tt := range createCollectionWithIndexesTests {
 		t.Run(tt.name, func(t *testing.T) {
 			collections := parseConfig(t, tt.configFile)
-			options := defaultOpts(tt.configFile)
-			err := datagen.Generate(&options, ioutil.Discard)
+			opts := defaultOpts(tt.configFile)
+			err := datagen.Generate(&opts, ioutil.Discard)
 			if tt.correct {
 				if err != nil {
 					t.Errorf("ensureIndex with indexes %v should not fail: \n%v", tt.indexes, err)
 				}
-				c := session.DB(collections[0].DB).C(collections[0].Name)
-				idx, err := c.Indexes()
+				cursor, err := session.Database(collections[0].DB).Collection(collections[0].Name).Indexes().List(context.Background())
 				if err != nil {
-					t.Errorf("fail to get indexes: %v", err)
+					t.Error(err)
 				}
-				for i := range tt.indexes {
-					// idx[0] is index on '_id' field
-					if want, got := tt.indexes[i].Name, idx[i+1].Name; want != got {
+
+				var idx struct {
+					Name string
+				}
+
+				i := 0
+				for cursor.Next(context.Background()) {
+
+					if err := cursor.Decode(&idx); err != nil {
+						t.Error(err)
+					}
+					// index on "_id" is created by default
+					if idx.Name == "_id_" {
+						continue
+					}
+
+					if want, got := tt.indexes[i].Name, idx.Name; want != got {
 						t.Errorf("index does not match: expected %s, got %s", want, got)
 					}
+					i++
 				}
+
 			} else {
 				if err == nil {
 					t.Errorf("expected an error for indexes %v", tt.indexes)
@@ -571,7 +610,7 @@ func TestGenerate(t *testing.T) {
 		options       datagen.Options
 		correct       bool
 		errMsgRegex   *regexp.Regexp
-		expectedNbDoc int
+		expectedNbDoc int64
 	}{
 		{
 			name:          "full-bson.json",
@@ -703,10 +742,6 @@ func TestGenerate(t *testing.T) {
 		},
 	}
 
-	var r struct {
-		N int `bson:"n"`
-	}
-
 	for _, tt := range realRunTests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := datagen.Generate(&tt.options, os.Stdout)
@@ -715,16 +750,12 @@ func TestGenerate(t *testing.T) {
 					t.Errorf("expected no error for options %v, but got %v", tt.options, err)
 				}
 				if tt.expectedNbDoc > 0 {
-					db := session.DB("datagen_it_test")
-					command := bson.D{
-						{Name: "count", Value: db.C("test_bson").Name},
-					}
-					err = db.Run(command, &r)
+					count, err := session.Database("datagen_it_test").Collection("test_bson").CountDocuments(context.Background(), bson.M{})
 					if err != nil {
-						t.Errorf("fail to run count command: %v", err)
+						t.Error(err)
 					}
-					if r.N != tt.expectedNbDoc {
-						t.Errorf("expected %d docs but got %d", tt.expectedNbDoc, r.N)
+					if count != tt.expectedNbDoc {
+						t.Errorf("expected %d docs but got %d", tt.expectedNbDoc, count)
 					}
 				}
 			} else {
@@ -750,19 +781,23 @@ func defaultOpts(configFile string) datagen.Options {
 	}
 }
 
-type distinctResult struct {
-	Values []interface{} `bson:"values"`
-}
+func nbDistinctValue(t *testing.T, dbName, collName, keyName string) int {
 
-func distinct(t *testing.T, dbName, collName, keyName string, result distinctResult) int {
-	err := session.DB(dbName).Run(bson.D{
-		{Name: "distinct", Value: collName},
-		{Name: "key", Value: keyName},
-	}, &result)
-	if err != nil {
+	var distinct struct {
+		Values []interface{}
+	}
+
+	result := session.Database(dbName).RunCommand(context.Background(), bson.D{
+		{"distinct", collName},
+		{"key", keyName},
+	})
+	if err := result.Err(); err != nil {
 		t.Error(err)
 	}
-	return len(result.Values)
+	if err := result.Decode(&distinct); err != nil {
+		t.Error(err)
+	}
+	return len(distinct.Values)
 }
 
 func parseConfig(t *testing.T, fileName string) []datagen.Collection {

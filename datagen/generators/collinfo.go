@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/MichaelTJones/pcg"
-	oldbson "github.com/globalsign/mgo/bson"
 	"github.com/manveru/faker"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
@@ -112,7 +111,7 @@ type Config struct {
 	// For `boundAggregator` and `valueAggregator` only
 	Field string `json:"field"`
 	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
-	Query oldbson.M `json:"query"`
+	Query bson.M `json:"query"`
 }
 
 // available generator types, see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
