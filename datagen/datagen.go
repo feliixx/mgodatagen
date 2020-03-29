@@ -219,7 +219,7 @@ func (d *dtg) fillCollection(coll *Collection) error {
 					docs = append(docs, doc)
 				}
 
-				_, err = c.InsertMany(ctx, docs)
+				_, err := c.InsertMany(ctx, docs)
 				if err != nil {
 					// if the bulk insert fails, push the error to the error channel
 					// so that we can use it from the main thread
