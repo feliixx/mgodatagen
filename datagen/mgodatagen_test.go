@@ -358,8 +358,8 @@ func TestCollectionWithRef(t *testing.T) {
 		Values []primitive.ObjectID
 	}
 	result := session.Database(collections[0].DB).RunCommand(context.Background(), bson.D{
-		{"distinct", collections[0].Name},
-		{"key", "_id"},
+		bson.E{Key: "distinct", Value: collections[0].Name},
+		bson.E{Key: "key", Value: "_id"},
 	})
 	if err := result.Err(); err != nil {
 		t.Error(err)
@@ -490,7 +490,7 @@ func TestCollectionCompression(t *testing.T) {
 					t.Errorf("expected no error for config %v: \n%v", tt.options, err)
 				}
 				result := session.Database(collections[0].DB).RunCommand(context.Background(), bson.D{
-					{"collStats", collections[0].Name},
+					bson.E{Key: "collStats", Value: collections[0].Name},
 				})
 				if err := result.Err(); err != nil {
 					t.Error(err)
@@ -788,8 +788,8 @@ func nbDistinctValue(t *testing.T, dbName, collName, keyName string) int {
 	}
 
 	result := session.Database(dbName).RunCommand(context.Background(), bson.D{
-		{"distinct", collName},
-		{"key", keyName},
+		bson.E{Key: "distinct", Value: collName},
+		bson.E{Key: "key", Value: keyName},
 	})
 	if err := result.Err(); err != nil {
 		t.Error(err)

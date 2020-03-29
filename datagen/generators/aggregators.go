@@ -65,9 +65,9 @@ func (a *valueAggregator) Update(session *mongo.Client, value interface{}) ([2]b
 		Values []interface{}
 	}
 	result := session.Database(a.database).RunCommand(context.Background(), bson.D{
-		{"distinct", a.collection},
-		{"key", a.field},
-		{"query", query}},
+		bson.E{Key: "distinct", Value: a.collection},
+		bson.E{Key: "key", Value: a.field},
+		bson.E{Key: "query", Value: query}},
 	)
 	if err := result.Err(); err != nil {
 		return [2]bson.M{}, fmt.Errorf("aggregation failed (get distinct values) for field %v: %v", a.key, err)
