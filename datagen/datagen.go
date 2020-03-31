@@ -211,8 +211,12 @@ func (d *dtg) fillCollection(coll *Collection) error {
 
 	wg.Wait()
 
-	if ctx.Err() != nil {
-		return <-errs
+	select {
+	case err, ok := <-errs:
+		if ok {
+			return err
+		}
+	default:
 	}
 	return nil
 }
@@ -243,11 +247,11 @@ func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.Canc
 			// so that we can use it from the main thread
 			select {
 			case errs <- fmt.Errorf("exception occurred during bulk insert:\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err):
+				// cancel the context to terminate goroutine and stop the feeding of the
+				// buffered channel
+				cancel()
 			default:
 			}
-			// cancel the context to terminate goroutine and stop the feeding of the
-			// buffered channel
-			cancel()
 			return
 		}
 		// return the rawchunk to the pool so it can be reused

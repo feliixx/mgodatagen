@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 )
