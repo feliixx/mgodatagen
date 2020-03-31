@@ -167,7 +167,7 @@ See **MongoDB documentation** for details on parameters:
 
 ### Example
 
-A set of sample config files can be found in **datagen/testdata/**. To use it,
+A set of sample config files can be found in **[datagen/generators/testdata/](https://github.com/feliixx/mgodatagen/tree/master/datagen/generators/testdata)**. To use it,
 make sure that you have a mongodb instance running (on 127.0.0.1:27017 for example)
 and run
 

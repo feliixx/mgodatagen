@@ -47,7 +47,9 @@ func (e *DocBuffer) Reserve() {
 	e.buf = append(e.buf, byte(0), byte(0), byte(0), byte(0))
 }
 
-// Bytes returns the content of the buffer
+// Bytes returns the content of the buffer. The resulting slice of
+// should be copied before being used, otherwise it's content may
+// be change
 func (e *DocBuffer) Bytes() []byte {
 	return e.buf
 }
