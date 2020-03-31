@@ -811,3 +811,22 @@ func parseConfig(t *testing.T, fileName string) []datagen.Collection {
 	}
 	return c
 }
+
+func BenchmarkGenerate(b *testing.B) {
+
+	opts := defaultOpts("testdata/big.json")
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+
+		b.StopTimer()
+		err := session.Database("datagen_it_test").Drop(context.Background())
+		if err != nil {
+			b.Error(err)
+		}
+		b.StartTimer()
+
+		datagen.Generate(&opts, ioutil.Discard)
+	}
+
+}

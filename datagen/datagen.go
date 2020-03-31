@@ -158,7 +158,10 @@ var pool = sync.Pool{
 	New: func() interface{} {
 		list := make([][]byte, 1000)
 		for i := range list {
-			list[i] = make([]byte, 128)
+			// use 256 bytes as default buffer size, because it's close to the
+			// average bson document size out there (mongodb-go-driver use the
+			// same value internally)
+			list[i] = make([]byte, 256)
 		}
 		return &rawChunk{
 			documents: list,
@@ -264,11 +267,15 @@ func (d *dtg) generateDocument(ctx context.Context, tasks chan *rawChunk, nbDoc 
 		for i := 0; i < rc.nbToInsert; i++ {
 			docBytes := docGenerator.Generate()
 
-			// if doc is not large enough, grow it manually
-			for len(rc.documents[i]) < len(docBytes) {
-				rc.documents[i] = append(rc.documents[i], byte(0))
+			// if doc is not large enough, allocate a new one.
+			// Otherwise, reslice it.
+			// Checking the cap of the slice instead of its length
+			// allows to avoid a few more allocations
+			if cap(rc.documents[i]) < len(docBytes) {
+				rc.documents[i] = make([]byte, len(docBytes))
+			} else {
+				rc.documents[i] = rc.documents[i][:len(docBytes)]
 			}
-			rc.documents[i] = rc.documents[i][:len(docBytes)]
 			copy(rc.documents[i], docBytes)
 		}
 		count += rc.nbToInsert
