@@ -182,10 +182,12 @@ func (d *dtg) fillCollection(coll *Collection) error {
 	if err != nil {
 		return err
 	}
+
 	nbInsertingGoRoutines := runtime.NumCPU()
 	if d.NumInsertWorker > 0 {
 		nbInsertingGoRoutines = d.NumInsertWorker
 	}
+
 	taskBufferSize := 10
 	// for really small insert, use only one goroutine and reduce the buffered channel size
 	if coll.Count <= 10000 {
@@ -200,70 +202,77 @@ func (d *dtg) fillCollection(coll *Collection) error {
 	defer cancel()
 
 	var wg sync.WaitGroup
-	wg.Add(nbInsertingGoRoutines)
 
 	for i := 0; i < nbInsertingGoRoutines; i++ {
-		go func() {
-			defer wg.Done()
-
-			c := d.session.Database(coll.DB).Collection(coll.Name)
-
-			for t := range tasks {
-				// if an error occurs in one of the goroutine, 'return' is called which trigger
-				// wg.Done() ==> the goroutine stops
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-
-				docs := make([]interface{}, 0, t.nbToInsert)
-				for _, doc := range t.documents[:t.nbToInsert] {
-					docs = append(docs, doc)
-				}
-
-				_, err := c.InsertMany(ctx, docs)
-				if err != nil {
-					// if the bulk insert fails, push the error to the error channel
-					// so that we can use it from the main thread
-					select {
-					case errs <- fmt.Errorf("exception occurred during bulk insert:\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err):
-					default:
-					}
-					// cancel the context to terminate goroutine and stop the feeding of the
-					// buffered channel
-					cancel()
-					return
-				}
-				// return the rawchunk to the pool so it can be reused
-				pool.Put(t)
-			}
-		}()
+		wg.Add(1)
+		go d.insertDocumentFromChannel(ctx, cancel, &wg, coll, tasks, errs)
 	}
-
 	d.generateDocument(ctx, tasks, coll.Count, docGenerator)
 
 	wg.Wait()
+
 	if ctx.Err() != nil {
 		return <-errs
 	}
 	return nil
 }
 
-func (d *dtg) generateDocument(ctx context.Context, tasks chan *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
-	// start bson.Raw generation to feed the task channel
+func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.CancelFunc, wg *sync.WaitGroup, coll *Collection, tasks <-chan *rawChunk, errs chan error) {
+
+	defer wg.Done()
+
+	c := d.session.Database(coll.DB).Collection(coll.Name)
+
+	for t := range tasks {
+		// if an error occurs in one of the goroutine, 'return' is called which trigger
+		// wg.Done() ==> the goroutine stops
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		docs := make([]interface{}, 0, t.nbToInsert)
+		for _, doc := range t.documents[:t.nbToInsert] {
+			docs = append(docs, doc)
+		}
+
+		_, err := c.InsertMany(ctx, docs)
+		if err != nil {
+			// if the bulk insert fails, push the error to the error channel
+			// so that we can use it from the main thread
+			select {
+			case errs <- fmt.Errorf("exception occurred during bulk insert:\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err):
+			default:
+			}
+			// cancel the context to terminate goroutine and stop the feeding of the
+			// buffered channel
+			cancel()
+			return
+		}
+		// return the rawchunk to the pool so it can be reused
+		pool.Put(t)
+	}
+}
+
+func (d *dtg) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
+
 	count := 0
 	for count < nbDoc {
+
 		select {
 		case <-ctx.Done(): // if an error occurred in one of the 'inserting' goroutines, close the channel
 			break
 		default:
 		}
+
 		rc := pool.Get().(*rawChunk)
+
 		rc.nbToInsert = d.BatchSize
 		if nbDoc-count < d.BatchSize {
 			rc.nbToInsert = nbDoc - count
 		}
+
 		for i := 0; i < rc.nbToInsert; i++ {
 			docBytes := docGenerator.Generate()
 
@@ -278,8 +287,10 @@ func (d *dtg) generateDocument(ctx context.Context, tasks chan *rawChunk, nbDoc 
 			}
 			copy(rc.documents[i], docBytes)
 		}
+
 		count += rc.nbToInsert
 		d.bar.Set(d.bar.Current() + rc.nbToInsert)
+
 		tasks <- rc
 	}
 	close(tasks)
@@ -365,7 +376,6 @@ Loop:
 	return aggregationError
 }
 
-// create index on generated collections
 func (d *dtg) ensureIndex(coll *Collection) error {
 
 	if len(coll.Indexes) == 0 {
@@ -428,8 +438,8 @@ func (d *dtg) printStats(collections []Collection) {
 		}
 
 		indexes := make([]string, 0, len(stats.IndexSizes))
-		for k, v := range stats.IndexSizes {
-			indexes = append(indexes, fmt.Sprintf("%s  %v kB", k, v))
+		for name, size := range stats.IndexSizes {
+			indexes = append(indexes, fmt.Sprintf("%s  %v kB", name, size))
 		}
 		rows = append(rows, []string{
 			coll.Name,
