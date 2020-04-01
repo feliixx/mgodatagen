@@ -1,6 +1,7 @@
 package datagen
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 
@@ -62,16 +63,23 @@ type ShardingConfig struct {
 // json configuration file
 func ParseConfig(content []byte, ignoreMissingDb bool) ([]Collection, error) {
 	var collectionList []Collection
-	err := json.Unmarshal(content, &collectionList)
+
+	// Use a decoder here se we can disallow unknow fields. Decode will return an
+	// error if some fields from content can't be matched
+	// this should help detect typos / spelling errors in config files
+	decoder := json.NewDecoder(bytes.NewReader(content))
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(&collectionList)
 	if err != nil {
-		return nil, fmt.Errorf("Error in configuration file: object / array / Date badly formatted: \n\n\t\t%v", err)
+		return nil, fmt.Errorf("error in configuration file: object / array / Date badly formatted: \n\n\t\t%v", err)
 	}
 	for _, v := range collectionList {
 		if v.Name == "" || (v.DB == "" && !ignoreMissingDb) {
-			return nil, fmt.Errorf("Error in configuration file: \n\t'collection' and 'database' fields can't be empty")
+			return nil, fmt.Errorf("error in configuration file: \n\t'collection' and 'database' fields can't be empty")
 		}
 		if v.Count <= 0 {
-			return nil, fmt.Errorf("Error in configuration file: \n\tfor collection %s, 'count' has to be > 0", v.Name)
+			return nil, fmt.Errorf("error in configuration file: \n\tfor collection %s, 'count' has to be > 0", v.Name)
 		}
 	}
 	return collectionList, nil

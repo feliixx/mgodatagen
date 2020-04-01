@@ -6,7 +6,7 @@
         "content": {
             "_id": {
                 "type": "constant",
-                "value": 0
+                "constVal": 0
             }
         }
     }
