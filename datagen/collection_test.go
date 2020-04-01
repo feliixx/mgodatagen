@@ -41,7 +41,7 @@ func TestParseConfig(t *testing.T) {
 				}]`),
 			ignoreMissingDB: false,
 			correct:         false,
-			errMsgRegex:     regexp.MustCompile("^Error in configuration file: object / array / Date badly formatted: \n\n\t\t.*"),
+			errMsgRegex:     regexp.MustCompile("^error in configuration file: object / array / Date badly formatted: \n\n\t\t.*"),
 			nbColl:          0,
 		},
 		{
@@ -53,7 +53,7 @@ func TestParseConfig(t *testing.T) {
 				}]`),
 			ignoreMissingDB: false,
 			correct:         false,
-			errMsgRegex:     regexp.MustCompile("^Error in configuration file: \n\t'collection' and 'database' fields can't be empty.*"),
+			errMsgRegex:     regexp.MustCompile("^error in configuration file: \n\t'collection' and 'database' fields can't be empty.*"),
 			nbColl:          0,
 		},
 		{
@@ -66,7 +66,7 @@ func TestParseConfig(t *testing.T) {
 				}]`),
 			ignoreMissingDB: false,
 			correct:         false,
-			errMsgRegex:     regexp.MustCompile("^Error in configuration file: \n\tfor collection.*"),
+			errMsgRegex:     regexp.MustCompile("^error in configuration file: \n\tfor collection.*"),
 			nbColl:          0,
 		},
 	}

@@ -717,6 +717,12 @@ func TestGenerate(t *testing.T) {
 			errMsgRegex: regexp.MustCompile("^exception occurred during bulk insert.*\n  cause.*\n Try.*"),
 		},
 		{
+			name:        "error unknown field",
+			options:     defaultOpts("testdata/invalid-content-unknown-field.json"),
+			correct:     false,
+			errMsgRegex: regexp.MustCompile("^error in configuration file.*\n\n\t\tjson: unknown field.*"),
+		},
+		{
 			name:        "wrong shardconfig",
 			options:     defaultOpts("testdata/invalid-shardconfig.json"),
 			errMsgRegex: regexp.MustCompile("^wrong value for 'shardConfig.shardCollection'.*"),

@@ -1,0 +1,13 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "invalid_content_extra_field",
+        "count": 1,
+        "content": {
+            "_id": {
+                "type": "objectId",
+                "unknownField": 0
+            }
+        }
+    }
+]
