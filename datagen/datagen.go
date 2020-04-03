@@ -124,24 +124,16 @@ func (d *dtg) createCollection(coll *Collection) error {
 		if len(coll.ShardConfig.Key) == 0 {
 			return fmt.Errorf("wrong value for 'shardConfig.key', can't be null and must be an object like {'_id': 'hashed'}, found: %v", coll.ShardConfig.Key)
 		}
-		// index to shard the collection
-		// if shard key is '_id', no need to rebuild the index
-		if coll.ShardConfig.Key["_id"] == 1 {
-			index := Index{
-				Name: "shardKey",
-				Key:  coll.ShardConfig.Key,
-			}
-			err := c.Database().RunCommand(context.Background(), bson.D{
-				bson.E{Key: "createIndexes", Value: c.Name},
-				bson.E{Key: "indexes", Value: [1]Index{index}},
-			}).Err()
-			if err != nil {
-				return fmt.Errorf("couldn't create shard key with index config %v\n cause: %s", index.Key, err)
-			}
-		}
-		err := d.session.Database("admin").RunCommand(context.Background(), coll.ShardConfig).Err()
+		err := d.session.Database("admin").RunCommand(context.Background(), bson.D{bson.E{Key: "enableSharding", Value: coll.DB}}).Err()
 		if err != nil {
-			return fmt.Errorf("couldn't create sharded collection. Make sure that sharding is enabled,\n see https://docs.mongodb.com/manual/reference/command/enableSharding/#dbcmd.enableSharding for details\n cause: %v", err)
+			return fmt.Errorf("fail to enable sharding on db '%s':\n  cause: %v", coll.DB, err)
+		}
+		// as the collection is empty, no need to create the indexes on the sharded key before creating the collection,
+		// because it will be created automatically by mongodb. See https://docs.mongodb.com/manual/core/sharding-shard-key/#shard-key-indexes
+		// for details
+		err = d.runMgoCompatCommand(context.Background(), "admin", coll.ShardConfig)
+		if err != nil {
+			return fmt.Errorf("fail to shard collection '%s' in db '%s'\n cause:  %v", coll.Name, coll.DB, err)
 		}
 	}
 	return nil
@@ -390,27 +382,14 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 	if err != nil {
 		return fmt.Errorf("error while dropping index for collection %s:\n  cause: %v", coll.Name, err)
 	}
-
-	// With the default registry, index.Collation is kept event when it's empty,
-	// and it make the command fail
-	// to fix this, marshal the command to a bson.Raw with the mgocompat registry
-	// providing the same behavior that the old mgo driver
-	mgoRegistry := mgocompat.NewRespectNilValuesRegistryBuilder().Build()
-	cmd := bson.D{
-		bson.E{Key: "createIndexes", Value: coll.Name},
-		bson.E{Key: "indexes", Value: coll.Indexes},
-	}
-
-	_, cmdBytes, err := bson.MarshalValueWithRegistry(mgoRegistry, cmd)
-	if err != nil {
-		return fmt.Errorf("fait to generate command to create indexes: %v", err)
-	}
-
 	// avoid timeout when building indexes
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	err = d.session.Database(coll.DB).RunCommand(ctx, cmdBytes).Err()
+	err = d.runMgoCompatCommand(ctx, coll.DB, bson.D{
+		bson.E{Key: "createIndexes", Value: coll.Name},
+		bson.E{Key: "indexes", Value: coll.Indexes},
+	})
 	if err != nil {
 		return fmt.Errorf("error while building indexes for collection %s\n cause: %v", coll.Name, err)
 	}
@@ -458,4 +437,17 @@ func (d *dtg) printStats(collections []Collection) {
 	table.SetHeader([]string{"collection", "count", "avg object size", "indexes"})
 	table.AppendBulk(rows)
 	table.Render()
+}
+
+func (d *dtg) runMgoCompatCommand(ctx context.Context, db string, cmd interface{}) error {
+	// With the default registry, index.Collation is kept event when it's empty,
+	// and it make the command fail
+	// to fix this, marshal the command to a bson.Raw with the mgocompat registry
+	// providing the same behavior that the old mgo driver
+	mgoRegistry := mgocompat.NewRespectNilValuesRegistryBuilder().Build()
+	_, cmdBytes, err := bson.MarshalValueWithRegistry(mgoRegistry, cmd)
+	if err != nil {
+		return fmt.Errorf("fait to generate command to create indexes: %v", err)
+	}
+	return d.session.Database(db).RunCommand(ctx, cmdBytes).Err()
 }

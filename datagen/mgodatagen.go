@@ -99,7 +99,8 @@ func connectToDB(conn *Connection, out io.Writer) (*mongo.Client, []int, error) 
 	session, err := mongo.Connect(context.Background(), options.Client().
 		ApplyURI(url).
 		SetConnectTimeout(conn.Timeout).
-		SetServerSelectionTimeout(conn.Timeout))
+		SetServerSelectionTimeout(conn.Timeout).
+		SetRetryWrites(false))
 	if err != nil {
 		return nil, nil, fmt.Errorf("fail to create mongo client from uri %s: %v", url, err)
 	}

@@ -1,0 +1,23 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "test_bson",
+        "count": 63422,
+        "shardConfig": {
+            "shardCollection": "datagen_it_test.test_bson",
+            "key": {
+                "n": 1
+            }
+        },
+        "content": {
+            "_id": {
+                "type": "objectId"
+            },
+            "n": {
+                "type": "int",
+                "minInt": 5535,
+                "maxInt": 989886
+            }
+        }
+    }
+]

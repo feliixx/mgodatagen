@@ -238,7 +238,9 @@ func TestAggregatorUpdate(t *testing.T) {
 	}
 
 	ci := generators.NewCollInfo(1, []int{3, 4}, defaultSeed, nil, nil)
-	session, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
+	session, err := mongo.Connect(context.Background(), options.Client().
+		ApplyURI("mongodb://127.0.0.1:27017").
+		SetRetryWrites(false))
 	if err != nil {
 		t.Error(err)
 	}

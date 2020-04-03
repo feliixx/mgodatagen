@@ -14,12 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
-
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/feliixx/mgodatagen/datagen"
 )
@@ -37,7 +35,10 @@ var (
 
 func TestMain(m *testing.M) {
 
-	s, err := mongo.Connect(context.Background(), options.Client().ApplyURI("mongodb://127.0.0.1:27017"))
+	s, err := mongo.Connect(context.Background(), options.Client().
+		ApplyURI("mongodb://127.0.0.1:27017").
+		SetRetryWrites(false))
+
 	if err != nil {
 		fmt.Printf("fail to connect to mongodb: %v", err)
 		os.Exit(1)
@@ -605,13 +606,15 @@ func TestCollectionWithIndexes(t *testing.T) {
 
 func TestGenerate(t *testing.T) {
 
-	realRunTests := []struct {
+	type generateTest struct {
 		name          string
 		options       datagen.Options
 		correct       bool
 		errMsgRegex   *regexp.Regexp
 		expectedNbDoc int64
-	}{
+	}
+
+	generateTests := []generateTest{
 		{
 			name:          "full-bson.json",
 			options:       defaultOpts("generators/testdata/full-bson.json"),
@@ -722,33 +725,75 @@ func TestGenerate(t *testing.T) {
 			correct:     false,
 			errMsgRegex: regexp.MustCompile("^error in configuration file.*\n\n\t\tjson: unknown field.*"),
 		},
+	}
+
+	shardedGenerateTests := []struct {
+		name                    string
+		options                 datagen.Options
+		correctWithShardedDB    bool
+		correctWithStandaloneDB bool
+		errMsgRegexShardedDB    *regexp.Regexp
+		errMsgRegexStandaloneDB *regexp.Regexp
+		expectedNbDoc           int64
+	}{
 		{
-			name:        "wrong shardconfig",
-			options:     defaultOpts("testdata/invalid-shardconfig.json"),
-			errMsgRegex: regexp.MustCompile("^wrong value for 'shardConfig.shardCollection'.*"),
-			correct:     false,
+			name:                    "wrong shardconfig",
+			options:                 defaultOpts("testdata/invalid-shardconfig.json"),
+			correctWithShardedDB:    false,
+			correctWithStandaloneDB: false,
+			errMsgRegexShardedDB:    regexp.MustCompile("^wrong value for 'shardConfig.shardCollection'.*"),
+			errMsgRegexStandaloneDB: regexp.MustCompile("^wrong value for 'shardConfig.shardCollection'.*"),
 		},
 		{
-			name:        "fail to shard on single mongod",
-			options:     defaultOpts("testdata/invalid-shardconfig-singlemongod.json"),
-			errMsgRegex: regexp.MustCompile("^couldn't create sharded collection.*"),
-			correct:     false,
+			name:                    "valid shard config",
+			options:                 defaultOpts("testdata/sharded_id.json"),
+			correctWithShardedDB:    true,
+			expectedNbDoc:           15000,
+			correctWithStandaloneDB: false,
+			errMsgRegexStandaloneDB: regexp.MustCompile("^fail to enable sharding on db.*"),
 		},
 		{
-			name:        "fail to shard with non _id key",
-			options:     defaultOpts("testdata/invalid-shardconfig-nonid.json"),
-			errMsgRegex: regexp.MustCompile("^couldn't create sharded collection.*"),
-			correct:     false,
+			name:                    "valid shard config sharded on field other than _id",
+			options:                 defaultOpts("testdata/sharded-non_id.json"),
+			correctWithShardedDB:    true,
+			expectedNbDoc:           63422,
+			correctWithStandaloneDB: false,
+			errMsgRegexStandaloneDB: regexp.MustCompile("^fail to enable sharding on db.*"),
 		},
 		{
-			name:        "empty shard key",
-			options:     defaultOpts("testdata/invalid-shardconfig-emptykey.json"),
-			errMsgRegex: regexp.MustCompile("^wrong value for 'shardConfig.key'.*"),
-			correct:     false,
+			name:                    "empty shard key",
+			options:                 defaultOpts("testdata/invalid-shardconfig-emptykey.json"),
+			correctWithShardedDB:    false,
+			correctWithStandaloneDB: false,
+			errMsgRegexShardedDB:    regexp.MustCompile("^wrong value for 'shardConfig.key'.*"),
+			errMsgRegexStandaloneDB: regexp.MustCompile("^wrong value for 'shardConfig.key'.*"),
 		},
 	}
 
-	for _, tt := range realRunTests {
+	isDBsharded := isDatabaseSharded()
+
+	for _, st := range shardedGenerateTests {
+		var correct bool
+		var errMsgRegex *regexp.Regexp
+
+		if isDBsharded {
+			correct = st.correctWithShardedDB
+			errMsgRegex = st.errMsgRegexShardedDB
+		} else {
+			correct = st.correctWithStandaloneDB
+			errMsgRegex = st.errMsgRegexStandaloneDB
+		}
+
+		generateTests = append(generateTests, generateTest{
+			name:          st.name,
+			options:       st.options,
+			correct:       correct,
+			errMsgRegex:   errMsgRegex,
+			expectedNbDoc: st.expectedNbDoc,
+		})
+	}
+
+	for _, tt := range generateTests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := datagen.Generate(&tt.options, os.Stdout)
 			if tt.correct {
@@ -816,6 +861,20 @@ func parseConfig(t *testing.T, fileName string) []datagen.Collection {
 		t.Error(err)
 	}
 	return c
+}
+
+func isDatabaseSharded() bool {
+
+	var shardConfig struct {
+		Shards []bson.M
+	}
+
+	result := session.Database("admin").RunCommand(context.Background(), bson.M{"listShards": 1})
+	err := result.Decode(&shardConfig)
+	if err == nil && result.Err() == nil && len(shardConfig.Shards) > 1 {
+		return true
+	}
+	return false
 }
 
 func BenchmarkGenerate(b *testing.B) {
