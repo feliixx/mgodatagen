@@ -8,7 +8,9 @@ import (
 	"time"
 
 	"github.com/MichaelTJones/pcg"
-	"github.com/manveru/faker"
+
+	"github.com/brianvoe/gofakeit/v4"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
@@ -145,37 +147,101 @@ const (
 
 // available faker methods
 const (
-	MethodCellPhoneNumber    = "CellPhoneNumber"
-	MethodCity               = "City"
-	MethodCityPrefix         = "CityPrefix"
-	MethodCitySuffix         = "CitySuffix"
-	MethodCompanyBs          = "CompanyBs"
-	MethodCompanyCatchPhrase = "CompanyCatchPhrase"
-	MethodCompanyName        = "CompanyName"
-	MethodCompanySuffix      = "CompanySuffix"
-	MethodCountry            = "Country"
-	MethodDomainName         = "DomainName"
-	MethodDomainSuffix       = "DomainSuffix"
-	MethodDomainWord         = "DomainWord"
-	MethodEmail              = "Email"
-	MethodFirstName          = "FirstName"
-	MethodFreeEmail          = "FreeEmail"
-	MethodJobTitle           = "JobTitle"
-	MethodLastName           = "LastName"
-	MethodName               = "Name"
-	MethodNamePrefix         = "NamePrefix"
-	MethodNameSuffix         = "NameSuffix"
-	MethodPhoneNumber        = "PhoneNumber"
-	MethodPostCode           = "PostCode"
-	MethodSafeEmail          = "SafeEmail"
-	MethodSecondaryAddress   = "SecondaryAddress"
-	MethodState              = "State"
-	MethodStateAbbr          = "StateAbbr"
-	MethodStreetAddress      = "StreetAddress"
-	MethodStreetName         = "StreetName"
-	MethodStreetSuffix       = "StreetSuffix"
-	MethodURL                = "URL"
-	MethodUserName           = "UserName"
+	MethodAnimal                  = "Animal"
+	MethodAnimalType              = "AnimalType"
+	MethodBS                      = "BS"
+	MethodBeerAlcohol             = "BeerAlcohol"
+	MethodBeerBlg                 = "BeerBlg"
+	MethodBeerHop                 = "BeerHop"
+	MethodBeerIbu                 = "BeerIbu"
+	MethodBeerMalt                = "BeerMalt"
+	MethodBeerName                = "BeerName"
+	MethodBeerStyle               = "BeerStyle"
+	MethodBeerYeast               = "BeerYeast"
+	MethodBuzzWord                = "BuzzWord"
+	MethodCarMaker                = "CarMaker"
+	MethodCarModel                = "CarModel"
+	MethodCat                     = "Cat"
+	MethodChromeUserAgent         = "ChromeUserAgent"
+	MethodCity                    = "City"
+	MethodColor                   = "Color"
+	MethodCompany                 = "Company"
+	MethodCompanySuffix           = "CompanySuffix"
+	MethodCountry                 = "Country"
+	MethodCountryAbr              = "CountryAbr"
+	MethodCreditCardCvv           = "CreditCardCvv"
+	MethodCreditCardExp           = "CreditCardExp"
+	MethodCreditCardType          = "CreditCardType"
+	MethodCurrencyLong            = "CurrencyLong"
+	MethodCurrencyShort           = "CurrencyShort"
+	MethodDog                     = "Dog"
+	MethodDomainName              = "DomainName"
+	MethodDomainSuffix            = "DomainSuffix"
+	MethodEmail                   = "Email"
+	MethodEmoji                   = "Emoji"
+	MethodEmojiAlias              = "EmojiAlias"
+	MethodEmojiCategory           = "EmojiCategory"
+	MethodEmojiDescription        = "EmojiDescription"
+	MethodEmojiTag                = "EmojiTag"
+	MethodExtension               = "Extension"
+	MethodFarmAnimal              = "FarmAnimal"
+	MethodFirefoxUserAgent        = "FirefoxUserAgent"
+	MethodFirstName               = "FirstName"
+	MethodFuelType                = "FuelType"
+	MethodGender                  = "Gender"
+	MethodHTTPMethod              = "HTTPMethod"
+	MethodHackerAbbreviation      = "HackerAbbreviation"
+	MethodHackerAdjective         = "HackerAdjective"
+	MethodHackerIngverb           = "HackerIngverb"
+	MethodHackerNoun              = "HackerNoun"
+	MethodHackerPhrase            = "HackerPhrase"
+	MethodHackerVerb              = "HackerVerb"
+	MethodHexColor                = "HexColor"
+	MethodHipsterWord             = "HipsterWord"
+	MethodIPv4Address             = "IPv4Address"
+	MethodIPv6Address             = "IPv6Address"
+	MethodJobDescriptor           = "JobDescriptor"
+	MethodJobLevel                = "JobLevel"
+	MethodJobTitle                = "JobTitle"
+	MethodLanguage                = "Language"
+	MethodLanguageAbbreviation    = "LanguageAbbreviation"
+	MethodLastName                = "LastName"
+	MethodLetter                  = "Letter"
+	MethodMacAddress              = "MacAddress"
+	MethodMimeType                = "MimeType"
+	MethodMonth                   = "Month"
+	MethodName                    = "Name"
+	MethodNamePrefix              = "NamePrefix"
+	MethodNameSuffix              = "NameSuffix"
+	MethodOperaUserAgent          = "OperaUserAgent"
+	MethodPetName                 = "PetName"
+	MethodPhone                   = "Phone"
+	MethodPhoneFormatted          = "PhoneFormatted"
+	MethodProgrammingLanguage     = "ProgrammingLanguage"
+	MethodProgrammingLanguageBest = "ProgrammingLanguageBest"
+	MethodQuestion                = "Question"
+	MethodQuote                   = "Quote"
+	MethodSSN                     = "SSN"
+	MethodSafariUserAgent         = "SafariUserAgent"
+	MethodSafeColor               = "SafeColor"
+	MethodState                   = "State"
+	MethodStateAbr                = "StateAbr"
+	MethodStreet                  = "MehtodStreet"
+	MethodStreetName              = "StreetName"
+	MethodStreetNumber            = "StreetNumber"
+	MethodStreetPrefix            = "StreetPrefix"
+	MethodStreetSuffix            = "StreetSuffix"
+	MethodTimeZone                = "TimeZone"
+	MethodTimeZoneAbv             = "TimeZoneAbv"
+	MethodTimeZoneFull            = "TimeZoneFull"
+	MethodTransmissionGearType    = "TransmissionGearType"
+	MethodURL                     = "URL"
+	MethodUserAgent               = "UserAgent"
+	MethodUsername                = "Username"
+	MethodVehicleType             = "VehicleType"
+	MethodWeekDay                 = "WeekDay"
+	MethodWord                    = "Word"
+	MethodZip                     = "Zip"
 )
 
 var mapTypes = map[string]bsontype.Type{
@@ -203,38 +269,140 @@ var mapTypes = map[string]bsontype.Type{
 	TypeBoundAggregator: bson.TypeNull,
 }
 
-var fakerMethods = map[string]func(f *faker.Faker) string{
-	MethodCellPhoneNumber:    (*faker.Faker).CellPhoneNumber,
-	MethodCity:               (*faker.Faker).City,
-	MethodCityPrefix:         (*faker.Faker).CityPrefix,
-	MethodCitySuffix:         (*faker.Faker).CitySuffix,
-	MethodCompanyBs:          (*faker.Faker).CompanyBs,
-	MethodCompanyCatchPhrase: (*faker.Faker).CompanyCatchPhrase,
-	MethodCompanyName:        (*faker.Faker).CompanyName,
-	MethodCompanySuffix:      (*faker.Faker).CompanySuffix,
-	MethodCountry:            (*faker.Faker).Country,
-	MethodDomainName:         (*faker.Faker).DomainName,
-	MethodDomainSuffix:       (*faker.Faker).DomainSuffix,
-	MethodDomainWord:         (*faker.Faker).DomainWord,
-	MethodEmail:              (*faker.Faker).Email,
-	MethodFirstName:          (*faker.Faker).FirstName,
-	MethodFreeEmail:          (*faker.Faker).FreeEmail,
-	MethodJobTitle:           (*faker.Faker).JobTitle,
-	MethodLastName:           (*faker.Faker).LastName,
-	MethodName:               (*faker.Faker).Name,
-	MethodNamePrefix:         (*faker.Faker).NamePrefix,
-	MethodNameSuffix:         (*faker.Faker).NameSuffix,
-	MethodPhoneNumber:        (*faker.Faker).PhoneNumber,
-	MethodPostCode:           (*faker.Faker).PostCode,
-	MethodSafeEmail:          (*faker.Faker).SafeEmail,
-	MethodSecondaryAddress:   (*faker.Faker).SecondaryAddress,
-	MethodState:              (*faker.Faker).State,
-	MethodStateAbbr:          (*faker.Faker).StateAbbr,
-	MethodStreetAddress:      (*faker.Faker).StreetAddress,
-	MethodStreetName:         (*faker.Faker).StreetName,
-	MethodStreetSuffix:       (*faker.Faker).StreetSuffix,
-	MethodURL:                (*faker.Faker).URL,
-	MethodUserName:           (*faker.Faker).UserName,
+var fakerMethods = map[string]func() string{
+
+	// Old manrevu/faker values are kept, but non documented
+	// in order to avoid breaking previous working config
+	// some names are exact duplicate of gofakeit methods, so
+	// no need to add thme to the list. Cooncerned method below:
+	//
+	// "CompanySuffix"
+	// "Country"
+	// "City"
+	// "DomainName"
+	// "DomainSuffix"
+	// "Email"
+	// "FirstName"
+	// "JobTitle"
+	// "LastName"
+	// "Name"
+	// "NamePrefix"
+	// "NameSuffix"
+	// "State"
+	// "StreetName"
+	// "StreetSuffix"
+	// "URL"
+
+	"CellPhoneNumber":             gofakeit.Phone,
+	"CityPrefix":                  gofakeit.City,
+	"CitySuffix":                  gofakeit.City,
+	"CompanyBs":                   gofakeit.BS,
+	"CompanyCatchPhrase":          gofakeit.HackerPhrase,
+	"CompanyName":                 gofakeit.Company,
+	"DomainWord":                  gofakeit.DomainName,
+	"FreeEmail":                   gofakeit.Email,
+	"PhoneNumber":                 gofakeit.Phone,
+	"PostCode":                    gofakeit.Zip,
+	"SafeEmail":                   gofakeit.Email,
+	"SecondaryAddress":            gofakeit.StreetName,
+	"StateAbbr":                   gofakeit.StateAbr,
+	"StreetAddress":               gofakeit.StreetName,
+	"UserName":                    gofakeit.Username,
+	MethodAnimal:                  gofakeit.Animal,
+	MethodAnimalType:              gofakeit.AnimalType,
+	MethodBS:                      gofakeit.BS,
+	MethodBeerAlcohol:             gofakeit.BeerAlcohol,
+	MethodBeerBlg:                 gofakeit.BeerBlg,
+	MethodBeerHop:                 gofakeit.BeerHop,
+	MethodBeerIbu:                 gofakeit.BeerIbu,
+	MethodBeerMalt:                gofakeit.BeerMalt,
+	MethodBeerName:                gofakeit.BeerName,
+	MethodBeerStyle:               gofakeit.BeerStyle,
+	MethodBeerYeast:               gofakeit.BeerYeast,
+	MethodBuzzWord:                gofakeit.BuzzWord,
+	MethodCarMaker:                gofakeit.CarMaker,
+	MethodCarModel:                gofakeit.CarModel,
+	MethodCat:                     gofakeit.Cat,
+	MethodChromeUserAgent:         gofakeit.ChromeUserAgent,
+	MethodColor:                   gofakeit.Color,
+	MethodCity:                    gofakeit.City,
+	MethodCompany:                 gofakeit.Company,
+	MethodCompanySuffix:           gofakeit.CompanySuffix,
+	MethodCountry:                 gofakeit.Country,
+	MethodCountryAbr:              gofakeit.CountryAbr,
+	MethodCreditCardCvv:           gofakeit.CreditCardCvv,
+	MethodCreditCardExp:           gofakeit.CreditCardExp,
+	MethodCreditCardType:          gofakeit.CreditCardType,
+	MethodCurrencyLong:            gofakeit.CurrencyLong,
+	MethodCurrencyShort:           gofakeit.CurrencyShort,
+	MethodDog:                     gofakeit.Dog,
+	MethodDomainName:              gofakeit.DomainName,
+	MethodDomainSuffix:            gofakeit.DomainSuffix,
+	MethodEmail:                   gofakeit.Email,
+	MethodEmoji:                   gofakeit.Emoji,
+	MethodEmojiAlias:              gofakeit.EmojiAlias,
+	MethodEmojiCategory:           gofakeit.EmojiCategory,
+	MethodEmojiDescription:        gofakeit.EmojiDescription,
+	MethodEmojiTag:                gofakeit.EmojiTag,
+	MethodExtension:               gofakeit.Extension,
+	MethodFarmAnimal:              gofakeit.FarmAnimal,
+	MethodFirefoxUserAgent:        gofakeit.FirefoxUserAgent,
+	MethodFirstName:               gofakeit.FirstName,
+	MethodFuelType:                gofakeit.FuelType,
+	MethodGender:                  gofakeit.Gender,
+	MethodHTTPMethod:              gofakeit.HTTPMethod,
+	MethodHackerAbbreviation:      gofakeit.HackerAbbreviation,
+	MethodHackerAdjective:         gofakeit.HackerAdjective,
+	MethodHackerIngverb:           gofakeit.HackerIngverb,
+	MethodHackerNoun:              gofakeit.HackerNoun,
+	MethodHackerPhrase:            gofakeit.HackerPhrase,
+	MethodHackerVerb:              gofakeit.HackerVerb,
+	MethodHexColor:                gofakeit.HexColor,
+	MethodHipsterWord:             gofakeit.HipsterWord,
+	MethodIPv4Address:             gofakeit.IPv4Address,
+	MethodIPv6Address:             gofakeit.IPv6Address,
+	MethodJobDescriptor:           gofakeit.JobDescriptor,
+	MethodJobLevel:                gofakeit.JobLevel,
+	MethodJobTitle:                gofakeit.JobTitle,
+	MethodLanguage:                gofakeit.Language,
+	MethodLanguageAbbreviation:    gofakeit.LanguageAbbreviation,
+	MethodLastName:                gofakeit.LastName,
+	MethodLetter:                  gofakeit.Letter,
+	MethodMacAddress:              gofakeit.MacAddress,
+	MethodMimeType:                gofakeit.MimeType,
+	MethodMonth:                   gofakeit.Month,
+	MethodName:                    gofakeit.Name,
+	MethodNamePrefix:              gofakeit.NamePrefix,
+	MethodNameSuffix:              gofakeit.NameSuffix,
+	MethodOperaUserAgent:          gofakeit.OperaUserAgent,
+	MethodPetName:                 gofakeit.PetName,
+	MethodPhone:                   gofakeit.Phone,
+	MethodPhoneFormatted:          gofakeit.PhoneFormatted,
+	MethodProgrammingLanguage:     gofakeit.ProgrammingLanguage,
+	MethodProgrammingLanguageBest: gofakeit.ProgrammingLanguageBest,
+	MethodQuestion:                gofakeit.Question,
+	MethodQuote:                   gofakeit.Quote,
+	MethodSSN:                     gofakeit.SSN,
+	MethodSafariUserAgent:         gofakeit.SafariUserAgent,
+	MethodSafeColor:               gofakeit.SafeColor,
+	MethodState:                   gofakeit.State,
+	MethodStateAbr:                gofakeit.StateAbr,
+	MethodStreet:                  gofakeit.Street,
+	MethodStreetName:              gofakeit.StreetName,
+	MethodStreetNumber:            gofakeit.StreetNumber,
+	MethodStreetPrefix:            gofakeit.StreetPrefix,
+	MethodStreetSuffix:            gofakeit.StreetSuffix,
+	MethodTimeZone:                gofakeit.TimeZone,
+	MethodTimeZoneAbv:             gofakeit.TimeZoneAbv,
+	MethodTimeZoneFull:            gofakeit.TimeZoneFull,
+	MethodTransmissionGearType:    gofakeit.TransmissionGearType,
+	MethodURL:                     gofakeit.URL,
+	MethodUserAgent:               gofakeit.UserAgent,
+	MethodUsername:                gofakeit.Username,
+	MethodVehicleType:             gofakeit.VehicleType,
+	MethodWeekDay:                 gofakeit.WeekDay,
+	MethodWord:                    gofakeit.Word,
+	MethodZip:                     gofakeit.Zip,
 }
 
 // NewDocumentGenerator creates an object generator to generate valid bson documents
@@ -488,19 +656,13 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		return &uuidGenerator{base: base}, nil
 
 	case TypeFaker:
-		// TODO: use "en" locale for now, but should be configurable
-		fk, err := faker.New("en")
-		if err != nil {
-			return nil, fmt.Errorf("fail to instantiate faker generator: %v", err)
-		}
 		method, ok := fakerMethods[config.Method]
 		if !ok {
 			return nil, fmt.Errorf("invalid Faker method: %v", config.Method)
 		}
 		return &fakerGenerator{
-			base:  base,
-			faker: fk,
-			f:     method,
+			base: base,
+			f:    method,
 		}, nil
 
 	case TypeRef:

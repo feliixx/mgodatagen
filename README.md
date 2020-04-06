@@ -11,7 +11,7 @@ Try it online: [**mongoplayground**](https://mongoplayground.net/)
 ## Features
 
 - Support all bson types listed in [MongoDB bson types](https://docs.mongodb.com/manual/reference/bson-types/)
-- Generate _real_ data using [faker](https://github.com/manveru/faker)
+- Generate _real_ data using [gofakeit](https://github.com/brianvoe/gofakeit)
 - Create referenced fields accross collections
 - Aggregate data across collections
 - Create sharded collection
@@ -723,7 +723,7 @@ where `m` is the min value, and `M` the max value.
 
 ### Faker
 
-Generate 'real' data using [Faker library](https://github.com/manveru/faker).
+Generate 'real' data using [gofakeit library](https://github.com/brianvoe/gofakeit).
 
 ```JSON5
 "fieldName": {
@@ -737,40 +737,113 @@ Generate 'real' data using [Faker library](https://github.com/manveru/faker).
 List of faker methods:
 
 ```
-"CellPhoneNumber"
-"City"
-"CityPrefix"
-"CitySuffix"
-"CompanyBs"
-"CompanyCatchPhrase"
-"CompanyName"
-"CompanySuffix"
-"Country"
-"DomainName"
-"DomainSuffix"
-"DomainWord"
-"Email"
 "FirstName"
-"FreeEmail"
-"JobTitle"
 "LastName"
 "Name"
 "NamePrefix"
 "NameSuffix"
-"PhoneNumber"
-"PostCode"
-"SafeEmail"
-"SecondaryAddress"
-"State"
-"StateAbbr"
-"StreetAddress"
-"StreetName"
-"StreetSuffix"
+"Gender"
+"Phone"
+"PhoneFormatted"
+"Username"
+"Email"
+
+"BS"
+"BuzzWord"
+"Company"
+"CompanySuffix"
+"JobDescriptor"
+"JobLevel"
+"JobTitle"
+"Language"
+"LanguageAbbreviation"
+
+"CreditCardCvv"
+"CreditCardExp"
+"CreditCardType"
+"CurrencyLong"
+"CurrencyShort"
+
+"DomainName"
+"DomainSuffix"
+"HTTPMethod"
+"IPv4Address"
+"IPv6Address"
+"MacAddress"
+"MimeType"
+"SSN"
 "URL"
-"UserName"
+"UserAgent"
+"SafariUserAgent"
+"OperaUserAgent"
+"ChromeUserAgent"
+"Extension"
+"FirefoxUserAgent"
+
+"TimeZone"
+"TimeZoneAbv"
+"TimeZoneFull"
+"Month"
+"WeekDay"
+
+"Word"
+"Question"
+"Quote"
+"Letter"
+"ProgrammingLanguage"
+"ProgrammingLanguageBest"
+"HexColor"
+"Color"
+"HipsterWord"
+"SafeColor"
+
+"Street"
+"StreetName"
+"StreetNumber"
+"StreetPrefix"
+"StreetSuffix"
+"City"
+"State"
+"StateAbr"
+"Zip"
+"Country"
+"CountryAbr"
+
+"Emoji"
+"EmojiAlias"
+"EmojiCategory"
+"EmojiDescription"
+"EmojiTag"
+
+"HackerAbbreviation"
+"HackerAdjective"
+"HackerIngverb"
+"HackerNoun"
+"HackerPhrase"
+"HackerVerb"
+
+"CarMaker"
+"CarModel"
+"TransmissionGearType"
+"FuelType"
+"VehicleType"
+
+"Animal"
+"AnimalType"
+"Cat"
+"Dog"
+"FarmAnimal"
+"PetName"
+
+"BeerAlcohol"
+"BeerBlg"
+"BeerHop"
+"BeerIbu"
+"BeerMalt"
+"BeerName"
+"BeerStyle"
+"BeerYeast"
 ```
 
-If you're building large datasets (1000000+ items) you should avoid faker generators
-and use main or custom generators instead, as faker generator are way slower.
-
-Currently, only `"en"` locale is available.
+If you're building large datasets (10M+ documents) you should avoid faker generators
+and use main or custom generators instead, as faker may be way slower.

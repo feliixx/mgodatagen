@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/MichaelTJones/pcg"
-	"github.com/manveru/faker"
 	uuid "github.com/satori/go.uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
@@ -452,12 +451,11 @@ func (g *uuidGenerator) Value() {
 // Generator for creating random string using faker library
 type fakerGenerator struct {
 	base
-	faker *faker.Faker
-	f     func(f *faker.Faker) string
+	f func() string
 }
 
 func (g *fakerGenerator) Value() {
-	fakerVal := []byte(g.f(g.faker))
+	fakerVal := []byte(g.f())
 	g.buffer.Write(int32Bytes(int32(len(fakerVal) + 1)))
 	g.buffer.Write(fakerVal)
 	g.buffer.WriteSingleByte(byte(0))
