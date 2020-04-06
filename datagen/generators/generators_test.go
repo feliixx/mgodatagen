@@ -384,7 +384,7 @@ func TestNewGenerator(t *testing.T) {
 				Type: generators.TypeDecimal,
 			},
 			correct: false,
-			version: []int{3, 2},
+			version: []int{3, 2, 1},
 		},
 		{
 			name: "decimal with mongodb 3.6",
@@ -399,6 +399,15 @@ func TestNewGenerator(t *testing.T) {
 			config: generators.Config{
 				Type:             generators.TypeBoolean,
 				MaxDistinctValue: -1,
+			},
+			correct: false,
+			version: []int{3, 4},
+		},
+		{
+			name: "constant with invalid value",
+			config: generators.Config{
+				Type:     generators.TypeConstant,
+				ConstVal: bson.Raw("hjkgkgkg"),
 			},
 			correct: false,
 			version: []int{3, 4},
