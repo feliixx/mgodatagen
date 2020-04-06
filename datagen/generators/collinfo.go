@@ -294,7 +294,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'")
 		}
 		if config.Unique {
-			values, err := uniqueValues(ci.Count, int(config.MaxLength))
+			values, err := uniqueValues(ci.Count, config.MaxLength)
 			if err != nil {
 				return nil, err
 			}
