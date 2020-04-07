@@ -6,7 +6,7 @@
 
 A small CLI tool to quickly generate millions of pseudo-random BSON documents and insert them into a MongoDB instance. Quickly test new data structure or how your application responds when your database grows!
 
-Try it online: [**mongoplayground**](https://mongoplayground.net/)
+Try it online: [**mongoplayground.net**](https://mongoplayground.net/)
 
 ## Features
 
@@ -28,10 +28,12 @@ or
 
 Build from source:
 
-First, make sure that go is installed on your machine (see [install go](https://golang.org/doc/install) for details ). Then, use `go get`:
+First, make sure that go is installed on your machine (see [install go](https://golang.org/doc/install) for details ). Then clone the repo and build it:
 
 ```
-go get -u "github.com/feliixx/mgodatagen"
+git clone https://github.com/feliixx/mgodatagen.git
+cd mgodatagen
+go install
 ```
 
 ## Options
@@ -177,7 +179,7 @@ make sure that you have a mongodb instance running (on 127.0.0.1:27017 for examp
 and run
 
 ```
-./mgodatagen -f datagen/testdata/ref.json
+./mgodatagen -f datagen/generators/testdata/ref.json
 ```
 
 This will insert 1000 random documents in collections `test` and `link` of database
