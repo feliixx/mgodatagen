@@ -34,7 +34,7 @@
     },
     {
         "database": "datagen_it_test",
-        "collection": "agg",
+        "collection": "test_bson",
         "count": 6,
         "content": {
             "_id": {
