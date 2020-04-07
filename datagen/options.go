@@ -11,11 +11,14 @@ type General struct {
 
 // Connection struct that stores info on connection from command line args
 type Connection struct {
-	Host     string `short:"h" long:"host" value-name:"<hostname>" description:"mongodb host to connect to" default:"127.0.0.1"`
-	Port     string `long:"port" value-name:"<port>" description:"server port" default:"27017"`
-	UserName string `short:"u" long:"username" value-name:"<username>" description:"username for authentification"`
-	Password string `short:"p" long:"password" value-name:"<password>" description:"password for authentification"`
-	Timeout  time.Duration
+	Host           string `short:"h" long:"host" value-name:"<hostname>" description:"mongodb host to connect to" default:"127.0.0.1"`
+	Port           string `long:"port" value-name:"<port>" description:"server port" default:"27017"`
+	UserName       string `short:"u" long:"username" value-name:"<username>" description:"username for authentification"`
+	Password       string `short:"p" long:"password" value-name:"<password>" description:"password for authentification"`
+	AuthMechanism  string `long:"authenticationMechanism" value-name:"<mechanism>" description:"authentication mechanism\n for now only PLAIN and MONGODB-X509 are supported"`
+	TlsCertKeyFile string `long:"tlsCertificateKeyFile" value-name:"<path>" description:"PEM certificate/key file for TLS"`
+	TlsCAFile      string `long:"tlsCAFile" value-name:"<path>" description:"Certificate Authority file for TLS"`
+	Timeout        time.Duration
 }
 
 // Configuration struct that stores info on config file from command line args
