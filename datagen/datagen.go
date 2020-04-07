@@ -42,7 +42,7 @@ func (d *dtg) generate(collection *Collection) error {
 	}{
 		{
 			name:     "creating",
-			size:     1,
+			size:     2,
 			stepFunc: (*dtg).createCollection,
 		},
 		{
@@ -52,12 +52,12 @@ func (d *dtg) generate(collection *Collection) error {
 		},
 		{
 			name:     "aggregating",
-			size:     1,
+			size:     collection.Count * 10 / 100,
 			stepFunc: (*dtg).updateWithAggregators,
 		},
 		{
 			name:     "indexing",
-			size:     1,
+			size:     collection.Count * 10 / 100,
 			stepFunc: (*dtg).ensureIndex,
 		},
 	}
@@ -72,7 +72,7 @@ func (d *dtg) generate(collection *Collection) error {
 	bounds := make(sort.IntSlice, 0, len(steps))
 	for _, s := range steps {
 		total += s.size
-		bounds = append(bounds, total)
+		bounds = append(bounds, total-1)
 	}
 
 	d.bar = progress.AddBar(total).AppendCompleted().PrependFunc(func(b *uiprogress.Bar) string {
@@ -402,11 +402,6 @@ func (d *dtg) printStats(collections []Collection) {
 		return
 	}
 
-	var stats struct {
-		Count      int    `bson:"count"`
-		AvgObjSize int    `bson:"avgObjSize"`
-		IndexSizes bson.M `bson:"indexSizes"`
-	}
 	rows := make([][]string, 0, len(collections))
 
 	for _, coll := range collections {
@@ -415,6 +410,12 @@ func (d *dtg) printStats(collections []Collection) {
 			bson.E{Key: "collStats", Value: coll.Name},
 			bson.E{Key: "scale", Value: 1024},
 		})
+
+		var stats struct {
+			Count      int    `bson:"count"`
+			AvgObjSize int    `bson:"avgObjSize"`
+			IndexSizes bson.M `bson:"indexSizes"`
+		}
 		err := result.Decode(&stats)
 		if err != nil {
 			fmt.Fprintf(d.out, "fail to parse stats result: %v", err)
