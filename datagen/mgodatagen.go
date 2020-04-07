@@ -89,20 +89,12 @@ func run(options *Options, out io.Writer) error {
 // get a connection from Connection args
 func connectToDB(conn *Connection, out io.Writer) (*mongo.Client, []int, error) {
 
-	url := fmt.Sprintf("mongodb://%s:%s", conn.Host, conn.Port)
-	fmt.Fprintf(out, "Connecting to %s", url)
+	opts := createClientOptions(conn)
+	fmt.Fprintf(out, "connecting to %s", opts.GetURI())
 
-	if conn.UserName != "" && conn.Password != "" {
-		url = fmt.Sprintf("mongodb://%s:%s@%s:%s", conn.UserName, conn.Password, conn.Host, conn.Port)
-		fmt.Fprintf(out, " as %s", conn.UserName)
-	}
-	session, err := mongo.Connect(context.Background(), options.Client().
-		ApplyURI(url).
-		SetConnectTimeout(conn.Timeout).
-		SetServerSelectionTimeout(conn.Timeout).
-		SetRetryWrites(false))
+	session, err := mongo.Connect(context.Background(), opts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("fail to create mongo client from uri %s: %v", url, err)
+		return nil, nil, fmt.Errorf("connection failed\n  cause: %v", err)
 	}
 
 	err = session.Ping(context.Background(), readpref.Primary())
@@ -142,6 +134,34 @@ func connectToDB(conn *Connection, out io.Writer) (*mongo.Client, []int, error) 
 		}
 	}
 	return session, versionInt, nil
+}
+
+func createClientOptions(conn *Connection) *options.ClientOptions {
+
+	connOpts := options.Client().
+		ApplyURI(fmt.Sprintf("mongodb://%s:%s", conn.Host, conn.Port)).
+		SetConnectTimeout(conn.Timeout).
+		SetServerSelectionTimeout(conn.Timeout).
+		SetRetryWrites(false) // this is only needed for sharded cluster, it default to false on standalone instance
+
+	if conn.UserName == "" && conn.Password == "" && conn.AuthMechanism == "" {
+		return connOpts
+	}
+
+	var credentials options.Credential
+	if conn.UserName != "" && conn.Password != "" {
+		credentials.Username = conn.UserName
+		credentials.Password = conn.Password
+	}
+	if conn.AuthMechanism != "" {
+		credentials.AuthMechanism = conn.AuthMechanism
+	}
+
+	if conn.TlsCAFile != "" || conn.TlsCertKeyFile != "" {
+		connOpts.ApplyURI(fmt.Sprintf("mongodb://%s:%s/?tlsCAFile=%s&tlsCertificateKeyFile=%s", conn.Host, conn.Port, conn.TlsCAFile, conn.TlsCertKeyFile))
+	}
+
+	return connOpts.SetAuth(credentials)
 }
 
 func createEmptyCfgFile(filename string) error {

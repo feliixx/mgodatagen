@@ -43,27 +43,32 @@ Usage:
   mgodatagen
 
 template:
-      --new=<filename>         create an empty configuration file
+      --new=<filename>                         create an empty configuration file
 
 configuration:
-  -f, --file=<configfile>      JSON config file. This field is required
-  -i, --indexonly              if present, mgodatagen will just try to rebuild index
-  -a, --append                 if present, append documents to the collection without
-                               removing older documents or deleting the collection
-  -n, --numWorker=<nb>         number of concurrent workers inserting documents
-                               in database. Default is number of CPU+1
-  -b, --batchsize=<size>       bulk insert batch size (default: 1000)
+  -f, --file=<configfile>                      JSON config file. This field is required
+  -i, --indexonly                              if present, mgodatagen will just try to rebuild index
+  -a, --append                                 if present, append documents to the collection without
+                                               removing older documents or deleting the collection
+  -n, --numWorker=<nb>                         number of concurrent workers inserting documents
+                                               in database. Default is number of CPU
+  -b, --batchsize=<size>                       bulk insert batch size (default: 1000)
 
 connection infos:
-  -h, --host=<hostname>        mongodb host to connect to (default: 127.0.0.1)
-      --port=<port>            server port (default: 27017)
-  -u, --username=<username>    username for authentification
-  -p, --password=<password>    password for authentification
+  -h, --host=<hostname>                        mongodb host to connect to (default: 127.0.0.1)
+      --port=<port>                            server port (default: 27017)
+  -u, --username=<username>                    username for authentification
+  -p, --password=<password>                    password for authentification
+      --authenticationMechanism=<mechanism>    authentication mechanism
+                                               for now only PLAIN and MONGODB-X509 are supported
+      --tlsCertificateKeyFile=<path>           PEM certificate/key file for TLS
+      --tlsCAFile=<path>                       Certificate Authority file for TLS
 
 general:
-      --help                   show this help message
-  -v, --version                print the tool version and exit
-  -q, --quiet                  quieter output
+      --help                                   show this help message
+  -v, --version                                print the tool version and exit
+  -q, --quiet                                  quieter output
+
 ```
 
 Only the configuration file need to be specified ( **-f | --file flag**). A basic usage of mgodatagen would be

@@ -714,6 +714,24 @@ func TestGenerate(t *testing.T) {
 			errMsgRegex: regexp.MustCompile("^connection failed\n  cause.*"),
 		},
 		{
+			name: "auth not enabled on db",
+			options: datagen.Options{
+				Connection: datagen.Connection{
+					AuthMechanism:  "MONGODB-X509",
+					TlsCertKeyFile: "testdata/output.txt",
+					TlsCAFile:      "testdata/output.txt",
+					Timeout:        500 * time.Millisecond,
+				},
+				Configuration: datagen.Configuration{
+					ConfigFile: "testdata/empty.json",
+					BatchSize:  1000,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:     false,
+			errMsgRegex: regexp.MustCompile("^connection failed\n  cause.*"),
+		},
+		{
 			name:        "bulk insert failed",
 			options:     defaultOpts("testdata/invalid-content.json"),
 			correct:     false,
