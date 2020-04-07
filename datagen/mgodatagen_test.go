@@ -619,7 +619,6 @@ func TestGenerate(t *testing.T) {
 			name:          "full-bson.json",
 			options:       defaultOpts("generators/testdata/full-bson.json"),
 			correct:       true,
-			errMsgRegex:   nil,
 			expectedNbDoc: 1000,
 		},
 		{
@@ -634,7 +633,6 @@ func TestGenerate(t *testing.T) {
 				General: defaultGeneralOpts,
 			},
 			correct:       true,
-			errMsgRegex:   nil,
 			expectedNbDoc: 2000,
 		},
 		{
@@ -650,7 +648,6 @@ func TestGenerate(t *testing.T) {
 				General: defaultGeneralOpts,
 			},
 			correct:       true,
-			errMsgRegex:   nil,
 			expectedNbDoc: 2000,
 		},
 		{
@@ -674,10 +671,16 @@ func TestGenerate(t *testing.T) {
 			errMsgRegex: regexp.MustCompile("^invalid value for -b | --batchsize:*"),
 		},
 		{
-			name:        "full-aggregation.json",
-			options:     defaultOpts("generators/testdata/full-aggregation.json"),
-			correct:     true,
-			errMsgRegex: nil,
+			name:          "full-aggregation.json",
+			options:       defaultOpts("generators/testdata/full-aggregation.json"),
+			correct:       true,
+			expectedNbDoc: 6,
+		},
+		{
+			name:          "full-aggregation.json",
+			options:       defaultOpts("generators/testdata/full-faker.json"),
+			correct:       true,
+			expectedNbDoc: 467,
 		},
 		{
 			name: "non-listenning port",

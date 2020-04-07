@@ -1,0 +1,449 @@
+[
+  {
+    "database": "datagen_it_test",
+    "collection": "test_bson",
+    "count": 467,
+    "content": {
+      "Animal": {
+        "type":  "faker",
+        "method":  "Animal"
+      },
+      "AnimalType": {
+        "type":  "faker",
+        "method":  "AnimalType"
+      },
+      "BS":  {
+        "type":  "faker",
+        "method":  "BS"
+      },
+      "BeerAlcohol": {
+        "type":  "faker",
+        "method":  "BeerAlcohol"
+      },
+      "BeerBlg":  {
+        "type":  "faker",
+        "method":  "BeerBlg"
+      },
+      "BeerHop": {
+        "type":  "faker",
+        "method":  "BeerHop"
+      },
+      "BeerIbu":  {
+        "type":  "faker",
+        "method":  "BeerIbu"
+      },
+      "BeerMalt": {
+        "type":  "faker",
+        "method":  "BeerMalt"
+      },
+      "BeerName":  {
+        "type":  "faker",
+        "method":  "BeerName"
+      },
+      "BeerStyle": {
+        "type":  "faker",
+        "method":  "BeerStyle"
+      },
+      "BeerYeast":  {
+        "type":  "faker",
+        "method":  "BeerYeast"
+      },
+      "BuzzWord": {
+        "type":  "faker",
+        "method":  "BuzzWord"
+      },
+      "CarMaker":  {
+        "type":  "faker",
+        "method":  "CarMaker"
+      },
+      "CarModel": {
+        "type":  "faker",
+        "method":  "CarModel"
+      },
+      "Cat":  {
+        "type":  "faker",
+        "method":  "Cat"
+      },
+      "ChromeUserAgent": {
+        "type":  "faker",
+        "method":  "ChromeUserAgent"
+      },
+      "City":  {
+        "type":  "faker",
+        "method":  "City"
+      },
+      "Color": {
+        "type":  "faker",
+        "method":  "Color"
+      },
+      "Company":  {
+        "type":  "faker",
+        "method":  "Company"
+      },
+      "CompanySuffix": {
+        "type":  "faker",
+        "method":  "CompanySuffix"
+      },
+      "Country":  {
+        "type":  "faker",
+        "method":  "Country"
+      },
+      "CountryAbr": {
+        "type":  "faker",
+        "method":  "CountryAbr"
+      },
+      "CreditCardCvv":  {
+        "type":  "faker",
+        "method":  "CreditCardCvv"
+      },
+      "CreditCardExp": {
+        "type":  "faker",
+        "method":  "CreditCardExp"
+      },
+      "CreditCardType":  {
+        "type":  "faker",
+        "method":  "CreditCardType"
+      },
+      "CurrencyLong": {
+        "type":  "faker",
+        "method":  "CurrencyLong"
+      },
+      "CurrencyShort":  {
+        "type":  "faker",
+        "method":  "CurrencyShort"
+      },
+      "Dog": {
+        "type":  "faker",
+        "method":  "Dog"
+      },
+      "DomainName":  {
+        "type":  "faker",
+        "method":  "DomainName"
+      },
+      "DomainSuffix": {
+        "type":  "faker",
+        "method":  "DomainSuffix"
+      },
+      "Email":  {
+        "type":  "faker",
+        "method":  "Email"
+      },
+      "Emoji": {
+        "type":  "faker",
+        "method":  "Emoji"
+      },
+      "EmojiAlias":  {
+        "type":  "faker",
+        "method":  "EmojiAlias"
+      },
+      "EmojiCategory": {
+        "type":  "faker",
+        "method":  "EmojiCategory"
+      },
+      "EmojiDescription":  {
+        "type":  "faker",
+        "method":  "EmojiDescription"
+      },
+      "EmojiTag": {
+        "type":  "faker",
+        "method":  "EmojiTag"
+      },
+      "Extension":  {
+        "type":  "faker",
+        "method":  "Extension"
+      },
+      "FarmAnimal": {
+        "type":  "faker",
+        "method":  "FarmAnimal"
+      },
+      "FirefoxUserAgent":  {
+        "type":  "faker",
+        "method":  "FirefoxUserAgent"
+      },
+      "FirstName": {
+        "type":  "faker",
+        "method":  "FirstName"
+      },
+      "FuelType":  {
+        "type":  "faker",
+        "method":  "FuelType"
+      },
+      "Gender": {
+        "type":  "faker",
+        "method":  "Gender"
+      },
+      "HTTPMethod":  {
+        "type":  "faker",
+        "method":  "HTTPMethod"
+      },
+      "HackerAbbreviation": {
+        "type":  "faker",
+        "method":  "HackerAbbreviation"
+      },
+      "HackerAdjective":  {
+        "type":  "faker",
+        "method":  "HackerAdjective"
+      },
+      "HackerIngverb": {
+        "type":  "faker",
+        "method":  "HackerIngverb"
+      },
+      "HackerNoun":  {
+        "type":  "faker",
+        "method":  "HackerNoun"
+      },
+      "HackerPhrase": {
+        "type":  "faker",
+        "method":  "HackerPhrase"
+      },
+      "HackerVerb":  {
+        "type":  "faker",
+        "method":  "HackerVerb"
+      },
+      "HexColor": {
+        "type":  "faker",
+        "method":  "HexColor"
+      },
+      "HipsterWord":  {
+        "type":  "faker",
+        "method":  "HipsterWord"
+      },
+      "IPv4Address": {
+        "type":  "faker",
+        "method":  "IPv4Address"
+      },
+      "IPv6Address":  {
+        "type":  "faker",
+        "method":  "IPv6Address"
+      },
+      "JobDescriptor": {
+        "type":  "faker",
+        "method":  "JobDescriptor"
+      },
+      "JobLevel":  {
+        "type":  "faker",
+        "method":  "JobLevel"
+      },
+      "JobTitle": {
+        "type":  "faker",
+        "method":  "JobTitle"
+      },
+      "Language":  {
+        "type":  "faker",
+        "method":  "Language"
+      },
+      "LanguageAbbreviation": {
+        "type":  "faker",
+        "method":  "LanguageAbbreviation"
+      },
+      "LastName":  {
+        "type":  "faker",
+        "method":  "LastName"
+      },
+      "Letter": {
+        "type":  "faker",
+        "method":  "Letter"
+      },
+      "MacAddress":  {
+        "type":  "faker",
+        "method":  "MacAddress"
+      },
+      "MimeType": {
+        "type":  "faker",
+        "method":  "MimeType"
+      },
+      "Month":  {
+        "type":  "faker",
+        "method":  "Month"
+      },
+      "Name": {
+        "type":  "faker",
+        "method":  "Name"
+      },
+      "NamePrefix":  {
+        "type":  "faker",
+        "method":  "NamePrefix"
+      },
+      "NameSuffix": {
+        "type":  "faker",
+        "method":  "NameSuffix"
+      },
+      "OperaUserAgent":  {
+        "type":  "faker",
+        "method":  "OperaUserAgent"
+      },
+      "PetName": {
+        "type":  "faker",
+        "method":  "PetName"
+      },
+      "Phone":  {
+        "type":  "faker",
+        "method":  "Phone"
+      },
+      "PhoneFormatted": {
+        "type":  "faker",
+        "method":  "PhoneFormatted"
+      },
+      "ProgrammingLanguage":  {
+        "type":  "faker",
+        "method":  "ProgrammingLanguage"
+      },
+      "ProgrammingLanguageBest": {
+        "type":  "faker",
+        "method":  "ProgrammingLanguageBest"
+      },
+      "Question":  {
+        "type":  "faker",
+        "method":  "Question"
+      },
+      "Quote": {
+        "type":  "faker",
+        "method":  "Quote"
+      },
+      "SSN":  {
+        "type":  "faker",
+        "method":  "SSN"
+      },
+      "SafariUserAgent": {
+        "type":  "faker",
+        "method":  "SafariUserAgent"
+      },
+      "SafeColor":  {
+        "type":  "faker",
+        "method":  "SafeColor"
+      },
+      "State": {
+        "type":  "faker",
+        "method":  "State"
+      },
+      "StateAbr":  {
+        "type":  "faker",
+        "method":  "StateAbr"
+      },
+      "MehtodStreet": {
+        "type":  "faker",
+        "method":  "MehtodStreet"
+      },
+      "StreetName":  {
+        "type":  "faker",
+        "method":  "StreetName"
+      },
+      "StreetNumber": {
+        "type":  "faker",
+        "method":  "StreetNumber"
+      },
+      "StreetPrefix":  {
+        "type":  "faker",
+        "method":  "StreetPrefix"
+      },
+      "StreetSuffix": {
+        "type":  "faker",
+        "method":  "StreetSuffix"
+      },
+      "TimeZone":  {
+        "type":  "faker",
+        "method":  "TimeZone"
+      },
+      "TimeZoneAbv": {
+        "type":  "faker",
+        "method":  "TimeZoneAbv"
+      },
+      "TimeZoneFull":  {
+        "type":  "faker",
+        "method":  "TimeZoneFull"
+      },
+      "TransmissionGearType": {
+        "type":  "faker",
+        "method":  "TransmissionGearType"
+      },
+      "URL":  {
+        "type":  "faker",
+        "method":  "URL"
+      },
+      "UserAgent": {
+        "type":  "faker",
+        "method":  "UserAgent"
+      },
+      "Username":  {
+        "type":  "faker",
+        "method":  "Username"
+      },
+      "VehicleType": {
+        "type":  "faker",
+        "method":  "VehicleType"
+      },
+      "WeekDay":  {
+        "type":  "faker",
+        "method":  "WeekDay"
+      },
+      "Word": {
+        "type":  "faker",
+        "method":  "Word"
+      },
+      "Zip": {
+        "type": "faker",
+        "method": "Zip"
+      },
+      "CellPhoneNumber_compat": {
+        "type":  "faker",
+        "method":  "CellPhoneNumber"
+      },
+      "CityPrefix_compat": {
+        "type":  "faker",
+        "method":  "CityPrefix"
+      },
+      "CitySuffix_compat":  {
+        "type":  "faker",
+        "method":  "CitySuffix"
+      },
+      "CompanyBs_compat": {
+        "type":  "faker",
+        "method":  "CompanyBs"
+      },
+      "CompanyCatchPhrase_compat":  {
+        "type":  "faker",
+        "method":  "CompanyCatchPhrase"
+      },
+      "CompanyName_compat": {
+        "type":  "faker",
+        "method":  "CompanyName"
+      },
+      "DomainWord_compat":  {
+        "type":  "faker",
+        "method":  "DomainWord"
+      },
+      "FreeEmail_compat": {
+        "type":  "faker",
+        "method":  "FreeEmail"
+      },
+      "PhoneNumber_compat":  {
+        "type":  "faker",
+        "method":  "PhoneNumber"
+      },
+      "PostCode_compat": {
+        "type":  "faker",
+        "method":  "PostCode"
+      },
+      "SafeEmail_compat":  {
+        "type":  "faker",
+        "method":  "SafeEmail"
+      },
+      "SecondaryAddress_compat": {
+        "type":  "faker",
+        "method":  "SecondaryAddress"
+      },
+      "StateAbbr_compat":  {
+        "type":  "faker",
+        "method":  "StateAbbr"
+      },
+      "StreetAddress_compat": {
+        "type":  "faker",
+        "method":  "StreetAddress"
+      },
+      "UserName_compat": {
+        "type": "faker",
+        "method": "UserName"
+      }
+    }
+  }
+]
