@@ -7,6 +7,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // Aggregator is a type of generator that use another collection
@@ -93,7 +94,7 @@ func (a *boundAggregator) Update(session *mongo.Client, value interface{}) ([2]b
 		{"$limit": 1},
 		{"$project": bson.M{"min": "$" + a.field}}}
 
-	cursor, err := session.Database(a.database).Collection(a.collection).Aggregate(context.Background(), pipeline)
+	cursor, err := session.Database(a.database).Collection(a.collection).Aggregate(context.Background(), pipeline, options.Aggregate().SetAllowDiskUse(true))
 	if err != nil {
 		return [2]bson.M{}, fmt.Errorf("aggregation failed (lower bound) for field %v: %v", a.key, err)
 	}
@@ -108,7 +109,7 @@ func (a *boundAggregator) Update(session *mongo.Client, value interface{}) ([2]b
 		{"$sort": bson.M{a.field: -1}},
 		{"$limit": 1},
 		{"$project": bson.M{"max": "$" + a.field}}}
-	cursor, err = session.Database(a.database).Collection(a.collection).Aggregate(context.Background(), pipeline)
+	cursor, err = session.Database(a.database).Collection(a.collection).Aggregate(context.Background(), pipeline, options.Aggregate().SetAllowDiskUse(true))
 	if err != nil {
 		return [2]bson.M{}, fmt.Errorf("aggregation failed (higher bound) for field %v: %v", a.key, err)
 	}
