@@ -13,13 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 const defaultTimeout = 10 * time.Second

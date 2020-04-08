@@ -11,13 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/mgocompat"
-
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/olekukonko/tablewriter"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/bson/mgocompat"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
