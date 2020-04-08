@@ -42,14 +42,14 @@ func run(options *Options, out io.Writer) error {
 		return nil
 	}
 	if options.ConfigFile == "" {
-		return fmt.Errorf("No configuration file provided, try mgodatagen --help for more informations ")
+		return fmt.Errorf("no configuration file provided, try mgodatagen --help for more informations ")
 	}
 	if options.BatchSize > 1000 || options.BatchSize <= 0 {
 		return fmt.Errorf("invalid value for -b | --batchsize: %v. BatchSize has to be between 1 and 1000", options.BatchSize)
 	}
 	content, err := ioutil.ReadFile(options.ConfigFile)
 	if err != nil {
-		return fmt.Errorf("file error: %v", err)
+		return fmt.Errorf("fail to read file %s\n  cause: %v", options.ConfigFile, err)
 	}
 	collections, err := ParseConfig(content, false)
 	if err != nil {
@@ -74,7 +74,6 @@ func run(options *Options, out io.Writer) error {
 	}
 
 	start := time.Now()
-	defer printElapsedTime(out, start)
 
 	for _, collection := range collections {
 		err = dtg.generate(&collection)
@@ -83,6 +82,8 @@ func run(options *Options, out io.Writer) error {
 		}
 	}
 	dtg.printStats(collections)
+	printElapsedTime(out, start)
+
 	return nil
 }
 
@@ -171,7 +172,7 @@ func createEmptyCfgFile(filename string) error {
 		response := make([]byte, 2)
 		_, err := os.Stdin.Read(response)
 		if err != nil {
-			return fmt.Errorf("couldn't read from user, aborting %v", err)
+			return fmt.Errorf("couldn't read from user, aborting: %v", err)
 		}
 		if string(response[0]) != "y" {
 			return nil
