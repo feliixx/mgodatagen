@@ -654,7 +654,7 @@ func TestGenerate(t *testing.T) {
 			name:        "no config file",
 			options:     defaultOpts(""),
 			correct:     false,
-			errMsgRegex: regexp.MustCompile("^No configuration file provided*"),
+			errMsgRegex: regexp.MustCompile("^no configuration file provided*"),
 		},
 		{
 			name: "invalid batch size",

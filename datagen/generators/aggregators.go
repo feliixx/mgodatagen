@@ -49,7 +49,7 @@ func (a *countAggregator) Update(session *mongo.Client, value interface{}) ([2]b
 
 	count, err := session.Database(a.database).Collection(a.collection).CountDocuments(context.Background(), query)
 	if err != nil {
-		return [2]bson.M{}, fmt.Errorf("couldn't count documents for key%v: %v", a.key, err)
+		return [2]bson.M{}, fmt.Errorf("couldn't count documents for key '%s'\n  cause: %v", a.key, err)
 	}
 	return [2]bson.M{{a.localVar: value}, {"$set": bson.M{a.key: count}}}, nil
 }
@@ -71,10 +71,10 @@ func (a *valueAggregator) Update(session *mongo.Client, value interface{}) ([2]b
 		bson.E{Key: "query", Value: query}},
 	)
 	if err := result.Err(); err != nil {
-		return [2]bson.M{}, fmt.Errorf("aggregation failed (get distinct values) for field %v: %v", a.key, err)
+		return [2]bson.M{}, fmt.Errorf("aggregation failed (get distinct values) for field '%s'\n  cause: %v", a.key, err)
 	}
 	if err := result.Decode(&distinct); err != nil {
-		return [2]bson.M{}, fmt.Errorf("aggregation failed (decode distinct values) for field %v: %v", a.key, err)
+		return [2]bson.M{}, fmt.Errorf("aggregation failed (decode distinct values) for field '%s'\n  cause: %v", a.key, err)
 	}
 	return [2]bson.M{{a.localVar: value}, {"$set": bson.M{a.key: distinct.Values}}}, nil
 }
@@ -96,7 +96,7 @@ func (a *boundAggregator) Update(session *mongo.Client, value interface{}) ([2]b
 
 	cursor, err := session.Database(a.database).Collection(a.collection).Aggregate(context.Background(), pipeline, options.Aggregate().SetAllowDiskUse(true))
 	if err != nil {
-		return [2]bson.M{}, fmt.Errorf("aggregation failed (lower bound) for field %v: %v", a.key, err)
+		return [2]bson.M{}, fmt.Errorf("aggregation failed (lower bound) for field '%s'\n  cause: %v", a.key, err)
 	}
 	cursor.Next(context.Background())
 	var result bson.M
@@ -111,7 +111,7 @@ func (a *boundAggregator) Update(session *mongo.Client, value interface{}) ([2]b
 		{"$project": bson.M{"max": "$" + a.field}}}
 	cursor, err = session.Database(a.database).Collection(a.collection).Aggregate(context.Background(), pipeline, options.Aggregate().SetAllowDiskUse(true))
 	if err != nil {
-		return [2]bson.M{}, fmt.Errorf("aggregation failed (higher bound) for field %v: %v", a.key, err)
+		return [2]bson.M{}, fmt.Errorf("aggregation failed (higher bound) for field '%s'\n  cause: %v", a.key, err)
 	}
 	cursor.Next(context.Background())
 	cursor.Decode(&result)

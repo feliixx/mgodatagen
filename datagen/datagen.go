@@ -104,7 +104,7 @@ func (d *dtg) createCollection(coll *Collection) error {
 	}
 	err := c.Drop(context.Background())
 	if err != nil {
-		return fmt.Errorf("fail to drop collection %s: %v", coll.Name, err)
+		return fmt.Errorf("fail to drop collection '%s'\ncause  %v", coll.Name, err)
 	}
 
 	if coll.CompressionLevel != "" {
@@ -113,27 +113,27 @@ func (d *dtg) createCollection(coll *Collection) error {
 			bson.E{Key: "storageEngine", Value: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}},
 		}).Err()
 		if err != nil {
-			return fmt.Errorf("coulnd't create collection with compression level %s:\n  cause: %v", coll.CompressionLevel, err)
+			return fmt.Errorf("coulnd't create collection with compression level '%s'\n  cause: %v", coll.CompressionLevel, err)
 		}
 	}
 	if coll.ShardConfig.ShardCollection != "" {
 		nm := coll.DB + "." + coll.Name
 		if coll.ShardConfig.ShardCollection != nm {
-			return fmt.Errorf("wrong value for 'shardConfig.shardCollection', should be <database>.<collection>: found %s, expected %s", coll.ShardConfig.ShardCollection, nm)
+			return fmt.Errorf("wrong value for 'shardConfig.shardCollection', should be <database>.<collection>: found '%s', expected '%s'", coll.ShardConfig.ShardCollection, nm)
 		}
 		if len(coll.ShardConfig.Key) == 0 {
 			return fmt.Errorf("wrong value for 'shardConfig.key', can't be null and must be an object like {'_id': 'hashed'}, found: %v", coll.ShardConfig.Key)
 		}
 		err := d.session.Database("admin").RunCommand(context.Background(), bson.D{bson.E{Key: "enableSharding", Value: coll.DB}}).Err()
 		if err != nil {
-			return fmt.Errorf("fail to enable sharding on db '%s':\n  cause: %v", coll.DB, err)
+			return fmt.Errorf("fail to enable sharding on db '%s'\n  cause: %v", coll.DB, err)
 		}
 		// as the collection is empty, no need to create the indexes on the sharded key before creating the collection,
 		// because it will be created automatically by mongodb. See https://docs.mongodb.com/manual/core/sharding-shard-key/#shard-key-indexes
 		// for details
 		err = d.runMgoCompatCommand(context.Background(), "admin", coll.ShardConfig)
 		if err != nil {
-			return fmt.Errorf("fail to shard collection '%s' in db '%s'\n cause:  %v", coll.Name, coll.DB, err)
+			return fmt.Errorf("fail to shard collection '%s' in db '%s'\n  cause: %v", coll.Name, coll.DB, err)
 		}
 	}
 	return nil
@@ -238,7 +238,7 @@ func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.Canc
 			// if the bulk insert fails, push the error to the error channel
 			// so that we can use it from the main thread
 			select {
-			case errs <- fmt.Errorf("exception occurred during bulk insert:\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err):
+			case errs <- fmt.Errorf("exception occurred during bulk insert\n  cause: %v\n Try to set a smaller batch size with -b | --batchsize option", err):
 				// cancel the context to terminate goroutine and stop the feeding of the
 				// buffered channel
 				cancel()
@@ -246,7 +246,6 @@ func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.Canc
 			}
 			return
 		}
-		// return the rawchunk to the pool so it can be reused
 		pool.Put(t)
 	}
 }
@@ -326,7 +325,7 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 		for t := range tasks {
 			_, err := collection.UpdateMany(ctx, t[0], t[1])
 			if err != nil {
-				errs <- fmt.Errorf("exception occurred during update:\n  cause: %v", err)
+				errs <- fmt.Errorf("exception occurred during update\n  cause: %v", err)
 				return
 			}
 		}
@@ -345,11 +344,11 @@ Loop:
 			bson.E{Key: "key", Value: localVar},
 		})
 		if err := result.Err(); err != nil {
-			aggregationError = fmt.Errorf("fail to get distinct values for local field %v: %v", localVar, err)
+			aggregationError = fmt.Errorf("fail to get distinct values for local field '%s'\n  cause: %v", localVar, err)
 			break Loop
 		}
 		if err := result.Decode(&distinct); err != nil {
-			aggregationError = fmt.Errorf("fail to decode distinct values for local field %v: %v", localVar, err)
+			aggregationError = fmt.Errorf("fail to decode distinct values for local field '%s'\n  cause: %v", localVar, err)
 			break Loop
 		}
 
@@ -380,7 +379,7 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 
 	_, err := d.session.Database(coll.DB).Collection(coll.Name).Indexes().DropAll(context.Background())
 	if err != nil {
-		return fmt.Errorf("error while dropping index for collection %s:\n  cause: %v", coll.Name, err)
+		return fmt.Errorf("error while dropping index for collection '%s'\n  cause: %v", coll.Name, err)
 	}
 	// avoid timeout when building indexes
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
@@ -391,7 +390,7 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 		bson.E{Key: "indexes", Value: coll.Indexes},
 	})
 	if err != nil {
-		return fmt.Errorf("error while building indexes for collection %s\n cause: %v", coll.Name, err)
+		return fmt.Errorf("error while building indexes for collection '%s'\n cause: %v", coll.Name, err)
 	}
 	return nil
 }
@@ -418,7 +417,7 @@ func (d *dtg) printStats(collections []Collection) {
 		}
 		err := result.Decode(&stats)
 		if err != nil {
-			fmt.Fprintf(d.out, "fail to parse stats result: %v", err)
+			fmt.Fprintf(d.out, "fail to parse stats result\n  cause: %v", err)
 		}
 
 		indexes := make([]string, 0, len(stats.IndexSizes))
@@ -448,7 +447,7 @@ func (d *dtg) runMgoCompatCommand(ctx context.Context, db string, cmd interface{
 	mgoRegistry := mgocompat.NewRespectNilValuesRegistryBuilder().Build()
 	_, cmdBytes, err := bson.MarshalValueWithRegistry(mgoRegistry, cmd)
 	if err != nil {
-		return fmt.Errorf("fait to generate command to create indexes: %v", err)
+		return fmt.Errorf("fait to generate mgocompat command\n  cause: %v", err)
 	}
 	return d.session.Database(db).RunCommand(ctx, cmdBytes).Err()
 }

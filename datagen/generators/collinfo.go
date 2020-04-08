@@ -415,7 +415,7 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 	for k, v := range content {
 		g, err := ci.newGenerator(buffer, k, &v)
 		if err != nil {
-			return nil, fmt.Errorf("fail to create DocumentGenerator:\n\tcause: for field %s, %v", k, err)
+			return nil, fmt.Errorf("fail to create DocumentGenerator\n  invalid generator for field '%s'\n    cause: %v", k, err)
 		}
 		d.Add(g)
 	}
@@ -649,7 +649,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 				counter: config.StartLong,
 			}, nil
 		default:
-			return nil, fmt.Errorf("invalid type %v", config.Type)
+			return nil, fmt.Errorf("invalid type '%s'", config.Type)
 		}
 
 	case TypeUUID:
@@ -658,7 +658,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 	case TypeFaker:
 		method, ok := fakerMethods[config.Method]
 		if !ok {
-			return nil, fmt.Errorf("invalid Faker method: %v", config.Method)
+			return nil, fmt.Errorf("invalid Faker method '%s'", config.Method)
 		}
 		return &fakerGenerator{
 			base: base,
@@ -703,7 +703,7 @@ func constGeneratorFromValue(base base, value interface{}) (Generator, error) {
 func bsonValue(key string, val interface{}) ([]byte, error) {
 	raw, err := bson.Marshal(bson.M{key: val})
 	if err != nil {
-		return nil, fmt.Errorf("couldn't marshal value: %v", err)
+		return nil, fmt.Errorf("fail to marshal '%s': %v", val, err)
 	}
 	// remove first 4 bytes (bson document size) and last bytes (terminating 0x00
 	// indicating end of document) to keep only the bson content
@@ -757,7 +757,7 @@ func uniqueValues(docCount int, stringSize int) ([][]byte, error) {
 	if stringSize < 5 {
 		maxNumber := int(math.Pow(float64(len(letterBytes)), float64(stringSize)))
 		if docCount > maxNumber {
-			return nil, fmt.Errorf("doc count is greater than possible value for string of size %v, max is %v ( %v^%v) ", stringSize, maxNumber, len(letterBytes), stringSize)
+			return nil, fmt.Errorf("doc count is greater than possible value for string of size %d, max is %vd( %d^%d) ", stringSize, maxNumber, len(letterBytes), stringSize)
 		}
 	}
 	u := &unique{
@@ -813,7 +813,7 @@ func (ci *CollInfo) newAggregatorFromMap(content map[string]Config) ([]Aggregato
 		case TypeCountAggregator, TypeValueAggregator, TypeBoundAggregator:
 			a, err := ci.newAggregator(k, &v)
 			if err != nil {
-				return nil, fmt.Errorf("for field %s, %v", k, err)
+				return nil, fmt.Errorf("fail to create Aggregator\n  invalid generator for field '%s'\n    cause: %v", k, err)
 			}
 			agArr = append(agArr, a)
 		default:
