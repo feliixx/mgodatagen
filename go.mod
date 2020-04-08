@@ -9,7 +9,7 @@ require (
 	github.com/gosuri/uiprogress v0.0.1
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/mattn/go-runewidth v0.0.9 // indirect
-	github.com/olekukonko/tablewriter v0.0.1
+	github.com/olekukonko/tablewriter v0.0.4
 	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
-	go.mongodb.org/mongo-driver v1.3.1
+	go.mongodb.org/mongo-driver v1.3.2
 )
