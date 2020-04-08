@@ -433,7 +433,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 
 	bsonType, ok := mapTypes[config.Type]
 	if !ok {
-		return nil, fmt.Errorf("invalid type %v", config.Type)
+		return nil, fmt.Errorf("invalid type '%s'", config.Type)
 	}
 	nullPercentage := uint32(config.NullPercentage) * 10
 	base := newBase(key, nullPercentage, bsonType, buffer, ci.pcg32)
