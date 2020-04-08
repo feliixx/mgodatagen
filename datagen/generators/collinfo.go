@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/MichaelTJones/pcg"
-
 	"github.com/brianvoe/gofakeit/v4"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
