@@ -412,6 +412,14 @@ func TestNewGenerator(t *testing.T) {
 			correct: false,
 			version: []int{3, 4},
 		},
+		{
+			name: "max distinct value > coll.Count",
+			config: generators.Config{
+				Type:             generators.TypePosition,
+				MaxDistinctValue: 101},
+			correct: true,
+			version: []int{4},
+		},
 	}
 	// all possible faker methods
 	fakerVal := []string{
