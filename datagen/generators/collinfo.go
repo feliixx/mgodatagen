@@ -439,12 +439,20 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 	base := newBase(key, nullPercentage, bsonType, buffer, ci.pcg32)
 
 	if config.MaxDistinctValue != 0 {
+		// there is no point in having a maxDistinctValue
+		// greater than the number of doc to generate, since
+		// it use a fromArrayGenerator with randomOrder=false
 		size := config.MaxDistinctValue
+		if size > ci.Count {
+			size = ci.Count
+		}
 		config.MaxDistinctValue = 0
+
 		values, bsonType, err := ci.preGenerate(key, config, size)
 		if err != nil {
 			return nil, err
 		}
+
 		base.bsonType = bsonType
 		return &fromArrayGenerator{
 			base:  base,
