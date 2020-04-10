@@ -721,8 +721,8 @@ func TestGenerate(t *testing.T) {
 			options: datagen.Options{
 				Connection: datagen.Connection{
 					AuthMechanism:  "MONGODB-X509",
-					TlsCertKeyFile: "testdata/output.txt",
-					TlsCAFile:      "testdata/output.txt",
+					TLSCertKeyFile: "testdata/output.txt",
+					TLSCAFile:      "testdata/output.txt",
 					Timeout:        500 * time.Millisecond,
 				},
 				Configuration: datagen.Configuration{
