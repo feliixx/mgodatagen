@@ -5,7 +5,7 @@
       "count": 1000000,
       "content": {
         "_id": {
-          "type": "wtf",
+          "type": "ref",
           "id": 1,
           "refContent": {
             "type": "objectId"

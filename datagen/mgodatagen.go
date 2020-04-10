@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/feliixx/mgodatagen/datagen/generators"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,8 +24,8 @@ import (
 
 const defaultTimeout = 10 * time.Second
 
-// Generate creates a database according to specified options. Progress informations
-// are send to out
+// Generate creates a database from options. Logs and progress are send
+// to out
 func Generate(options *Options, out io.Writer) error {
 	return run(options, out)
 }
@@ -72,6 +74,26 @@ func run(options *Options, out io.Writer) error {
 	}
 
 	start := time.Now()
+	seed := uint64(start.Unix())
+
+	// build all generators / aggregators before generating the collection, so we can
+	// return the any config error fater.
+	// That way, if the config contains an error in the n-th collection, we don't have to
+	// wait for the n-1 first collections to be generated to get the error
+	for i := 0; i < len(collections); i++ {
+
+		ci := generators.NewCollInfo(collections[i].Count, dtg.version, seed, dtg.mapRef, dtg.mapRefType)
+
+		collections[i].docGenerator, err = ci.NewDocumentGenerator(collections[i].Content)
+		if err != nil {
+			return err
+		}
+
+		collections[i].aggregators, err = ci.NewAggregatorSlice(collections[i].Content)
+		if err != nil {
+			return err
+		}
+	}
 
 	for _, collection := range collections {
 		err = dtg.generate(&collection)
