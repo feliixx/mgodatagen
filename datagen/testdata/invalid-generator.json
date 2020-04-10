@@ -1,0 +1,22 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "collection_ok",
+        "count": 12,
+        "content": {
+            "_id": {
+                "type": "objectId"
+            }
+        }
+    },
+    {
+        "database": "datagen_it_test",
+        "collection": "collection_invalid",
+        "count": 37473,
+        "content": {
+            "_id": {
+                "type": "invalid"
+            }
+        }
+    }
+]

@@ -413,7 +413,7 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 	for k, v := range content {
 		g, err := ci.newGenerator(buffer, k, &v)
 		if err != nil {
-			return nil, fmt.Errorf("fail to create DocumentGenerator\n  invalid generator for field '%s'\n    cause: %v", k, err)
+			return nil, fmt.Errorf("invalid generator for field '%s'\n  cause: %v", k, err)
 		}
 		d.Add(g)
 	}
@@ -819,7 +819,7 @@ func (ci *CollInfo) newAggregatorFromMap(content map[string]Config) ([]Aggregato
 		case TypeCountAggregator, TypeValueAggregator, TypeBoundAggregator:
 			a, err := ci.newAggregator(k, &v)
 			if err != nil {
-				return nil, fmt.Errorf("fail to create Aggregator\n  invalid generator for field '%s'\n    cause: %v", k, err)
+				return nil, fmt.Errorf("invalid generator for field '%s'\n  cause: %v", k, err)
 			}
 			agArr = append(agArr, a)
 		default:
