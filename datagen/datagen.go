@@ -166,14 +166,6 @@ func (d *dtg) fillCollection(coll *Collection) error {
 		return nil
 	}
 
-	seed := uint64(time.Now().Unix())
-	ci := generators.NewCollInfo(coll.Count, d.version, seed, d.mapRef, d.mapRefType)
-
-	docGenerator, err := ci.NewDocumentGenerator(coll.Content)
-	if err != nil {
-		return err
-	}
-
 	nbInsertingGoRoutines := runtime.NumCPU()
 	if d.NumInsertWorker > 0 {
 		nbInsertingGoRoutines = d.NumInsertWorker
@@ -198,7 +190,7 @@ func (d *dtg) fillCollection(coll *Collection) error {
 		wg.Add(1)
 		go d.insertDocumentFromChannel(ctx, cancel, &wg, coll, tasks, errs)
 	}
-	d.generateDocument(ctx, tasks, coll.Count, docGenerator)
+	d.generateDocument(ctx, tasks, coll.Count, coll.docGenerator)
 
 	wg.Wait()
 
@@ -297,12 +289,7 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 		return nil
 	}
 
-	ci := generators.NewCollInfo(coll.Count, d.version, 0, d.mapRef, d.mapRefType)
-	aggregators, err := ci.NewAggregatorSlice(coll.Content)
-	if err != nil {
-		return err
-	}
-	if len(aggregators) == 0 {
+	if len(coll.aggregators) == 0 {
 		return nil
 	}
 
@@ -332,7 +319,7 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 
 	var aggregationError error
 Loop:
-	for _, aggregator := range aggregators {
+	for _, aggregator := range coll.aggregators {
 
 		localVar := aggregator.LocalVar()
 		var distinct struct {

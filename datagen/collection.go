@@ -28,6 +28,9 @@ type Collection struct {
 	Indexes []Index `json:"indexes"`
 	// Sharding information for sharded collection
 	ShardConfig ShardingConfig `json:"shardConfig"`
+
+	docGenerator *generators.DocumentGenerator
+	aggregators  []generators.Aggregator
 }
 
 // Index struct used to create an index from `db.runCommand({"createIndexes": "collName", ...})`
