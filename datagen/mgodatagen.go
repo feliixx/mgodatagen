@@ -178,8 +178,8 @@ func createClientOptions(conn *Connection) *options.ClientOptions {
 		credentials.AuthMechanism = conn.AuthMechanism
 	}
 
-	if conn.TlsCAFile != "" || conn.TlsCertKeyFile != "" {
-		connOpts.ApplyURI(fmt.Sprintf("mongodb://%s:%s/?tlsCAFile=%s&tlsCertificateKeyFile=%s", conn.Host, conn.Port, conn.TlsCAFile, conn.TlsCertKeyFile))
+	if conn.TLSCAFile != "" || conn.TLSCertKeyFile != "" {
+		connOpts.ApplyURI(fmt.Sprintf("mongodb://%s:%s/?tlsCAFile=%s&tlsCertificateKeyFile=%s", conn.Host, conn.Port, conn.TLSCAFile, conn.TLSCertKeyFile))
 	}
 
 	return connOpts.SetAuth(credentials)

@@ -16,8 +16,8 @@ type Connection struct {
 	UserName       string `short:"u" long:"username" value-name:"<username>" description:"username for authentification"`
 	Password       string `short:"p" long:"password" value-name:"<password>" description:"password for authentification"`
 	AuthMechanism  string `long:"authenticationMechanism" value-name:"<mechanism>" description:"authentication mechanism\n for now only PLAIN and MONGODB-X509 are supported"`
-	TlsCertKeyFile string `long:"tlsCertificateKeyFile" value-name:"<path>" description:"PEM certificate/key file for TLS"`
-	TlsCAFile      string `long:"tlsCAFile" value-name:"<path>" description:"Certificate Authority file for TLS"`
+	TLSCertKeyFile string `long:"tlsCertificateKeyFile" value-name:"<path>" description:"PEM certificate/key file for TLS"`
+	TLSCAFile      string `long:"tlsCAFile" value-name:"<path>" description:"Certificate Authority file for TLS"`
 	Timeout        time.Duration
 }
 
