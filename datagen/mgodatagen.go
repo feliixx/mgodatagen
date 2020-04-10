@@ -86,12 +86,11 @@ func run(options *Options, out io.Writer) error {
 
 		collections[i].docGenerator, err = ci.NewDocumentGenerator(collections[i].Content)
 		if err != nil {
-			return err
+			return fmt.Errorf("fail to create DocumentGenerator for collection '%s'\n%v", collections[i].Name, err)
 		}
-
 		collections[i].aggregators, err = ci.NewAggregatorSlice(collections[i].Content)
 		if err != nil {
-			return err
+			return fmt.Errorf("fail to create Aggregator for collection '%s'\n%v", collections[i].Name, err)
 		}
 	}
 

@@ -31,6 +31,22 @@ var (
 	defaultGeneralOpts = datagen.General{
 		Quiet: true,
 	}
+	version   string
+	dbSharded bool
+
+	shardInfo = `
+shard list: [
+  {
+    "_id": "shard0000",
+    "host": "localhost:27021",
+    "state": 1
+  },
+  {
+    "_id": "shard0001",
+    "host": "localhost:27022",
+    "state": 1
+  }
+]`
 )
 
 func TestMain(m *testing.M) {
@@ -45,6 +61,12 @@ func TestMain(m *testing.M) {
 	}
 	session = s
 	defer s.Disconnect(context.Background())
+	version = mongodbVersion()
+	dbSharded = isDatabaseSharded()
+
+	if !dbSharded {
+		shardInfo = ""
+	}
 
 	retCode := m.Run()
 
@@ -153,6 +175,52 @@ func TestProgressOutput(t *testing.T) {
 	want, got := expected[1][:45], output[1][:45]
 	if !bytes.Equal(want, got) {
 		t.Errorf("expected \n%s \n but got \n%s", want, got)
+	}
+}
+
+func TestInvalidGeneratorOutput(t *testing.T) {
+
+	configFile := "testdata/invalid-generator.json"
+	opts := defaultOpts(configFile)
+	opts.Quiet = false
+
+	var buffer bytes.Buffer
+	err := datagen.Generate(&opts, &buffer)
+	fmt.Fprintln(&buffer, err)
+
+	want := fmt.Sprintf(`connecting to mongodb://127.0.0.1:27017
+MongoDB server version %v
+%s
+fail to create DocumentGenerator for collection 'collection_invalid'
+invalid generator for field '_id'
+  cause: invalid type 'invalid'
+`, version, shardInfo)
+
+	if got := buffer.String(); want != got {
+		t.Errorf("expected\n\n'%s'\n\nbut got\n\n'%s'", want, got)
+	}
+}
+
+func TestInvalidAggregatorOutput(t *testing.T) {
+
+	configFile := "testdata/invalid-aggregator.json"
+	opts := defaultOpts(configFile)
+	opts.Quiet = false
+
+	var buffer bytes.Buffer
+	err := datagen.Generate(&opts, &buffer)
+	fmt.Fprintln(&buffer, err)
+
+	want := fmt.Sprintf(`connecting to mongodb://127.0.0.1:27017
+MongoDB server version %s
+%s
+fail to create Aggregator for collection 'collection_invalid'
+invalid generator for field 'invalid-aggregator'
+  cause: 'query' can't be null or empty
+`, version, shardInfo)
+
+	if got := buffer.String(); want != got {
+		t.Errorf("expected\n\n'%s'\n\nbut got\n\n'%s'", want, got)
 	}
 }
 
@@ -791,13 +859,11 @@ func TestGenerate(t *testing.T) {
 		},
 	}
 
-	isDBsharded := isDatabaseSharded()
-
 	for _, st := range shardedGenerateTests {
 		var correct bool
 		var errMsgRegex *regexp.Regexp
 
-		if isDBsharded {
+		if dbSharded {
 			correct = st.correctWithShardedDB
 			errMsgRegex = st.errMsgRegexShardedDB
 		} else {
@@ -896,6 +962,18 @@ func isDatabaseSharded() bool {
 		return true
 	}
 	return false
+}
+
+func mongodbVersion() string {
+	result := session.Database("admin").RunCommand(context.Background(), bson.M{"buildInfo": 1})
+	var buildInfo struct {
+		Version string
+	}
+	err := result.Decode(&buildInfo)
+	if err != nil {
+		buildInfo.Version = "3.4.0"
+	}
+	return buildInfo.Version
 }
 
 func BenchmarkGenerate(b *testing.B) {
