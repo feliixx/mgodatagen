@@ -215,6 +215,7 @@ List of main `<generator>` types:
 
 List of custom `<generator>` types:
 
+- [faker](#faker)
 - [position](#position)
 - [constant](#constant)
 - [autoincrement](#autoincrement)
@@ -224,40 +225,6 @@ List of custom `<generator>` types:
 - [countAggregator](#countAggregator)
 - [valueAggregator](#valueAggregator)
 - [boundAggregator](#boundAggregator)
-
-List of [Faker](https://github.com/manveru/faker) `<generator>` types:
-
-- [CellPhoneNumber](#faker)
-- [City](#faker)
-- [CityPrefix](#faker)
-- [CitySuffix](#faker)
-- [CompanyBs](#faker)
-- [CompanyCatchPhrase](#faker)
-- [CompanyName](#faker)
-- [CompanySuffix](#faker)
-- [Country](#faker)
-- [DomainName](#faker)
-- [DomainSuffix](#faker)
-- [DomainWord](#faker)
-- [Email](#faker)
-- [FirstName](#faker)
-- [FreeEmail](#faker)
-- [JobTitle](#faker)
-- [LastName](#faker)
-- [Name](#faker)
-- [NamePrefix](#faker)
-- [NameSuffix](#faker)
-- [PhoneNumber](#faker)
-- [PostCode](#faker)
-- [SafeEmail](#faker)
-- [SecondaryAddress](#faker)
-- [State](#faker)
-- [StateAbbr](#faker)
-- [StreetAddress](#faker)
-- [StreetName](#faker)
-- [StreetSuffix](#faker)
-- [URL](#faker)
-- [UserName](#faker)
 
 ### String
 
