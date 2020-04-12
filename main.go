@@ -9,7 +9,7 @@ import (
 	"github.com/feliixx/mgodatagen/datagen"
 )
 
-const version = "0.7.5"
+const version = "0.8.1"
 
 func main() {
 	var options datagen.Options
