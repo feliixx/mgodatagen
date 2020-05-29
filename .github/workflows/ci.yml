@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-16.04
     strategy:
       matrix:
-        mongodb-version: [3.6.17, 4.0.17, 4.2.5, 4.2.5-sharded]
+        mongodb-version: [3.6.18, 4.0.18, 4.2.7, 4.2.7-sharded]
 
     steps:
       - name: Check out code
