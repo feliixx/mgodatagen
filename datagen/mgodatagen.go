@@ -5,6 +5,7 @@ package datagen
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -46,6 +47,15 @@ func run(options *Options, out io.Writer) error {
 	}
 	if options.BatchSize > 1000 || options.BatchSize <= 0 {
 		return fmt.Errorf("invalid value for -b | --batchsize: %v. BatchSize has to be between 1 and 1000", options.BatchSize)
+	}
+	if options.IndexOnly && options.IndexFirst {
+		return errors.New("-i | --indexonly and  can't be present at the same time. Try to remove the -x | --indexfirst flag")
+	}
+
+	if options.IndexFirst {
+		fmt.Fprint(out, `WARNING: when -x | --indexfirst flag is set, all write errors are ignored.
+Actual collection count may not match the 'count' specified in config file
+`)
 	}
 	content, err := ioutil.ReadFile(options.ConfigFile)
 	if err != nil {

@@ -1,0 +1,23 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "test_bson",
+        "count": 11479,
+        "content": {
+            "c32": {
+                "type": "int", 
+                "minInt": 1, 
+                "maxInt": 10
+            }
+        },
+        "indexes": [
+            {
+                "name": "idx_1",
+                "key": {
+                    "c32": 1
+                },
+                "unique": true
+            }
+        ]
+    }
+]

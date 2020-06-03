@@ -18,6 +18,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/bson/mgocompat"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 )
@@ -59,6 +60,10 @@ func (d *dtg) generate(collection *Collection) error {
 			size:     collection.Count * 10 / 100,
 			stepFunc: (*dtg).ensureIndex,
 		},
+	}
+
+	if d.Options.IndexFirst {
+		steps[1], steps[3] = steps[3], steps[1]
 	}
 
 	progress := uiprogress.New()
@@ -106,15 +111,17 @@ func (d *dtg) createCollection(coll *Collection) error {
 		return fmt.Errorf("fail to drop collection '%s'\ncause  %v", coll.Name, err)
 	}
 
-	if coll.CompressionLevel != "" {
-		err = d.session.Database(coll.DB).RunCommand(context.Background(), bson.D{
-			bson.E{Key: "create", Value: coll.Name},
-			bson.E{Key: "storageEngine", Value: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}},
-		}).Err()
-		if err != nil {
-			return fmt.Errorf("coulnd't create collection with compression level '%s'\n  cause: %v", coll.CompressionLevel, err)
-		}
+	createCommand := bson.D{
+		bson.E{Key: "create", Value: coll.Name},
 	}
+	if coll.CompressionLevel != "" {
+		createCommand = append(createCommand, bson.E{Key: "storageEngine", Value: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
+	}
+	err = d.session.Database(coll.DB).RunCommand(context.Background(), createCommand).Err()
+	if err != nil {
+		return fmt.Errorf("coulnd't create collection with compression level '%s'\n  cause: %v", coll.CompressionLevel, err)
+	}
+
 	if coll.ShardConfig.ShardCollection != "" {
 		nm := coll.DB + "." + coll.Name
 		if coll.ShardConfig.ShardCollection != nm {
@@ -210,6 +217,18 @@ func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.Canc
 
 	c := d.session.Database(coll.DB).Collection(coll.Name)
 
+	insertOpts := options.InsertMany()
+	// if indexfirst mode is set, specify that writes are unordered so failed
+	// insert will not block the process. This is usefull in the case of an
+	// index with 'unique' constraint on two or more fields. There is currently
+	// no way to specify 'maxDistinctValue' on a combinaison of top level fields,
+	// and we can't garantee that there will be no duplicate in generated collection,
+	// so the only option left is to ignore insert that fail because of duplicates
+	// writes
+	if d.Options.IndexFirst {
+		insertOpts.SetOrdered(false)
+	}
+
 	for t := range tasks {
 		// if an error occurs in one of the goroutine, 'return' is called which trigger
 		// wg.Done() ==> the goroutine stops
@@ -224,8 +243,8 @@ func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.Canc
 			docs = append(docs, doc)
 		}
 
-		_, err := c.InsertMany(ctx, docs)
-		if err != nil {
+		_, err := c.InsertMany(ctx, docs, insertOpts)
+		if !d.Options.IndexFirst && err != nil {
 			// if the bulk insert fails, push the error to the error channel
 			// so that we can use it from the main thread
 			select {

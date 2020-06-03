@@ -684,7 +684,7 @@ func TestGenerate(t *testing.T) {
 
 	generateTests := []generateTest{
 		{
-			name:          "full-bson.json",
+			name:          "full bson",
 			options:       defaultOpts("generators/testdata/full-bson.json"),
 			correct:       true,
 			expectedNbDoc: 1000,
@@ -739,13 +739,13 @@ func TestGenerate(t *testing.T) {
 			errMsgRegex: regexp.MustCompile("^invalid value for -b | --batchsize:*"),
 		},
 		{
-			name:          "full-aggregation.json",
+			name:          "full aggregation",
 			options:       defaultOpts("generators/testdata/full-aggregation.json"),
 			correct:       true,
 			expectedNbDoc: 6,
 		},
 		{
-			name:          "full-aggregation.json",
+			name:          "full faker",
 			options:       defaultOpts("generators/testdata/full-faker.json"),
 			correct:       true,
 			expectedNbDoc: 467,
@@ -768,7 +768,7 @@ func TestGenerate(t *testing.T) {
 			errMsgRegex: regexp.MustCompile("^connection failed\n  cause.*"),
 		},
 		{
-			name: "auth not enabled on db",
+			name: "auth not enabled on db with password",
 			options: datagen.Options{
 				Connection: datagen.Connection{
 					UserName: "user",
@@ -785,7 +785,7 @@ func TestGenerate(t *testing.T) {
 			errMsgRegex: regexp.MustCompile("^connection failed\n  cause.*"),
 		},
 		{
-			name: "auth not enabled on db",
+			name: "auth not enabled on db with x509 cert",
 			options: datagen.Options{
 				Connection: datagen.Connection{
 					AuthMechanism:  "MONGODB-X509",
@@ -813,6 +813,35 @@ func TestGenerate(t *testing.T) {
 			options:     defaultOpts("testdata/invalid-content-unknown-field.json"),
 			correct:     false,
 			errMsgRegex: regexp.MustCompile("^error in configuration file.*\n\n\t\tjson: unknown field.*"),
+		},
+		{
+			name: "index first",
+			options: datagen.Options{
+				Connection: defaultConnOpts,
+				Configuration: datagen.Configuration{
+					ConfigFile: "testdata/index-first.json",
+					IndexFirst: true,
+					BatchSize:  1000,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       true,
+			expectedNbDoc: 10,
+		},
+		{
+			name: "index first and index only",
+			options: datagen.Options{
+				Connection: defaultConnOpts,
+				Configuration: datagen.Configuration{
+					ConfigFile: "testdata/index-first.json",
+					IndexFirst: true,
+					IndexOnly:  true,
+					BatchSize:  1000,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:     false,
+			errMsgRegex: regexp.MustCompile("^-x | --indexonly and -i | --indexfirst can't be present at the same time. Try to remove the -x | --indexfirst flag.*"),
 		},
 	}
 
