@@ -49,7 +49,7 @@ func run(options *Options, out io.Writer) error {
 		return fmt.Errorf("invalid value for -b | --batchsize: %v. BatchSize has to be between 1 and 1000", options.BatchSize)
 	}
 	if options.IndexOnly && options.IndexFirst {
-		return errors.New("-i | --indexonly and  can't be present at the same time. Try to remove the -x | --indexfirst flag")
+		return errors.New("-i | --indexonly and -x | --indexfirst can't be present at the same time. Try to remove the -x | --indexfirst flag")
 	}
 
 	if options.IndexFirst {

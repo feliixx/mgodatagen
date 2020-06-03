@@ -841,7 +841,7 @@ func TestGenerate(t *testing.T) {
 				General: defaultGeneralOpts,
 			},
 			correct:     false,
-			errMsgRegex: regexp.MustCompile("^-x | --indexonly and -i | --indexfirst can't be present at the same time. Try to remove the -x | --indexfirst flag.*"),
+			errMsgRegex: regexp.MustCompile("^-i | --indexonly and -x | --indexfirst can't be present at the same time. Try to remove the -x | --indexfirst flag.*"),
 		},
 	}
 
