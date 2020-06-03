@@ -14,6 +14,7 @@ const version = "0.8.1"
 func main() {
 	var options datagen.Options
 	p := flags.NewParser(&options, flags.Default&^flags.HelpFlag)
+	p.Usage = "-f config_file.json"
 	_, err := p.Parse()
 	if err != nil {
 		fmt.Println("try mgodatagen --help for more informations")

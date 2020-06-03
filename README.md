@@ -42,16 +42,19 @@ Several options are available (use `mgodatagen --help` to print this):
 
 ```
 Usage:
-  mgodatagen
+  mgodatagen -f config_file.json
 
 template:
       --new=<filename>                         create an empty configuration file
 
 configuration:
   -f, --file=<configfile>                      JSON config file. This field is required
-  -i, --indexonly                              if present, mgodatagen will just try to rebuild index
+
   -a, --append                                 if present, append documents to the collection without
                                                removing older documents or deleting the collection
+  -i, --indexonly                              if present, mgodatagen will just try to rebuild index
+  -x, --indexfirst                             if present, mgodatagen will create index before
+                                               inserting documents
   -n, --numWorker=<nb>                         number of concurrent workers inserting documents
                                                in database. Default is number of CPU
   -b, --batchsize=<size>                       bulk insert batch size (default: 1000)
