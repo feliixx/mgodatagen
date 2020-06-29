@@ -324,6 +324,14 @@ func TestNewGenerator(t *testing.T) {
 			version: []int{3, 6},
 		},
 		{
+			name: "ref generator with no generator",
+			config: generators.Config{
+				Type: generators.TypeRef,
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
 			name: "object generator with invalid generator",
 			config: generators.Config{
 				Type: generators.TypeObject,

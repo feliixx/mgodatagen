@@ -674,6 +674,11 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 	case TypeRef:
 		_, ok := ci.mapRef[config.ID]
 		if !ok {
+
+			if config.RefContent == nil {
+				return nil, errors.New("'refContent' can't be null or empty'")
+			}
+
 			values, bsonType, err := ci.preGenerate(key, config.RefContent, ci.Count)
 			if err != nil {
 				return nil, err
