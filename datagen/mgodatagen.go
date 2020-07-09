@@ -174,6 +174,9 @@ func createClientOptions(conn *Connection) *options.ClientOptions {
 		SetServerSelectionTimeout(conn.Timeout).
 		SetRetryWrites(false) // this is only needed for sharded cluster, it default to false on standalone instance
 
+	if conn.Uri != "" {
+		connOpts.ApplyURI(conn.Uri)
+	}
 	if conn.UserName == "" && conn.Password == "" && conn.AuthMechanism == "" {
 		return connOpts
 	}
