@@ -219,10 +219,10 @@ func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.Canc
 
 	insertOpts := options.InsertMany()
 	// if indexfirst mode is set, specify that writes are unordered so failed
-	// insert will not block the process. This is usefull in the case of an
+	// insert will not block the process. This is useful in the case of an
 	// index with 'unique' constraint on two or more fields. There is currently
-	// no way to specify 'maxDistinctValue' on a combinaison of top level fields,
-	// and we can't garantee that there will be no duplicate in generated collection,
+	// no way to specify 'maxDistinctValue' on a combination of top level fields,
+	// and we can't guarantee that there will be no duplicate in generated collection,
 	// so the only option left is to ignore insert that fail because of duplicates
 	// writes
 	if d.Options.IndexFirst {
