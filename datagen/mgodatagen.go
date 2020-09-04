@@ -176,6 +176,7 @@ func createClientOptions(conn *Connection) *options.ClientOptions {
 
 	if conn.Uri != "" {
 		connOpts.ApplyURI(conn.Uri)
+		return connOpts // return to avoid UserName / Password / AuthMechanism is set
 	}
 	if conn.UserName == "" && conn.Password == "" && conn.AuthMechanism == "" {
 		return connOpts
