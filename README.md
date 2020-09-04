@@ -103,12 +103,12 @@ See **MongoDB documentation** for details on parameters:
   {
    // REQUIRED FIELDS
    //
-   "database": <string>,              // required, database name
-   "collection": <string>,            // required, collection name
-   "count": <int>,                    // required, number of document to insert in the collection
+   "database":     `string`,          // required, database name
+   "collection":   `string`,          // required, collection name
+   "count":        `int`,             // required, number of document to insert in the collection
    "content": {                       // required, the actual schema to generate documents
-     "fieldName1": <generator>,       // optional, see Generator below
-     "fieldName2": <generator>,
+     "fieldName1": `generator`,       // optional, see Generator below
+     "fieldName2": `generator`,
      ...
    },
    // OPTIONAL FIELDS
@@ -118,55 +118,55 @@ See **MongoDB documentation** for details on parameters:
    // - none
    // - snappy
    // - zlib
-   "compressionLevel": <string>,      // optional, default: snappy
+   "compressionLevel": `string`,      // optional, default: snappy
 
    // configuration for sharded collection
-   "shardConfig": {                   // optional
-      "shardCollection": <string>.<string>, // required. <database>.<collection>
-      "key": <object>,                // required, shard key, eg: {"_id": "hashed"}
-      "unique": <boolean>,            // optional, default: false
-      "numInitialChunks": <int>       // optional
+   "shardConfig": {                          // optional
+      "shardCollection":  `string`.`string`, // required. <database>.<collection>
+      "key":              `object`,          // required, shard key, eg: {"_id": "hashed"}
+      "unique":           `boolean`,         // optional, default: false
+      "numInitialChunks": `int`,             // optional
 
-      "collation": {                  // optional
-        "locale": <string>,
-        "caseLevel": <boolean>,
-        "caseFirst": <string>,
-        "strength": <int>,
-        "numericOrdering": <boolean>,
-        "alternate": <string>,
-        "maxVariable": <string>,
-        "backwards": <boolean>
+      "collation": {       // optional
+        "locale":          `string`,
+        "caseLevel":       `boolean`,
+        "caseFirst":       `string`,
+        "strength":        `int`,
+        "numericOrdering": `boolean`,
+        "alternate":       `string`,
+        "maxVariable":     `string`,
+        "backwards":       `boolean`
       }
    },
 
    // list of index to build
-   "indexes": [                       // optional
+   "indexes": [                // optional
       {
-         "name": <string>,            // required, index name
-         "key": <object>,             // required, index key, eg: {"name": 1}
-         "sparse": <boolean>,         // optional, default: false
-         "unique": <boolean>,         // optional, default: false
-         "background": <boolean>,     // optional, default: false
-         "bits": <int>,               // optional, for 2d indexes only, default: 26
-         "min": <double>,             // optional, for 2d indexes only, default: -180.0
-         "max": <double>,             // optional, for 2d index only, default: 180.0
-         "bucketSize": <double>,      // optional, for geoHaystack indexes only
-         "expireAfterSeconds": <int>, // optional, for TTL indexes only
-         "weights": <string>,         // optional, for text indexes only
-         "defaultLanguage": <string>, // optional, for text index only
-         "languageOverride": <string>,// optional, for text index only
-         "textIndexVersion": <int>,   // optional, for text index only
-         "partialFilterExpression": <object>, // optional
+         "name":               `string`,  // required, index name
+         "key":                `object`,  // required, index key, eg: {"name": 1}
+         "sparse":             `boolean`, // optional, default: false
+         "unique":             `boolean`, // optional, default: false
+         "background":         `boolean`, // optional, default: false
+         "bits":               `int`,     // optional, for 2d indexes only, default: 26
+         "min":                `double`,  // optional, for 2d indexes only, default: -180.0
+         "max":                `double`,  // optional, for 2d index only, default: 180.0
+         "bucketSize":         `double`,  // optional, for geoHaystack indexes only
+         "expireAfterSeconds": `int`,     // optional, for TTL indexes only
+         "weights":            `string`,  // optional, for text indexes only
+         "defaultLanguage":    `string`,  // optional, for text index only
+         "languageOverride":   `string`,  // optional, for text index only
+         "textIndexVersion":   `int`,     // optional, for text index only
+         "partialFilterExpression": `object`, // optional
 
-         "collation": {               // optional
-           "locale": <string>,
-           "caseLevel": <boolean>,
-           "caseFirst": <string>,
-           "strength": <int>,
-           "numericOrdering": <boolean>,
-           "alternate": <string>,
-           "maxVariable": <string>,
-           "backwards": <boolean>
+         "collation": {       // optional
+           "locale":          `string`,
+           "caseLevel":       `boolean`,
+           "caseFirst":       `string`,
+           "strength":        `int`,
+           "numericOrdering": `boolean`,
+           "alternate":       `string`,
+           "maxVariable":     `string`,
+           "backwards":       `boolean`
          }
    ]
   },
@@ -195,12 +195,12 @@ This will insert 1000 random documents in collections `test` and `link` of datab
 Generators have a common structure:
 
 ```JSON5
-"fieldName": {                 // required, field name in generated document
-  "type": <string>,            // required, type of the field
-  "nullPercentage": <int>,     // optional, int between 0 and 100. Percentage of documents
-                               // that will have this field
-  "maxDistinctValue": <int>,   // optional, maximum number of distinct values for this field
-  "typeParam": ...             // specific parameters for this type
+"fieldName": {                  // required, field name in generated document
+  "type":             `string`, // required, type of the field
+  "nullPercentage":   `int`,    // optional, int between 0 and 100. Percentage of documents
+                                // that will have this field
+  "maxDistinctValue": `int`,    // optional, maximum number of distinct values for this field
+  "typeParam": ...              // specific parameters for this type
 }
 ```
 
@@ -238,12 +238,12 @@ Generates a random string of a certain length. String is composed of char within
 
 ```JSON5
 "fieldName": {
-    "type": "string",          // required
-    "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>, // optional
-    "unique": <bool>,          // optional, see details below
-    "minLength": <int>,        // required,  must be >= 0
-    "maxLength": <int>         // required,  must be >= minLength
+    "type": "string",           // required
+    "nullPercentage":   `int`,  // optional
+    "maxDistinctValue": `int`,  // optional
+    "unique":           `bool`, // optional, see details below
+    "minLength":        `int`,  // required, must be >= 0
+    "maxLength":        `int`   // required, must be >= minLength
 }
 ```
 
@@ -273,10 +273,10 @@ Generates a random `int` within bounds.
 ```JSON5
 "fieldName": {
     "type": "int",             // required
-    "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>, // optional
-    "minInt": <int>,           // optional
-    "maxInt": <int>            // optional, must be >= minInt
+    "nullPercentage":   `int`, // optional
+    "maxDistinctValue": `int`, // optional
+    "minInt":           `int`, // optional
+    "maxInt":           `int`  // optional, must be >= minInt
 }
 ```
 
@@ -286,11 +286,11 @@ Generates a random `long` within bounds.
 
 ```JSON5
 "fieldName": {
-    "type": "long",            // required
-    "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>, // optional
-    "minLong": <long>,         // optional
-    "maxLong": <long>          // optional, must be >= minLong
+    "type": "long",             // required
+    "nullPercentage":   `int`,  // optional
+    "maxDistinctValue": `int`,  // optional
+    "minLong":          `long`, // optional
+    "maxLong":          `long`  // optional, must be >= minLong
 }
 ```
 
@@ -300,11 +300,11 @@ Generates a random `double` within bounds.
 
 ```JSON5
 "fieldName": {
-    "type": "double",          // required
-    "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>, // optional
-    "minDouble": <double>,     // optional
-    "maxDouble": <double>      // optional, must be >= minDouble
+    "type": "double",             // required
+    "nullPercentage":   `int`,    // optional
+    "maxDistinctValue": `int`,    // optional
+    "minDouble":        `double`, // optional
+    "maxDouble":        `double`  // optional, must be >= minDouble
 }
 ```
 
@@ -315,8 +315,8 @@ Generates a random `decimal128`.
 ```JSON5
 "fieldName": {
     "type": "decimal",         // required
-    "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>, // optional
+    "nullPercentage":   `int`, // optional
+    "maxDistinctValue": `int`, // optional
 }
 ```
 
@@ -327,8 +327,8 @@ Generates a random `boolean`.
 ```JSON5
 "fieldName": {
     "type": "boolean",         // required
-    "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>  // optional
+    "nullPercentage":   `int`, // optional
+    "maxDistinctValue": `int`  // optional
 }
 ```
 
@@ -339,8 +339,8 @@ Generates a random `objectId`.
 ```JSON5
 "fieldName": {
     "type": "objectId",        // required
-    "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>  // optional
+    "nullPercentage":   `int`, // optional
+    "maxDistinctValue": `int`  // optional
 }
 ```
 
@@ -350,12 +350,12 @@ Generates a random array of bson object.
 
 ```JSON5
 "fieldName": {
-    "type": "array",             // required
-    "nullPercentage": <int>,     // optional
-    "maxDistinctValue": <int>,   // optional
-    "size": <int>,               // required, size of the array
-    "arrayContent": <generator>  // genrator use to create element to fill the array.
-                                 // can be of any type scpecified in generator types
+    "type": "array",                 // required
+    "nullPercentage":   `int`,       // optional
+    "maxDistinctValue": `int`,       // optional
+    "size":             `int`,       // required, size of the array
+    "arrayContent":     `generator`  // generator use to create element to fill the array.
+                                     // can be of any type
 }
 ```
 
@@ -366,11 +366,11 @@ Generates random nested object.
 ```JSON5
 "fieldName": {
     "type": "object",                    // required
-    "nullPercentage": <int>,             // optional
-    "maxDistinctValue": <int>,           // optional
+    "nullPercentage":      `int`,        // optional
+    "maxDistinctValue":    `int`,        // optional
     "objectContent": {                   // required, list of generator used to
-       "nestedFieldName1": <generator>,  // generate the nested document
-       "nestedFieldName2": <generator>,
+       "nestedFieldName1": `generator`,  // generate the nested document
+       "nestedFieldName2": `generator`,
        ...
     }
 }
@@ -383,10 +383,10 @@ Generates random binary data of length within bounds.
 ```JSON5
 "fieldName": {
     "type": "binary",           // required
-    "nullPercentage": <int>,    // optional
-    "maxDistinctValue": <int>,  // optional
-    "minLength": <int>,         // required, must be >= 0
-    "maxLength": <int>          // required, must be >= minLength
+    "nullPercentage":   `int`,  // optional
+    "maxDistinctValue": `int`,  // optional
+    "minLength":        `int`,  // required, must be >= 0
+    "maxLength":        `int`   // required, must be >= minLength
 }
 ```
 
@@ -400,11 +400,11 @@ Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/r
 
 ```JSON5
 "fieldName": {
-    "type": "date",            // required
-    "nullPercentage": <int>,   // optional
-    "maxDistinctValue": <int>, // optional
-    "startDate": <string>,     // required
-    "endDate": <string>        // required, must be >= startDate
+    "type": "date",               // required
+    "nullPercentage":   `int`,    // optional
+    "maxDistinctValue": `int`,    // optional
+    "startDate":        `string`, // required
+    "endDate":          `string`  // required, must be >= startDate
 }
 ```
 
@@ -416,8 +416,8 @@ eg : [40.741895, -73.989308]
 ```JSON5
 "fieldName": {
     "type": "position",         // required
-    "nullPercentage": <int>     // optional
-    "maxDistinctValue": <int>   // optional
+    "nullPercentage":   `int`,  // optional
+    "maxDistinctValue": `int`   // optional
 }
 ```
 
@@ -427,10 +427,10 @@ Add the same value to each document.
 
 ```JSON5
 "fieldName": {
-    "type": "constant",       // required
-    "nullPercentage": <int>,  // optional
-    "constVal": <object>      // required, can be of any type including object and array
-                              // eg: {"k": 1, "v": "val"}
+    "type": "constant",         // required
+    "nullPercentage": `int`,    // optional
+    "constVal":       `object`  // required, can be of any type including object and array
+                                // eg: {"k": 1, "v": "val"}
 }
 ```
 
@@ -440,11 +440,11 @@ Generates an autoincremented value (type `<long>` or `<int>`).
 
 ```JSON5
 "fieldName": {
-    "type": "autoincrement",  // required
-    "nullPercentage": <int>,  // optional
-    "autoType": <string>,     // required, can be `int` or `long`
-    "startLong": <long>,      // optional, start value if autoType = long
-    "startInt": <int>         // optional, start value if autoType = int
+    "type": "autoincrement",    // required
+    "nullPercentage": `int`,    // optional
+    "autoType":       `string`, // required, can be `int` or `long`
+    "startLong":      `long`,   // optional, start value if autoType = long
+    "startInt":       `int`     // optional, start value if autoType = int
 }
 ```
 
@@ -456,12 +456,12 @@ generator in first collection:
 
 ```JSON5
 "fieldName":{
-    "type":"ref",               // required
-    "nullPercentage": <int>,    // optional
-    "maxDistinctValue": <int>,  // optional
-    "id": <int>,                // required, generator id used to link
-                                // field between collections
-    "refContent": <generator>   // required
+    "type":"ref",                    // required
+    "nullPercentage":   `int`,       // optional
+    "maxDistinctValue": `int`,       // optional
+    "id":               `int`,       // required, generator id used to link
+                                     // field between collections
+    "refContent":       `generator`  // required
 }
 ```
 
@@ -470,9 +470,9 @@ generator in other collections:
 ```JSON5
 "fieldName": {
     "type": "ref",              // required
-    "nullPercentage": <int>,    // optional
-    "maxDistinctValue": <int>,  // optional
-    "id": <int>                 // required, same id as previous generator
+    "nullPercentage":   `int`,  // optional
+    "maxDistinctValue": `int`,  // optional
+    "id":               `int`   // required, same id as previous generator
 }
 ```
 
@@ -485,13 +485,13 @@ in the order where they appear.
 ```JSON5
 "fieldName": {
     "type": "fromArray",      // required
-    "nullPercentage": <int>,  // optional
+    "nullPercentage": `int`,  // optional
     "in": [                   // required. Can't be empty. An array of object of
-      <object>,               // any type, including object and array.
-      <object>
+      `object`,               // any type, including object and array.
+      `object`
       ...
     ], 
-    "randomOrder": <bool>     // optional. If set to true, objects will be picked 
+    "randomOrder":    `bool`  // optional. If set to true, objects will be picked 
                               // from the array in random order.
 }
 ```
@@ -503,7 +503,7 @@ Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github
 ```JSON5
 "fieldName": {
     "type": "uuid",          // required
-    "nullPercentage": <int>  // optional
+    "nullPercentage": `int`  // optional
 }
 ```
 
@@ -517,10 +517,10 @@ The query can't be empty or null.
 ```JSON5
 "fieldName": {
   "type": "countAggregator", // required
-  "database": <string>,      // required, db to use to perform aggregation
-  "collection": <string>,    // required, collection to use to perform aggregation
-  "query": <object>          // required, query that selects which documents to count in the 
-                             // collection
+  "database":   `string`,    // required, db to use to perform aggregation
+  "collection": `string`,    // required, collection to use to perform aggregation
+  "query":      `object`     // required, query that selects which documents to count in
+                             // the collection
 }
 ```
 
@@ -577,10 +577,10 @@ The query can't be empty or null.
 ```JSON5
 "fieldName": {
   "type": "valueAggregator", // required
-  "database": <string>,      // required, db to use to perform aggregation
-  "collection": <string>,    // required, collection to use to perform aggregation
-  "key": <string>,           // required, the field for which to return distinct values.
-  "query": <object>          // required, query that specifies the documents from which
+  "database":   `string`,    // required, db to use to perform aggregation
+  "collection": `string`,    // required, collection to use to perform aggregation
+  "key":        `string`,    // required, the field for which to return distinct values.
+  "query":      `object`     // required, query that specifies the documents from which
                              // to retrieve the distinct values
 }
 ```
@@ -639,10 +639,10 @@ The query can't be empty or null
 ```JSON5
 "fieldName": {
   "type": "valueAggregator", // required
-  "database": <string>,      // required, db to use to perform aggregation
-  "collection": <string>,    // required, collection to use to perform aggregation
-  "key": <string>,           // required, the field for which to return distinct values.
-  "query": <object>          // required, query that specifies the documents from which
+  "database":   `string`,    // required, db to use to perform aggregation
+  "collection": `string`,    // required, collection to use to perform aggregation
+  "key":        `string`,    // required, the field for which to return distinct values.
+  "query":      `object`     // required, query that specifies the documents from which
                              // to retrieve lower/higer value
 }
 ```
@@ -702,9 +702,9 @@ Generate 'real' data using [gofakeit library](https://github.com/brianvoe/gofake
 ```JSON5
 "fieldName": {
     "type": "faker",             // required
-    "nullPercentage": <int>,     // optional
-    "maxDistinctValue": <int>,   // optional
-    "method": <string>           // faker method to use, for example: City / Email...
+    "nullPercentage":   `int`,   // optional
+    "maxDistinctValue": `int`,   // optional
+    "method":           `string` // faker method to use, for example: City / Email...
 }
 ```
 
