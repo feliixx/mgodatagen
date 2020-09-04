@@ -1,6 +1,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/feliixx/mgodatagen)](https://goreportcard.com/report/github.com/feliixx/mgodatagen)
 [![codecov](https://codecov.io/gh/feliixx/mgodatagen/branch/master/graph/badge.svg)](https://codecov.io/gh/feliixx/mgodatagen)
-[![GoDoc](https://godoc.org/github.com/feliixx/mgodatagen?status.svg)](http://godoc.org/github.com/feliixx/mgodatagen)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/feliixx/mgodatagen/datagen)](https://pkg.go.dev/github.com/feliixx/mgodatagen/datagen)
 
 # mgodatagen
 
