@@ -97,7 +97,7 @@ See **MongoDB documentation** for details on parameters:
 - indexes: [**indexes**](https://docs.mongodb.com/manual/reference/method/db.collection.createIndex/)
 - collation: [**collation**](https://docs.mongodb.com/manual/reference/bson-type-comparison-order/#collation)
 
-```JSON5
+```javascript
 [
   // first collection to create
   {
