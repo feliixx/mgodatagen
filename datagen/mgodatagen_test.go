@@ -751,6 +751,22 @@ func TestGenerate(t *testing.T) {
 			expectedNbDoc: 467,
 		},
 		{
+			name: "non-listenning port with uri",
+			options: datagen.Options{
+				Connection: datagen.Connection{
+					URI:    "mongodb://localhost:40000",
+					Timeout: 500 * time.Millisecond,
+				},
+				Configuration: datagen.Configuration{
+					ConfigFile: "testdata/empty.json",
+					BatchSize:  1000,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:     false,
+			errMsgRegex: regexp.MustCompile("^connection failed\n  cause.*"),
+		},
+		{
 			name: "non-listenning port",
 			options: datagen.Options{
 				Connection: datagen.Connection{
