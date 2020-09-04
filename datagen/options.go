@@ -11,7 +11,7 @@ type General struct {
 
 // Connection struct that stores info on connection from command line args
 type Connection struct {
-	URI            string `long:"uri" value-name:"<uri>" description:"connection string URI https://docs.mongodb.com/manual/\nreference/connection-string/\n URI take precedence over options username, password, authenticationMechanism"`
+	URI            string `long:"uri" value-name:"<uri>" description:"connection string URI. If present, takes precedence over all\nother options. For detail on URI format, see\n https://docs.mongodb.com/manual/reference/connection-string/"`
 	Host           string `short:"h" long:"host" value-name:"<hostname>" description:"mongodb host to connect to" default:"127.0.0.1"`
 	Port           string `long:"port" value-name:"<port>" description:"server port" default:"27017"`
 	UserName       string `short:"u" long:"username" value-name:"<username>" description:"username for authentification"`

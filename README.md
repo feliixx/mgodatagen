@@ -60,6 +60,9 @@ configuration:
   -b, --batchsize=<size>                       bulk insert batch size (default: 1000)
 
 connection infos:
+      --uri=<uri>                              connection string URI. If present, takes precedence over all
+                                               other options. For detail on URI format, see
+                                               https://docs.mongodb.com/manual/reference/connection-string/
   -h, --host=<hostname>                        mongodb host to connect to (default: 127.0.0.1)
       --port=<port>                            server port (default: 27017)
   -u, --username=<username>                    username for authentification
@@ -73,7 +76,6 @@ general:
       --help                                   show this help message
   -v, --version                                print the tool version and exit
   -q, --quiet                                  quieter output
-
 ```
 
 Only the configuration file need to be specified ( **-f | --file flag**). A basic usage of mgodatagen would be
