@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        mongodb-version: [4.0.19, 4.2.8, 4.4.0, 4.4.0-sharded]
+        mongodb-version: [4.0.21, 4.2.11, 4.4.2, 4.4.2-sharded]
 
     steps:
       - name: Check out code
@@ -42,14 +42,14 @@ jobs:
 
       - name: Export env variables
         run: |
-          echo "::set-env name=UBUNTU_VERSION::linux-x86_64-ubuntu$(lsb_release -r | tr -d '[:alpha:][:blank:][:punct:]')"
-          echo "::set-env name=MONGO_VERSION::$( echo ${{ matrix.mongodb-version }} | tr -d '[:alpha:][=-=]')"
+          echo "UBUNTU_VERSION=linux-x86_64-ubuntu$(lsb_release -r | tr -d '[:alpha:][:blank:][:punct:]')" >> $GITHUB_ENV
+          echo "MONGO_VERSION=$( echo ${{ matrix.mongodb-version }} | tr -d '[:alpha:][=-=]')" >> $GITHUB_ENV
 
       - name: Download MongoDB
         run: |
           wget -q http://downloads.mongodb.org/linux/mongodb-$UBUNTU_VERSION-$MONGO_VERSION.tgz
           tar xzvf mongodb-$UBUNTU_VERSION-$MONGO_VERSION.tgz
-          echo "::add-path::$PWD/mongodb-$UBUNTU_VERSION-$MONGO_VERSION/bin"
+          echo "$PWD/mongodb-$UBUNTU_VERSION-$MONGO_VERSION/bin" >> $GITHUB_PATH
           mkdir $PWD/db
 
       - name: Setup a sharded cluster

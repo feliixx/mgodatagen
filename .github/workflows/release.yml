@@ -26,11 +26,10 @@ jobs:
           tar -cvzf mgodatagen_linux_x86_64.tar.gz mgodatagen
 
       - name: Upload linux binary
-        uses: svenstaro/upload-release-action@v1-release
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: mgodatagen_linux_x86_64.tar.gz
-          asset_name: mgodatagen_linux_x86_64.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
 
@@ -41,11 +40,10 @@ jobs:
           tar -cvzf mgodatagen_macOSX_x86_64.tar.gz mgodatagen
 
       - name: Upload macOSX binary
-        uses: svenstaro/upload-release-action@v1-release
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: mgodatagen_macOSX_x86_64.tar.gz
-          asset_name: mgodatagen_macOSX_x86_64.tar.gz
           tag: ${{ github.ref }}
           overwrite: true
 
@@ -55,10 +53,9 @@ jobs:
           zip mgodatagen_windows_x86_64.zip mgodatagen.exe
 
       - name: Upload windows binary
-        uses: svenstaro/upload-release-action@v1-release
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: mgodatagen_windows_x86_64.zip
-          asset_name: mgodatagen_windows_x86_64.zip
           tag: ${{ github.ref }}
           overwrite: true
