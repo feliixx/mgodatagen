@@ -18,11 +18,13 @@ jobs:
         with:
           go-version: ${{ env.go-version }}
 
-      - name: Vet and lint code
-        run: |
-          go get -u -v golang.org/x/lint/golint
-          /home/runner/go/bin/golint -set_exit_status ./...
-          go vet ./...
+      - name: Vet code
+        run: go vet ./...
+
+      - name: Lint code
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.34
 
   build:
     needs: static_check
