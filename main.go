@@ -9,7 +9,13 @@ import (
 	"github.com/feliixx/mgodatagen/datagen"
 )
 
-const version = "0.8.4"
+// Version of mgodatagen. Should be linked via ld_flags when compiling
+// use this to set version to last known tag:
+//
+//  go build -ldflags "-X main.Version=$(git describe --tags $(git rev-list --tags --max-count=1))"
+//
+// use debug.ReadBuildInfo() when https://github.com/golang/go/issues/37475 is implemented
+var Version string
 
 func main() {
 	var options datagen.Options
@@ -26,7 +32,7 @@ func main() {
 	}
 
 	if options.Version {
-		fmt.Printf("mgodatagen version %s\n", version)
+		fmt.Printf("mgodatagen %s\n", Version)
 		os.Exit(0)
 	}
 
