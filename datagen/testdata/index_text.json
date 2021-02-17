@@ -1,0 +1,42 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "index_text",
+        "count": 32,
+        "content": {
+            "word": {
+                "type": "fromArray",
+                "in": [
+                    "Cafe",
+                    "Cofee",
+                    "Café",
+                    "Coffee Shopping",
+                    "coffee and cream",
+                    "Cafe con Leche"
+                ]
+            },
+            "language": {
+                "type": "fromArray",
+                "nullPercentage": 80,
+                "in": [
+                    "french",
+                    "english"
+                ]
+            }
+        },
+        "indexes": [
+            {
+                "name": "word_text",
+                "key": {
+                    "word": "text"
+                },
+                "weights": {
+                    "text": 1
+                },
+                "defaultLanguage": "french",
+                "languageOverride": "language",
+                "textIndexVersion": 3
+            }
+        ]
+    }
+]

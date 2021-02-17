@@ -592,16 +592,47 @@ func TestCollectionWithIndexes(t *testing.T) {
 		errMsgRegex *regexp.Regexp
 	}{
 		{
-			name:       "valid index",
-			configFile: "testdata/index.json",
+			name:       "basic index",
+			configFile: "testdata/index_basic.json",
 			indexes: []datagen.Index{
 				{
 					Name: "idx_1",
-					Key:  bson.M{"c32": 1},
 				},
 				{
 					Name: "idx_2",
-					Key:  bson.M{"c64": -1},
+				},
+			},
+			correct:     true,
+			errMsgRegex: nil,
+		},
+		{
+			name:       "TTL index",
+			configFile: "testdata/index_ttl.json",
+			indexes: []datagen.Index{
+				{
+					Name: "expireAt_1",
+				},
+			},
+			correct:     true,
+			errMsgRegex: nil,
+		},
+		{
+			name:       "text index",
+			configFile: "testdata/index_text.json",
+			indexes: []datagen.Index{
+				{
+					Name: "word_text",
+				},
+			},
+			correct:     true,
+			errMsgRegex: nil,
+		},
+		{
+			name:       "collation index",
+			configFile: "testdata/index_collation.json",
+			indexes: []datagen.Index{
+				{
+					Name: "collation_1",
 				},
 			},
 			correct:     true,
@@ -613,11 +644,9 @@ func TestCollectionWithIndexes(t *testing.T) {
 			indexes: []datagen.Index{
 				{
 					Name: "idx_1",
-					Key:  bson.M{"c32": 1},
 				},
 				{
 					Name: "idx_2",
-					Key:  bson.M{"invalid": "invalid"},
 				},
 			},
 			correct:     false,
@@ -639,9 +668,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 					t.Error(err)
 				}
 
-				var idx struct {
-					Name string
-				}
+				var idx datagen.Index
 
 				i := 0
 				for cursor.Next(context.Background()) {
@@ -835,7 +862,7 @@ func TestGenerate(t *testing.T) {
 			options: datagen.Options{
 				Connection: defaultConnOpts,
 				Configuration: datagen.Configuration{
-					ConfigFile: "testdata/index-first.json",
+					ConfigFile: "testdata/index_unique.json",
 					IndexFirst: true,
 					BatchSize:  1000,
 				},
@@ -849,7 +876,7 @@ func TestGenerate(t *testing.T) {
 			options: datagen.Options{
 				Connection: defaultConnOpts,
 				Configuration: datagen.Configuration{
-					ConfigFile: "testdata/index-first.json",
+					ConfigFile: "testdata/index_unique.json",
 					IndexFirst: true,
 					IndexOnly:  true,
 					BatchSize:  1000,

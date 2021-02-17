@@ -1,9 +1,20 @@
 [
     {
         "database": "datagen_it_test",
-        "collection": "index",
-        "count": 1,
-        "content": {},
+        "collection": "index_basic",
+        "count": 3,
+        "content": {
+            "c32": {
+                "type": "int",
+                "minInt": 0,
+                "maxInt": 10
+            },
+            "c64": {
+                "type": "long",
+                "minLong": 0,
+                "maxLong": 10
+            }
+        },
         "indexes": [
             {
                 "name": "idx_1",

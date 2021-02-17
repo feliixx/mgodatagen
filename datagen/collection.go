@@ -38,20 +38,22 @@ type Index struct {
 	Name                    string            `bson:"name"`
 	Key                     bson.M            `bson:"key"`
 	Unique                  bool              `bson:"unique,omitempty"`
-	DropDups                bool              `bson:"dropDups,omitempty"`
-	Background              bool              `bson:"background,omitempty"`
 	Sparse                  bool              `bson:"sparse,omitempty"`
 	Bits                    int               `bson:"bits,omitempty"`
 	Min                     float64           `bson:"min,omitempty"`
 	Max                     float64           `bson:"max,omitempty"`
 	BucketSize              float64           `bson:"bucketSize,omitempty"`
-	ExpireAfter             int               `bson:"expireAfterSeconds,omitempty"`
+	ExpireAfter             int               `bson:"expireAfterSeconds,omitempty" json:"expireAfterSeconds"`
 	Weights                 bson.M            `bson:"weights,omitempty"`
 	DefaultLanguage         string            `bson:"default_language,omitempty"`
 	LanguageOverride        string            `bson:"language_override,omitempty"`
 	TextIndexVersion        int               `bson:"textIndexVersion,omitempty"`
 	PartialFilterExpression bson.M            `bson:"partialFilterExpression,omitempty"`
 	Collation               options.Collation `bson:"collation,omitempty"`
+
+	// ignored from mongodb 4.2+
+	Background bool `bson:"background,omitempty"`
+	DropDups   bool `bson:"dropDups,omitempty"`
 }
 
 // ShardingConfig struct that holds information to shard the collection
