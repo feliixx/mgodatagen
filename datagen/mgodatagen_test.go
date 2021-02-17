@@ -163,7 +163,7 @@ func TestProgressOutput(t *testing.T) {
 		t.Error(err)
 	}
 
-	b, err := ioutil.ReadFile("testdata/output.txt")
+	b, err := ioutil.ReadFile("testdata/output/output.txt")
 	if err != nil {
 		t.Error(err)
 	}
@@ -180,7 +180,7 @@ func TestProgressOutput(t *testing.T) {
 
 func TestInvalidGeneratorOutput(t *testing.T) {
 
-	configFile := "testdata/invalid-generator.json"
+	configFile := "testdata/invalid/invalid-generator.json"
 	opts := defaultOpts(configFile)
 	opts.Quiet = false
 
@@ -203,7 +203,7 @@ invalid generator for field '_id'
 
 func TestInvalidAggregatorOutput(t *testing.T) {
 
-	configFile := "testdata/invalid-aggregator.json"
+	configFile := "testdata/invalid/invalid-aggregator.json"
 	opts := defaultOpts(configFile)
 	opts.Quiet = false
 
@@ -530,7 +530,7 @@ func TestCollectionCompression(t *testing.T) {
 		},
 		{
 			name:             "invalid compressor",
-			options:          defaultOpts("testdata/invalid-compression.json"),
+			options:          defaultOpts("testdata/invalid/invalid-compression.json"),
 			compressionLevel: "",
 			errMsgRegex:      regexp.MustCompile("^coulnd't create collection with compression level.*\n  cause.*"),
 			correct:          false,
@@ -609,7 +609,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 		},
 		{
 			name:       "invalid index",
-			configFile: "testdata/invalid-index.json",
+			configFile: "testdata/invalid/invalid-index.json",
 			indexes: []datagen.Index{
 				{
 					Name: "idx_1",
@@ -754,7 +754,7 @@ func TestGenerate(t *testing.T) {
 			name: "non-listenning port with uri",
 			options: datagen.Options{
 				Connection: datagen.Connection{
-					URI:    "mongodb://localhost:40000",
+					URI:     "mongodb://localhost:40000",
 					Timeout: 500 * time.Millisecond,
 				},
 				Configuration: datagen.Configuration{
@@ -805,8 +805,8 @@ func TestGenerate(t *testing.T) {
 			options: datagen.Options{
 				Connection: datagen.Connection{
 					AuthMechanism:  "MONGODB-X509",
-					TLSCertKeyFile: "testdata/output.txt",
-					TLSCAFile:      "testdata/output.txt",
+					TLSCertKeyFile: "testdata/output/output.txt",
+					TLSCAFile:      "testdata/output/output.txt",
 					Timeout:        500 * time.Millisecond,
 				},
 				Configuration: datagen.Configuration{
@@ -820,13 +820,13 @@ func TestGenerate(t *testing.T) {
 		},
 		{
 			name:        "bulk insert failed",
-			options:     defaultOpts("testdata/invalid-content.json"),
+			options:     defaultOpts("testdata/invalid/invalid-content.json"),
 			correct:     false,
 			errMsgRegex: regexp.MustCompile("^exception occurred during bulk insert.*\n  cause.*\n Try.*"),
 		},
 		{
 			name:        "error unknown field",
-			options:     defaultOpts("testdata/invalid-content-unknown-field.json"),
+			options:     defaultOpts("testdata/invalid/invalid-content-unknown-field.json"),
 			correct:     false,
 			errMsgRegex: regexp.MustCompile("^error in configuration file.*\n\n\t\tjson: unknown field.*"),
 		},
@@ -872,7 +872,7 @@ func TestGenerate(t *testing.T) {
 	}{
 		{
 			name:                    "wrong shardconfig",
-			options:                 defaultOpts("testdata/invalid-shardconfig.json"),
+			options:                 defaultOpts("testdata/invalid/invalid-shardconfig.json"),
 			correctWithShardedDB:    false,
 			correctWithStandaloneDB: false,
 			errMsgRegexShardedDB:    regexp.MustCompile("^wrong value for 'shardConfig.shardCollection'.*"),
@@ -896,7 +896,7 @@ func TestGenerate(t *testing.T) {
 		},
 		{
 			name:                    "empty shard key",
-			options:                 defaultOpts("testdata/invalid-shardconfig-emptykey.json"),
+			options:                 defaultOpts("testdata/invalid/invalid-shardconfig-emptykey.json"),
 			correctWithShardedDB:    false,
 			correctWithStandaloneDB: false,
 			errMsgRegexShardedDB:    regexp.MustCompile("^wrong value for 'shardConfig.key'.*"),
