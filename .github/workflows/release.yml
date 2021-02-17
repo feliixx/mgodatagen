@@ -23,7 +23,7 @@ jobs:
 
       - name: Create linux binary
         run: |
-          env GOOS=linux GOARCH=amd64 go build -ldflags=$LD_FLAGS -o mgodatagen
+          env GOOS=linux GOARCH=amd64 go build -ldflags="$LD_FLAGS" -o mgodatagen
           tar -cvzf mgodatagen_linux_x86_64.tar.gz mgodatagen
 
       - name: Upload linux binary
@@ -37,7 +37,7 @@ jobs:
       - name: Create macOSX binary
         run: |
           rm -f mgodatagen
-          env GOOS=darwin GOARCH=amd64 go build -ldflags=$LD_FLAGS -o mgodatagen
+          env GOOS=darwin GOARCH=amd64 go build -ldflags="$LD_FLAGS" -o mgodatagen
           tar -cvzf mgodatagen_macOSX_x86_64.tar.gz mgodatagen
 
       - name: Upload macOSX binary
@@ -50,7 +50,7 @@ jobs:
 
       - name: Create windows binary
         run: |
-          env GOOS=windows GOARCH=amd64 go build -ldflags=$LD_FLAGS -o mgodatagen.exe
+          env GOOS=windows GOARCH=amd64 go build -ldflags="$LD_FLAGS" -o mgodatagen.exe
           zip mgodatagen_windows_x86_64.zip mgodatagen.exe
 
       - name: Upload windows binary
