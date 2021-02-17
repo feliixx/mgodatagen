@@ -1,0 +1,23 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "index_ttl",
+        "count": 18,
+        "content": {
+            "expireAt": {
+                "type": "date",
+                "startDate": "2020-01-01T22:00:00+00:00",
+                "endDate": "2020-01-05T22:00:00+00:00"
+            }
+        },
+        "indexes": [
+            {
+                "name": "expireAt_1",
+                "key": {
+                    "expireAt": 1
+                },
+                "expireAfterSeconds": 0
+            }
+        ]
+    }
+]

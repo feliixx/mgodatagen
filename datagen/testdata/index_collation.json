@@ -1,0 +1,31 @@
+[
+    {
+        "database": "datagen_it_test",
+        "collection": "index_collation",
+        "count": 10,
+        "content": {
+            "category": {
+                "type": "string",
+                "minLength": 5,
+                "maxLength": 10
+            }
+        },
+        "indexes": [
+            {
+                "name": "collation_1",
+                "key": {
+                    "category": 1
+                },
+                "collation": {
+                    "locale": "fr",
+                    "strength": 3,
+                    "backwards": false,
+                    "normalization": false,
+                    "numericOrdering": false,
+                    "alternate": "shifted",
+                    "caseLevel": false
+                }
+            }
+        ]
+    }
+]

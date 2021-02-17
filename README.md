@@ -128,14 +128,15 @@ See **MongoDB documentation** for details on parameters:
       "numInitialChunks": `int`,             // optional
 
       "collation": {       // optional
-        "locale":          `string`,
-        "caseLevel":       `boolean`,
-        "caseFirst":       `string`,
-        "strength":        `int`,
-        "numericOrdering": `boolean`,
-        "alternate":       `string`,
-        "maxVariable":     `string`,
-        "backwards":       `boolean`
+        "locale":          `string`,         // required
+        "caseLevel":       `boolean`,        // optional
+        "caseFirst":       `string`,         // optional
+        "strength":        `int`,            // optional
+        "numericOrdering": `boolean`,        // optional
+        "alternate":       `string`,         // optional
+        "maxVariable":     `string`,         // optional 
+        "backwards":       `boolean`,        // optional
+        "normalization":   `string`          // optional
       }
    },
 
@@ -146,7 +147,6 @@ See **MongoDB documentation** for details on parameters:
          "key":                `object`,  // required, index key, eg: {"name": 1}
          "sparse":             `boolean`, // optional, default: false
          "unique":             `boolean`, // optional, default: false
-         "background":         `boolean`, // optional, default: false
          "bits":               `int`,     // optional, for 2d indexes only, default: 26
          "min":                `double`,  // optional, for 2d indexes only, default: -180.0
          "max":                `double`,  // optional, for 2d index only, default: 180.0
@@ -159,14 +159,15 @@ See **MongoDB documentation** for details on parameters:
          "partialFilterExpression": `object`, // optional
 
          "collation": {       // optional
-           "locale":          `string`,
-           "caseLevel":       `boolean`,
-           "caseFirst":       `string`,
-           "strength":        `int`,
-           "numericOrdering": `boolean`,
-           "alternate":       `string`,
-           "maxVariable":     `string`,
-           "backwards":       `boolean`
+           "locale":          `string`,       // required 
+           "caseLevel":       `boolean`,      // optional
+           "caseFirst":       `string`,       // optional
+           "strength":        `int`,          // optional
+           "numericOrdering": `boolean`,      // optional
+           "alternate":       `string`,       // optional
+           "maxVariable":     `string`,       // optional
+           "backwards":       `boolean`,      // optional
+           "normalization":   `string`        // optional
          }
    ]
   },
