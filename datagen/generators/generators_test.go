@@ -38,6 +38,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 		Constant                int32              `bson:"constant"`
 		AutoIncrementInt32      int32              `bson:"autoIncrementInt32"`
 		AutoIncrementInt64      int64              `bson:"autoIncrementInt64"`
+		AutoIncrementString     string             `bson:"autoIncrementString"`
 		Date                    time.Time          `bson:"date"`
 		BinaryData              []byte             `bson:"binaryData"`
 		ArrayInt32              []int32            `bson:"arrayInt32"`

@@ -16,7 +16,7 @@ Try it online: [**mongoplayground.net**](https://mongoplayground.net/)
 - Aggregate data across collections
 - Create sharded collection
 - Create collections in multiple databases
-- Cross-plateform
+- Cross-platform
 
 ![Demo](demo.gif)
 
@@ -437,15 +437,17 @@ Add the same value to each document.
 
 ### Autoincrement
 
-Generates an autoincremented value (type `<long>` or `<int>`).
+Generates an autoincremented value (type `<long>`, `<int>` or `<string>`).
 
 ```JSON5
 "fieldName": {
     "type": "autoincrement",    // required
     "nullPercentage": `int`,    // optional
-    "autoType":       `string`, // required, can be `int` or `long`
+    "autoType":       `long`, // required, can be `int`, `long` or `string`
     "startLong":      `long`,   // optional, start value if autoType = long
-    "startInt":       `int`     // optional, start value if autoType = int
+    "startInt":       `int`,     // optional, start value if autoType = int
+    "prefix":         `string`, // optional, prefix if autoType = string
+    "postfix":        `string`  // optional, postfix if autoType = string
 }
 ```
 
@@ -545,7 +547,7 @@ and that the generator for collection `second` is:
   "content": {
     "_id": {
       "type": "autoincrement",
-      "autoType": "int"
+      "autoType": "int",
       "startInt": 0
     },
     "count": {
@@ -606,7 +608,7 @@ and that the generator for collection `second` is:
   "content": {
     "_id": {
       "type": "autoincrement",
-      "autoType": "int"
+      "autoType": "int",
       "startInt": 0
     },
     "count": {
@@ -671,7 +673,7 @@ and that the generator for collection `second` is:
   "content": {
     "_id": {
       "type": "autoincrement",
-      "autoType": "int"
+      "autoType": "int",
       "startInt": 0
     },
     "count": {

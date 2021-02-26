@@ -69,6 +69,13 @@
           "autoType": "long",
           "startLong": 0
         },
+        "customers": {
+          "type": "autoincrement",
+          "autoType": "string",
+          "startLong": 3,
+          "prefix": "customer-",
+          "postfix": "@example.com"
+        },
         "pos": {
           "type": "position"
         },

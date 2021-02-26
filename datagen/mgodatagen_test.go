@@ -264,6 +264,7 @@ func TestCollectionContent(t *testing.T) {
 		Constant                int32              `bson:"constant"`
 		AutoIncrementInt32      int32              `bson:"autoIncrementInt32"`
 		AutoIncrementInt64      int64              `bson:"autoIncrementInt64"`
+		AutoIncrementString     string             `bson:"autoIncrementString"`
 		Date                    time.Time          `bson:"date"`
 		BinaryData              []byte             `bson:"binaryData"`
 		ArrayInt32              []int32            `bson:"arrayInt32"`
@@ -342,6 +343,10 @@ func TestCollectionContent(t *testing.T) {
 		if r.AutoIncrementInt64 != int64(i+18) {
 			t.Errorf("'AutoIncrementInt64' field should be %d, but was %d", int64(i+18), r.AutoIncrementInt64)
 		}
+		expected := fmt.Sprintf("%s%d%s", "customer", i+3, "-phone")
+		if r.AutoIncrementString != expected {
+			t.Errorf("'AutoIncrementString' field should be %s, but was %s", expected, r.AutoIncrementString)
+		}
 
 		dt := expectedDate.Sub(r.Date)
 		delta := time.Second * 60 * 60 * 24 * 365 * 4
@@ -389,6 +394,7 @@ func TestCollectionContent(t *testing.T) {
 		"arrayInt32":              11,
 		"autoIncrementInt32":      1000,
 		"autoIncrementInt64":      1000,
+		"autoIncrementString":     1000,
 		"boolean":                 2,
 		"float":                   1000,
 		"position":                2000,

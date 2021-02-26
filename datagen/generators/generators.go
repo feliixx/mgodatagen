@@ -10,6 +10,7 @@ package generators
 
 import (
 	"crypto/md5"
+	"fmt"
 	"os"
 	"strconv"
 	"sync/atomic"
@@ -410,6 +411,22 @@ type autoIncrementGenerator64 struct {
 
 func (g *autoIncrementGenerator64) Value() {
 	g.buffer.Write(int64Bytes(g.counter))
+	g.counter++
+}
+
+// Generator for creating auto-incremented string
+type autoIncrementGeneratorString struct {
+	base
+	prefix  string
+	postfix string
+	counter int64
+}
+
+func (g *autoIncrementGeneratorString) Value() {
+	value := fmt.Sprintf("%s%d%s", g.prefix, g.counter, g.postfix)
+	g.buffer.Write(uint32Bytes(uint32(len(value) + 1)))
+	g.buffer.Write([]byte(value))
+	g.buffer.WriteSingleByte(byte(0))
 	g.counter++
 }
 

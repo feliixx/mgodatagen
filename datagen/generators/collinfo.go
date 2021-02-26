@@ -112,6 +112,10 @@ type Config struct {
 	Field string `json:"field"`
 	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
 	Query bson.M `json:"query"`
+	// For `autoincrement` only
+	Prefix string `json:"prefix"`
+	// For `autoincrement` only
+	Postfix string `json:"postfix"`
 }
 
 // available generator types, see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
@@ -256,7 +260,7 @@ var mapTypes = map[string]bsontype.Type{
 	TypeFromArray:     bson.TypeNull, // can be of any bson type
 	TypeConstant:      bson.TypeNull, // can be of any bson type
 	TypeRef:           bson.TypeNull, // can be of any bson type
-	TypeAutoincrement: bson.TypeNull, // type bson.ElementInt32 or bson.ElementInt64
+	TypeAutoincrement: bson.TypeNull, // type bson.ElementInt32, bson.ElementInt64 or bson.string
 	TypeBinary:        bson.TypeBinary,
 	TypeDate:          bson.TypeDateTime,
 	TypeUUID:          bson.TypeString,
@@ -272,7 +276,7 @@ var fakerMethods = map[string]func() string{
 	// Old manrevu/faker values are kept, but non documented
 	// in order to avoid breaking previous working config
 	// some names are exact duplicate of gofakeit methods, so
-	// no need to add thme to the list. Cooncerned method below:
+	// no need to add them to the list. Concerned method below:
 	//
 	// "CompanySuffix"
 	// "Country"
@@ -653,6 +657,14 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			return &autoIncrementGenerator64{
 				base:    base,
 				counter: config.StartLong,
+			}, nil
+		case TypeString:
+			base.bsonType = bson.TypeString
+			return &autoIncrementGeneratorString{
+				base:    base,
+				counter: config.StartLong,
+				prefix:  config.Prefix,
+				postfix: config.Postfix,
 			}, nil
 		default:
 			return nil, fmt.Errorf("invalid type '%s'", config.Type)
