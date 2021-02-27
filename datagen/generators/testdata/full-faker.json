@@ -320,9 +320,9 @@
         "type":  "faker",
         "method":  "StateAbr"
       },
-      "MehtodStreet": {
+      "Street": {
         "type":  "faker",
-        "method":  "MehtodStreet"
+        "method":  "Street"
       },
       "StreetName":  {
         "type":  "faker",

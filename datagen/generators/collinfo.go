@@ -224,7 +224,7 @@ const (
 	MethodSafeColor               = "SafeColor"
 	MethodState                   = "State"
 	MethodStateAbr                = "StateAbr"
-	MethodStreet                  = "MehtodStreet"
+	MethodStreet                  = "Street"
 	MethodStreetName              = "StreetName"
 	MethodStreetNumber            = "StreetNumber"
 	MethodStreetPrefix            = "StreetPrefix"
@@ -272,7 +272,7 @@ var fakerMethods = map[string]func() string{
 	// Old manrevu/faker values are kept, but non documented
 	// in order to avoid breaking previous working config
 	// some names are exact duplicate of gofakeit methods, so
-	// no need to add thme to the list. Cooncerned method below:
+	// no need to add them to the list. Concerned method below:
 	//
 	// "CompanySuffix"
 	// "Country"
