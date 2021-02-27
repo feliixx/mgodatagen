@@ -148,9 +148,9 @@
         "type":  "faker",
         "method":  "EmojiTag"
       },
-      "Extension":  {
+      "FileExtension":  {
         "type":  "faker",
-        "method":  "Extension"
+        "method":  "FileExtension"
       },
       "FarmAnimal": {
         "type":  "faker",
@@ -164,9 +164,9 @@
         "type":  "faker",
         "method":  "FirstName"
       },
-      "FuelType":  {
+      "CarFuelType":  {
         "type":  "faker",
-        "method":  "FuelType"
+        "method":  "CarFuelType"
       },
       "Gender": {
         "type":  "faker",
@@ -184,9 +184,9 @@
         "type":  "faker",
         "method":  "HackerAdjective"
       },
-      "HackerIngverb": {
+      "HackeringVerb": {
         "type":  "faker",
-        "method":  "HackerIngverb"
+        "method":  "HackeringVerb"
       },
       "HackerNoun":  {
         "type":  "faker",
@@ -248,9 +248,9 @@
         "type":  "faker",
         "method":  "MacAddress"
       },
-      "MimeType": {
+      "FileMimeType": {
         "type":  "faker",
-        "method":  "MimeType"
+        "method":  "FileMimeType"
       },
       "Month":  {
         "type":  "faker",
@@ -352,9 +352,9 @@
         "type":  "faker",
         "method":  "TimeZoneFull"
       },
-      "TransmissionGearType": {
+      "CarTransmissionType": {
         "type":  "faker",
-        "method":  "TransmissionGearType"
+        "method":  "CarTransmissionType"
       },
       "URL":  {
         "type":  "faker",
@@ -368,9 +368,9 @@
         "type":  "faker",
         "method":  "Username"
       },
-      "VehicleType": {
+      "CarType": {
         "type":  "faker",
-        "method":  "VehicleType"
+        "method":  "CarType"
       },
       "WeekDay":  {
         "type":  "faker",

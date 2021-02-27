@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/MichaelTJones/pcg"
-	"github.com/brianvoe/gofakeit/v4"
+	"github.com/brianvoe/gofakeit/v6"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
@@ -181,16 +181,16 @@ const (
 	MethodEmojiCategory           = "EmojiCategory"
 	MethodEmojiDescription        = "EmojiDescription"
 	MethodEmojiTag                = "EmojiTag"
-	MethodExtension               = "Extension"
+	MethodFileExtension           = "FileExtension"
 	MethodFarmAnimal              = "FarmAnimal"
 	MethodFirefoxUserAgent        = "FirefoxUserAgent"
 	MethodFirstName               = "FirstName"
-	MethodFuelType                = "FuelType"
+	MethodCarFuelType             = "CarFuelType"
 	MethodGender                  = "Gender"
 	MethodHTTPMethod              = "HTTPMethod"
 	MethodHackerAbbreviation      = "HackerAbbreviation"
 	MethodHackerAdjective         = "HackerAdjective"
-	MethodHackerIngverb           = "HackerIngverb"
+	MethodHackeringVerb           = "HackeringVerb"
 	MethodHackerNoun              = "HackerNoun"
 	MethodHackerPhrase            = "HackerPhrase"
 	MethodHackerVerb              = "HackerVerb"
@@ -206,7 +206,7 @@ const (
 	MethodLastName                = "LastName"
 	MethodLetter                  = "Letter"
 	MethodMacAddress              = "MacAddress"
-	MethodMimeType                = "MimeType"
+	MethodFileMimeType            = "FileMimeType"
 	MethodMonth                   = "Month"
 	MethodName                    = "Name"
 	MethodNamePrefix              = "NamePrefix"
@@ -232,11 +232,11 @@ const (
 	MethodTimeZone                = "TimeZone"
 	MethodTimeZoneAbv             = "TimeZoneAbv"
 	MethodTimeZoneFull            = "TimeZoneFull"
-	MethodTransmissionGearType    = "TransmissionGearType"
+	MethodCarTransmissionType     = "CarTransmissionType"
 	MethodURL                     = "URL"
 	MethodUserAgent               = "UserAgent"
 	MethodUsername                = "Username"
-	MethodVehicleType             = "VehicleType"
+	MethodCarType                 = "CarType"
 	MethodWeekDay                 = "WeekDay"
 	MethodWord                    = "Word"
 	MethodZip                     = "Zip"
@@ -342,16 +342,16 @@ var fakerMethods = map[string]func() string{
 	MethodEmojiCategory:           gofakeit.EmojiCategory,
 	MethodEmojiDescription:        gofakeit.EmojiDescription,
 	MethodEmojiTag:                gofakeit.EmojiTag,
-	MethodExtension:               gofakeit.Extension,
+	MethodFileExtension:           gofakeit.FileExtension,
 	MethodFarmAnimal:              gofakeit.FarmAnimal,
 	MethodFirefoxUserAgent:        gofakeit.FirefoxUserAgent,
 	MethodFirstName:               gofakeit.FirstName,
-	MethodFuelType:                gofakeit.FuelType,
+	MethodCarFuelType:             gofakeit.CarFuelType,
 	MethodGender:                  gofakeit.Gender,
 	MethodHTTPMethod:              gofakeit.HTTPMethod,
 	MethodHackerAbbreviation:      gofakeit.HackerAbbreviation,
 	MethodHackerAdjective:         gofakeit.HackerAdjective,
-	MethodHackerIngverb:           gofakeit.HackerIngverb,
+	MethodHackeringVerb:           gofakeit.HackeringVerb,
 	MethodHackerNoun:              gofakeit.HackerNoun,
 	MethodHackerPhrase:            gofakeit.HackerPhrase,
 	MethodHackerVerb:              gofakeit.HackerVerb,
@@ -367,7 +367,7 @@ var fakerMethods = map[string]func() string{
 	MethodLastName:                gofakeit.LastName,
 	MethodLetter:                  gofakeit.Letter,
 	MethodMacAddress:              gofakeit.MacAddress,
-	MethodMimeType:                gofakeit.MimeType,
+	MethodFileMimeType:            gofakeit.FileMimeType,
 	MethodMonth:                   gofakeit.Month,
 	MethodName:                    gofakeit.Name,
 	MethodNamePrefix:              gofakeit.NamePrefix,
@@ -393,11 +393,11 @@ var fakerMethods = map[string]func() string{
 	MethodTimeZone:                gofakeit.TimeZone,
 	MethodTimeZoneAbv:             gofakeit.TimeZoneAbv,
 	MethodTimeZoneFull:            gofakeit.TimeZoneFull,
-	MethodTransmissionGearType:    gofakeit.TransmissionGearType,
+	MethodCarTransmissionType:     gofakeit.CarTransmissionType,
 	MethodURL:                     gofakeit.URL,
 	MethodUserAgent:               gofakeit.UserAgent,
 	MethodUsername:                gofakeit.Username,
-	MethodVehicleType:             gofakeit.VehicleType,
+	MethodCarType:                 gofakeit.CarType,
 	MethodWeekDay:                 gofakeit.WeekDay,
 	MethodWord:                    gofakeit.Word,
 	MethodZip:                     gofakeit.Zip,
