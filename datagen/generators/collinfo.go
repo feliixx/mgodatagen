@@ -291,21 +291,35 @@ var fakerMethods = map[string]func() string{
 	// "StreetSuffix"
 	// "URL"
 
-	"CellPhoneNumber":             gofakeit.Phone,
-	"CityPrefix":                  gofakeit.City,
-	"CitySuffix":                  gofakeit.City,
-	"CompanyBs":                   gofakeit.BS,
-	"CompanyCatchPhrase":          gofakeit.HackerPhrase,
-	"CompanyName":                 gofakeit.Company,
-	"DomainWord":                  gofakeit.DomainName,
-	"FreeEmail":                   gofakeit.Email,
-	"PhoneNumber":                 gofakeit.Phone,
-	"PostCode":                    gofakeit.Zip,
-	"SafeEmail":                   gofakeit.Email,
-	"SecondaryAddress":            gofakeit.StreetName,
-	"StateAbbr":                   gofakeit.StateAbr,
-	"StreetAddress":               gofakeit.StreetName,
-	"UserName":                    gofakeit.Username,
+	"CellPhoneNumber":    gofakeit.Phone,
+	"CityPrefix":         gofakeit.City,
+	"CitySuffix":         gofakeit.City,
+	"CompanyBs":          gofakeit.BS,
+	"CompanyCatchPhrase": gofakeit.HackerPhrase,
+	"CompanyName":        gofakeit.Company,
+	"DomainWord":         gofakeit.DomainName,
+	"FreeEmail":          gofakeit.Email,
+	"PhoneNumber":        gofakeit.Phone,
+	"PostCode":           gofakeit.Zip,
+	"SafeEmail":          gofakeit.Email,
+	"SecondaryAddress":   gofakeit.StreetName,
+	"StateAbbr":          gofakeit.StateAbr,
+	"StreetAddress":      gofakeit.StreetName,
+	"UserName":           gofakeit.Username,
+
+	// old gofakeit method, kept for backawrd compatibility
+	// but undocuemented
+
+	"MimeType":             gofakeit.FileMimeType,
+	"Extension":            gofakeit.FileExtension,
+	"FuelType":             gofakeit.CarFuelType,
+	"HackerIngverb":        gofakeit.HackerVerb,
+	"MehtodStreet":         gofakeit.Street,
+	"TransmissionGearType": gofakeit.CarTransmissionType,
+	"VehicleType":          gofakeit.CarType,
+
+	// current documented method
+
 	MethodAnimal:                  gofakeit.Animal,
 	MethodAnimalType:              gofakeit.AnimalType,
 	MethodBS:                      gofakeit.BS,
