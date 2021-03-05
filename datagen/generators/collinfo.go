@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/MichaelTJones/pcg"
@@ -100,12 +99,7 @@ type Config struct {
 	// For `faker` type only. Method to use
 	Method string `json:"method"`
 	// for `stringFromParts` type only. Generators used to create the string
-	Parts []Config `json:"parts"            "parts": {
-		"type": "stringFromParts",
-		"parts": [
-			
-		]
-	}`
+	Parts []Config `json:"parts"`
 	// For `ref` type only. Used to retrieve the array storing the value
 	// for this field
 	ID int `json:"id"`
@@ -469,252 +463,84 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		if size > ci.Count {
 			size = ci.Count
 		}
+		// set to 0 to avoid infinite loop when calling ci.preGenerate()
 		config.MaxDistinctValue = 0
 
 		values, bsonType, err := ci.preGenerate(key, config, size)
 		if err != nil {
 			return nil, err
 		}
-
 		base.bsonType = bsonType
-		return &fromArrayGenerator{
-			base:  base,
-			array: values,
-			size:  size,
-			index: 0,
-		}, nil
+
+		return newFromArrayGeneratorWithPregeneratedValues(base, values, false)
 	}
 
 	switch config.Type {
+
 	case TypeString:
-		if config.MinLength < 0 || config.MinLength > config.MaxLength {
-			return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'")
-		}
-		if config.Unique {
-			values, err := uniqueValues(ci.Count, config.MaxLength)
-			if err != nil {
-				return nil, err
-			}
-			return &fromArrayGenerator{
-				base:  base,
-				array: values,
-				size:  ci.Count,
-				index: 0,
-			}, nil
-		}
-		return &stringGenerator{
-			base:      base,
-			minLength: uint32(config.MinLength),
-			maxLength: uint32(config.MaxLength),
-		}, nil
+		return newStringGenerator(config, base, ci.Count)
 
 	case TypeInt:
-		if config.MaxInt < config.MinInt {
-			return nil, errors.New("make sure that 'maxInt' >= 'minInt'")
-		}
-		if config.MinInt == config.MaxInt {
-			return constGeneratorFromValue(base, config.MaxInt)
-		}
-		return &int32Generator{
-			base: base,
-			min:  config.MinInt,
-			max:  config.MaxInt + 1,
-		}, nil
+		return newIntGenerator(config, base)
 
 	case TypeLong:
-		if config.MaxLong < config.MinLong {
-			return nil, errors.New("make sure that 'maxLong' >= 'minLong'")
-		}
-		if config.MinLong == config.MaxLong {
-			return constGeneratorFromValue(base, config.MaxLong)
-		}
-		return &int64Generator{
-			base:  base,
-			min:   config.MinLong,
-			max:   config.MaxLong + 1,
-			pcg64: ci.pcg64,
-		}, nil
+		return newLongGenerator(config, base, ci.pcg64)
 
 	case TypeDouble:
-		if config.MaxDouble < config.MinDouble {
-			return nil, errors.New("make sure that 'maxDouble' >= 'minDouble'")
-		}
-		if config.MinDouble == config.MaxDouble {
-			return constGeneratorFromValue(base, config.MaxDouble)
-		}
-		return &float64Generator{
-			base:   base,
-			mean:   config.MinDouble,
-			stdDev: (config.MaxDouble - config.MinDouble) / 2,
-			pcg64:  ci.pcg64,
-		}, nil
+		return newDoubleGenerator(config, base, ci.pcg64)
 
 	case TypeDecimal:
 		if !ci.versionAtLeast(3, 4) {
 			return nil, errors.New("decimal type (bson decimal128) requires mongodb 3.4 at least")
 		}
-		return &decimal128Generator{base: base, pcg64: ci.pcg64}, nil
+		return newDecimalGenerator(base, ci.pcg64)
 
 	case TypeBoolean:
-		return &boolGenerator{base: base}, nil
+		return newBoolGenerator(base)
 
 	case TypeObjectID:
-		return &objectIDGenerator{base: base}, nil
+		return newObjectIDGenerator(base)
 
 	case TypeArray:
-		if config.Size <= 0 {
-			return nil, errors.New("make sure that 'size' >= 0")
-		}
-		g, err := ci.newGenerator(buffer, "", config.ArrayContent)
-		if err != nil {
-			return nil, err
-		}
-
-		// if the generator is of type FromArrayGenerator,
-		// use the type of the first Element as global type
-		// for the generator
-		// => fromArrayGenerator currently has to contain object of
-		// the same type, otherwise bson object will be incorrect
-		switch g := g.(type) {
-		case *fromArrayGenerator:
-			// if array is generated with preGenerate(), this step is not needed
-			if !g.doNotTruncate {
-				g.bsonType = bsontype.Type(g.array[0][0])
-				// do not write first 3 bytes, ie
-				// bson type, byte("k"), byte(0) to avoid conflict with
-				// array index, because index is the key
-				for i := range g.array {
-					g.array[i] = g.array[i][3:]
-				}
-			}
-		case *constGenerator:
-			g.bsonType = bsontype.Type(g.val[0])
-			// 2: 1 for bson type, and 1 for terminating byte 0x00 after element key
-			g.val = g.val[2+len(g.Key()):]
-		default:
-		}
-
-		return &arrayGenerator{
-			base:      base,
-			size:      config.Size,
-			generator: g,
-		}, nil
+		return newArrayGenerator(config, base, ci, buffer)
 
 	case TypeObject:
-		emg := &embeddedObjectGenerator{
-			base:       base,
-			generators: make([]Generator, 0, len(config.ObjectContent)),
-		}
-		for k, v := range config.ObjectContent {
-			g, err := ci.newGenerator(buffer, k, &v)
-			if err != nil {
-				return nil, err
-			}
-			if g != nil {
-				emg.generators = append(emg.generators, g)
-			}
-		}
-		return emg, nil
+		return newEmbededGenerator(config, base, ci, buffer)
 
 	case TypeFromArray:
-		if len(config.In) == 0 {
-			return nil, errors.New("'in' array can't be null or empty")
-		}
-		array := make([][]byte, len(config.In))
-		arrayStr := make([]string, len(config.In))
-		for i, v := range config.In {
-			raw, err := bsonValue(key, v)
-			if err != nil {
-				return nil, err
-			}
-			array[i] = raw
-			arrayStr[i] = fmt.Sprint(v)
-		}
-		return &fromArrayGenerator{
-			base:           base,
-			array:          array,
-			originStrArray: arrayStr,
-			size:           len(config.In),
-			index:          0,
-			randomOrder:    config.RandomOrder,
-		}, nil
+		return newFromArrayGenerator(config, base)
 
 	case TypeBinary:
-		if config.MinLength < 0 || config.MinLength > config.MaxLength {
-			return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' < 'maxLength'")
-		}
-		return &binaryDataGenerator{
-			base:      base,
-			maxLength: uint32(config.MaxLength),
-			minLength: uint32(config.MinLength),
-		}, nil
+		return newBinaryGenerator(config, base)
 
 	case TypeDate:
-		if config.StartDate.Unix() > config.EndDate.Unix() {
-			return nil, errors.New("make sure that 'startDate' < 'endDate'")
-		}
-		return &dateGenerator{
-			base:      base,
-			startDate: uint64(config.StartDate.Unix()),
-			delta:     uint64(config.EndDate.Unix() - config.StartDate.Unix()),
-			pcg64:     ci.pcg64,
-		}, nil
+		return newDateGenerator(config, base, ci.pcg64)
 
 	case TypePosition:
-		return &positionGenerator{base: base, pcg64: ci.pcg64}, nil
+		return newPositionGenerator(base, ci.pcg64)
 
 	case TypeConstant:
-		return constGeneratorFromValue(base, config.ConstVal)
+		return newConstantGenerator(base, config.ConstVal)
 
 	case TypeAutoincrement:
 		switch config.AutoType {
 		case TypeInt:
-			base.bsonType = bson.TypeInt32
-			return &autoIncrementGenerator32{
-				base:    base,
-				counter: config.StartInt,
-			}, nil
+			return newAutoIncrementIntGenerator(config, base)
 		case TypeLong:
-			base.bsonType = bson.TypeInt64
-			return &autoIncrementGenerator64{
-				base:    base,
-				counter: config.StartLong,
-			}, nil
+			return newAutoIncrementLongGenerator(config, base)
 		default:
 			return nil, fmt.Errorf("invalid type '%s'", config.Type)
 		}
 
 	case TypeUUID:
-		return &uuidGenerator{base: base}, nil
+		return newUUIDGenerator(base)
 
 	case TypeFaker:
-		method, ok := fakerMethods[config.Method]
-		if !ok {
-			return nil, fmt.Errorf("invalid Faker method '%s'", config.Method)
-		}
-		return &fakerGenerator{
-			base: base,
-			f:    method,
-		}, nil
+		return newFakerGenerator(config, base)
+
 	case TypeStringFromParts:
+		return newStringFromPartsGenerator(config, base, ci, buffer)
 
-		if len(config.Parts) == 0 {
-			return nil, errors.New("'parts' can't be null or empty")
-		}
-
-		parts := make([]Generator, 0, len(config.Parts))
-		for _, c := range config.Parts {
-			g, err := ci.newGenerator(buffer, "", &c)
-			if err != nil {
-				return nil, fmt.Errorf("invalid parts generator: %v", err)
-			}
-			parts = append(parts, g)
-		}
-
-		return &stringFromPartGenerator{
-			base:  base,
-			parts: parts,
-		}, nil
 	case TypeRef:
 		_, ok := ci.mapRef[config.ID]
 		if !ok {
@@ -731,40 +557,10 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			ci.mapRefType[config.ID] = bsonType
 		}
 		base.bsonType = ci.mapRefType[config.ID]
-		return &fromArrayGenerator{
-			base:          base,
-			array:         ci.mapRef[config.ID],
-			size:          len(ci.mapRef[config.ID]),
-			index:         0,
-			doNotTruncate: true,
-		}, nil
+		return newFromArrayGeneratorWithPregeneratedValues(base, ci.mapRef[config.ID], true)
 	}
 
 	return nil, nil
-}
-
-func constGeneratorFromValue(base base, value interface{}) (Generator, error) {
-	raw, err := bsonValue(string(base.Key()), value)
-	if err != nil {
-		return nil, err
-	}
-	// the bson type is already included in raw, so make sure that it's 'unset' from base
-	base.bsonType = bson.TypeNull
-	return &constGenerator{
-		base:           base,
-		originalStrVal: fmt.Sprintf("%v", value),
-		val:            raw,
-	}, nil
-}
-
-func bsonValue(key string, val interface{}) ([]byte, error) {
-	raw, err := bson.Marshal(bson.M{key: val})
-	if err != nil {
-		return nil, fmt.Errorf("fail to marshal '%s': %v", val, err)
-	}
-	// remove first 4 bytes (bson document size) and last bytes (terminating 0x00
-	// indicating end of document) to keep only the bson content
-	return raw[4 : len(raw)-1], nil
 }
 
 // check if current version of mongodb is greater or at least equal
@@ -779,53 +575,6 @@ func (ci *CollInfo) versionAtLeast(v ...int) (result bool) {
 		}
 	}
 	return true
-}
-
-type unique struct {
-	values       [][]byte
-	currentIndex int
-}
-
-// recursively generate all possible combinations with repeat
-func (u *unique) recur(data []byte, stringSize int, index int, docCount int) {
-	for i := 0; i < len(letterBytes); i++ {
-		if u.currentIndex < docCount {
-			data[index+4] = letterBytes[i]
-			if index == stringSize-1 {
-				tmp := make([]byte, len(data))
-				copy(tmp, data)
-				u.values[u.currentIndex] = tmp
-				u.currentIndex++
-			} else {
-				u.recur(data, stringSize, index+1, docCount)
-			}
-		}
-	}
-}
-
-// generate an array of length 'docCount' containing unique string
-// array will look like (for stringSize=3)
-// [ "aaa", "aab", "aac", ...]
-func uniqueValues(docCount int, stringSize int) ([][]byte, error) {
-	if stringSize == 0 {
-		return nil, fmt.Errorf("with unique generator, MinLength has to be > 0")
-	}
-	// if string size >= 5, there is at least 1073741824 possible string, so don't bother checking collection count
-	if stringSize < 5 {
-		maxNumber := int(math.Pow(float64(len(letterBytes)), float64(stringSize)))
-		if docCount > maxNumber {
-			return nil, fmt.Errorf("doc count is greater than possible value for string of size %d, max is %vd( %d^%d) ", stringSize, maxNumber, len(letterBytes), stringSize)
-		}
-	}
-	u := &unique{
-		values:       make([][]byte, docCount),
-		currentIndex: 0,
-	}
-	data := make([]byte, stringSize+5)
-	copy(data[0:4], int32Bytes(int32(stringSize)+1))
-
-	u.recur(data, stringSize, 0, docCount)
-	return u.values, nil
 }
 
 // preGenerate generates `nb`values using a generator created from config
