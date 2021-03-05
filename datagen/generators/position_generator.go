@@ -18,7 +18,7 @@ func newPositionGenerator(base base, pcg64 *pcg.PCG64) (Generator, error) {
 	}, nil
 }
 
-func (g *positionGenerator) Value() {
+func (g *positionGenerator) EncodeValue() {
 	current := g.buffer.Len()
 	g.buffer.Reserve()
 	for i := 0; i < 2; i++ {

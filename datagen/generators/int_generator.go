@@ -26,11 +26,11 @@ func newIntGenerator(config *Config, base base) (Generator, error) {
 	}, nil
 }
 
-func (g *intGenerator) Value() {
+func (g *intGenerator) EncodeValue() {
 	g.buffer.Write(int32Bytes(g.boundedInt32()))
 }
 
-func (g *intGenerator) String() {
+func (g *intGenerator) EncodeValueAsString() {
 	g.buffer.Write([]byte(strconv.Itoa(int(g.boundedInt32()))))
 }
 

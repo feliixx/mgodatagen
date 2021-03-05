@@ -29,11 +29,11 @@ func newConstantGenerator(base base, value interface{}) (Generator, error) {
 	}, nil
 }
 
-func (g *constGenerator) Value() {
+func (g *constGenerator) EncodeValue() {
 	g.buffer.Write(g.bsonVal)
 }
 
-func (g *constGenerator) String() {
+func (g *constGenerator) EncodeValueAsString() {
 	g.buffer.Write(g.strVal)
 }
 

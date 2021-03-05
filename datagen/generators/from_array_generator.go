@@ -54,11 +54,11 @@ func newFromArrayGeneratorWithPregeneratedValues(base base, values [][]byte, doN
 	}, nil
 }
 
-func (g *fromArrayGenerator) Value() {
+func (g *fromArrayGenerator) EncodeValue() {
 	g.buffer.Write(g.bsonArray[g.randomIndex()])
 }
 
-func (g *fromArrayGenerator) String() {
+func (g *fromArrayGenerator) EncodeValueAsString() {
 	g.buffer.Write(g.strArray[g.randomIndex()])
 }
 

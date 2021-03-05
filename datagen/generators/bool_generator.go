@@ -9,11 +9,11 @@ func newBoolGenerator(base base) (Generator, error) {
 	return &boolGenerator{base: base}, nil
 }
 
-func (g *boolGenerator) Value() {
+func (g *boolGenerator) EncodeValue() {
 	g.buffer.WriteSingleByte(byte(g.randomByte()))
 }
 
-func (g *boolGenerator) String() {
+func (g *boolGenerator) EncodeValueAsString() {
 	if g.randomByte() == 0 {
 		g.buffer.Write([]byte("true"))
 	}

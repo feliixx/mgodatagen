@@ -30,11 +30,11 @@ func newDoubleGenerator(config *Config, base base, pcg64 *pcg.PCG64) (Generator,
 	}, nil
 }
 
-func (g *doubleGenerator) Value() {
+func (g *doubleGenerator) EncodeValue() {
 	g.buffer.Write(float64Bytes(g.boundedFloat64()))
 }
 
-func (g *doubleGenerator) String() {
+func (g *doubleGenerator) EncodeValueAsString() {
 	g.buffer.Write([]byte(strconv.FormatFloat(g.boundedFloat64(), 'f', 10, 64)))
 }
 

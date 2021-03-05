@@ -20,12 +20,12 @@ func newAutoIncrementIntGenerator(config *Config, base base) (Generator, error) 
 	}, nil
 }
 
-func (g *autoIncrementIntGenerator) Value() {
+func (g *autoIncrementIntGenerator) EncodeValue() {
 	g.buffer.Write(int32Bytes(g.counter))
 	g.counter++
 }
 
-func (g *autoIncrementIntGenerator) String() {
+func (g *autoIncrementIntGenerator) EncodeValueAsString() {
 	val := strconv.Itoa(int(g.counter))
 	g.buffer.Write([]byte(val))
 	g.counter++

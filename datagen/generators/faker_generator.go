@@ -19,13 +19,13 @@ func newFakerGenerator(config *Config, base base) (Generator, error) {
 	}, nil
 }
 
-func (g *fakerGenerator) Value() {
+func (g *fakerGenerator) EncodeValue() {
 	fakerVal := []byte(g.f())
 	g.buffer.Write(int32Bytes(int32(len(fakerVal) + 1)))
 	g.buffer.Write(fakerVal)
 	g.buffer.WriteSingleByte(byte(0))
 }
 
-func (g *fakerGenerator) String() {
+func (g *fakerGenerator) EncodeValueAsString() {
 	g.buffer.Write([]byte(g.f()))
 }
