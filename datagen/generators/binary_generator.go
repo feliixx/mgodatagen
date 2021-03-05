@@ -23,7 +23,7 @@ func newBinaryGenerator(config *Config, base base) (Generator, error) {
 // legacy type binary instead of 0x05
 const genericBinaryType = 0x00
 
-func (g *binaryDataGenerator) Value() {
+func (g *binaryDataGenerator) EncodeValue() {
 	length := g.minLength
 	if g.minLength != g.maxLength {
 		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength

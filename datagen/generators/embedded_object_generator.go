@@ -25,7 +25,7 @@ func newEmbededGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuf
 	return emg, nil
 }
 
-func (g *embeddedObjectGenerator) Value() {
+func (g *embeddedObjectGenerator) EncodeValue() {
 	current := g.buffer.Len()
 	g.buffer.Reserve()
 	for _, gen := range g.generators {
@@ -35,7 +35,7 @@ func (g *embeddedObjectGenerator) Value() {
 				g.buffer.Write(gen.Key())
 				g.buffer.WriteSingleByte(byte(0))
 			}
-			gen.Value()
+			gen.EncodeValue()
 		}
 	}
 	g.buffer.WriteSingleByte(byte(0))

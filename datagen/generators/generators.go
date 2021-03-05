@@ -33,7 +33,7 @@ func (g *DocumentGenerator) Generate() []byte {
 				g.Buffer.Write(gen.Key())
 				g.Buffer.WriteSingleByte(byte(0))
 			}
-			gen.Value()
+			gen.EncodeValue()
 		}
 	}
 	g.Buffer.WriteSingleByte(byte(0))
@@ -41,7 +41,7 @@ func (g *DocumentGenerator) Generate() []byte {
 	return g.Buffer.Bytes()
 }
 
-// Add append a new Generator to the DocumentGenerator. The generator Value() method
+// Add append a new Generator to the DocumentGenerator. The generator EncodeValue() method
 // must write to the same DocBuffer as the DocumentGenerator g
 func (g *DocumentGenerator) Add(generator Generator) {
 	if generator != nil {
@@ -57,15 +57,15 @@ type Generator interface {
 	Key() []byte
 	// Type returns the bson type of the element as defined in bson spec: http://bsonspec.org/
 	Type() bsontype.Type
-	// Value encodes a random value in bson and write it to a DocBuffer
-	Value()
 	// Exists returns true if the generation should be performed.
 	Exists() bool
-	// String return the random value as a string
-	String()
+	// EncodeValue encodes a random value in bson and write it to a DocBuffer
+	EncodeValue()
+	// EncodeToString encodes a random value as a string and write it to a DocBuffer
+	EncodeValueAsString()
 }
 
-// base implements Key(), Type(), Exists() and String() methods. Intended to be
+// base implements Key(), Type(), Exists() and EncodeValueAsString() methods. Intended to be
 // embedded in each generator
 type base struct {
 	key []byte
@@ -102,4 +102,4 @@ func (g *base) Exists() bool {
 	return g.pcg32.Random()>>22 >= g.nullPercentage
 }
 
-func (g *base) String() {}
+func (g *base) EncodeValueAsString() {}

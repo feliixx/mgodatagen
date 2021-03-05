@@ -593,7 +593,7 @@ func (ci *CollInfo) preGenerate(key string, config *Config, nb int) (values [][]
 
 	values = make([][]byte, nb)
 	for i := 0; i < nb; i++ {
-		g.Value()
+		g.EncodeValue()
 		tmpArr := make([]byte, buffer.Len())
 		copy(tmpArr, buffer.Bytes())
 		values[i] = tmpArr

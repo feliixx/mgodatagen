@@ -15,7 +15,7 @@ func newDecimalGenerator(base base, pcg64 *pcg.PCG64) (Generator, error) {
 		nil
 }
 
-func (g *decimal128Generator) Value() {
+func (g *decimal128Generator) EncodeValue() {
 	b := uint64Bytes(g.pcg64.Random())
 	g.buffer.Write(b)
 	g.buffer.Write(b)

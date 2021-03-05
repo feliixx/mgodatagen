@@ -20,12 +20,12 @@ func newAutoIncrementLongGenerator(config *Config, base base) (Generator, error)
 	}, nil
 }
 
-func (g *autoIncrementLongGenerator) Value() {
+func (g *autoIncrementLongGenerator) EncodeValue() {
 	g.buffer.Write(int64Bytes(g.counter))
 	g.counter++
 }
 
-func (g *autoIncrementLongGenerator) String() {
+func (g *autoIncrementLongGenerator) EncodeValueAsString() {
 	val := strconv.FormatInt(g.counter, 10)
 	g.buffer.Write([]byte(val))
 	g.counter++

@@ -30,14 +30,14 @@ func newStringFromPartsGenerator(config *Config, base base, ci *CollInfo, buffer
 	}, nil
 }
 
-func (g *stringFromPartGenerator) Value() {
+func (g *stringFromPartGenerator) EncodeValue() {
 
 	sizePos := g.buffer.Len()
 	g.buffer.Reserve()
 	start := g.buffer.Len()
 
 	for _, p := range g.parts {
-		p.String()
+		p.EncodeValueAsString()
 	}
 	g.buffer.WriteSingleByte(0)
 	g.buffer.WriteAt(sizePos, int32Bytes(int32(g.buffer.Len()-start)))

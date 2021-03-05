@@ -26,7 +26,7 @@ func newDateGenerator(config *Config, base base, pcg64 *pcg.PCG64) (Generator, e
 	}, nil
 }
 
-func (g *dateGenerator) Value() {
+func (g *dateGenerator) EncodeValue() {
 	// dates are not evenly distributed
 	g.buffer.Write(uint64Bytes((g.pcg64.Bounded(g.delta) + g.startDate) * 1000))
 }

@@ -10,7 +10,7 @@ func newUUIDGenerator(base base) (Generator, error) {
 	return &uuidGenerator{base: base}, nil
 }
 
-func (g *uuidGenerator) Value() {
+func (g *uuidGenerator) EncodeValue() {
 	uuid, _ := uuid.NewV4()
 	strUUID := uuid.String()
 
@@ -19,7 +19,7 @@ func (g *uuidGenerator) Value() {
 	g.buffer.WriteSingleByte(byte(0))
 }
 
-func (g *uuidGenerator) String() {
+func (g *uuidGenerator) EncodeValueAsString() {
 	uuid, _ := uuid.NewV4()
 	g.buffer.Write([]byte(uuid.String()))
 }

@@ -72,7 +72,7 @@ var indexesBytes = [10]byte{
 	byte(57),
 }
 
-func (g *arrayGenerator) Value() {
+func (g *arrayGenerator) EncodeValue() {
 	current := g.buffer.Len()
 	g.buffer.Reserve()
 	// array looks like this:
@@ -86,7 +86,7 @@ func (g *arrayGenerator) Value() {
 			g.buffer.Write([]byte(strconv.Itoa(i)))
 		}
 		g.buffer.WriteSingleByte(byte(0))
-		g.generator.Value()
+		g.generator.EncodeValue()
 	}
 	g.buffer.WriteSingleByte(byte(0))
 	g.buffer.WriteAt(current, int32Bytes(int32(g.buffer.Len()-current)))

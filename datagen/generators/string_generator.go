@@ -40,7 +40,7 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-func (g *stringGenerator) Value() {
+func (g *stringGenerator) EncodeValue() {
 	length := g.minLength
 	if g.minLength != g.maxLength {
 		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength

@@ -20,11 +20,11 @@ func newObjectIDGenerator(base base) (Generator, error) {
 }
 
 // Value add a bson.ObjectId to the DocBuffer.
-func (g *objectIDGenerator) Value() {
+func (g *objectIDGenerator) EncodeValue() {
 	g.buffer.Write(g.randomObjectID())
 }
 
-func (g *objectIDGenerator) String() {
+func (g *objectIDGenerator) EncodeValueAsString() {
 
 	dst := make([]byte, hex.EncodedLen(12))
 	hex.Encode(dst, g.randomObjectID())

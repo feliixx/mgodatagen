@@ -30,11 +30,11 @@ func newLongGenerator(config *Config, base base, pcg64 *pcg.PCG64) (Generator, e
 	}, nil
 }
 
-func (g *longGenerator) Value() {
+func (g *longGenerator) EncodeValue() {
 	g.buffer.Write(int64Bytes(g.boundedInt64()))
 }
 
-func (g *longGenerator) String() {
+func (g *longGenerator) EncodeValueAsString() {
 	g.buffer.Write([]byte(strconv.FormatInt(g.boundedInt64(), 10)))
 }
 
