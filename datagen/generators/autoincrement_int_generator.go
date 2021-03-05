@@ -25,8 +25,8 @@ func (g *autoIncrementIntGenerator) Value() {
 	g.counter++
 }
 
-func (g *autoIncrementIntGenerator) String() string {
+func (g *autoIncrementIntGenerator) String() {
 	val := strconv.Itoa(int(g.counter))
+	g.buffer.Write([]byte(val))
 	g.counter++
-	return val
 }

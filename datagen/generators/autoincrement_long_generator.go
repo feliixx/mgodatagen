@@ -25,8 +25,8 @@ func (g *autoIncrementLongGenerator) Value() {
 	g.counter++
 }
 
-func (g *autoIncrementLongGenerator) String() string {
+func (g *autoIncrementLongGenerator) String() {
 	val := strconv.FormatInt(g.counter, 10)
+	g.buffer.Write([]byte(val))
 	g.counter++
-	return val
 }

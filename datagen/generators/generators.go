@@ -62,7 +62,7 @@ type Generator interface {
 	// Exists returns true if the generation should be performed.
 	Exists() bool
 	// String return the random value as a string
-	String() string
+	String()
 }
 
 // base implements Key(), Type(), Exists() and String() methods. Intended to be
@@ -102,4 +102,4 @@ func (g *base) Exists() bool {
 	return g.pcg32.Random()>>22 >= g.nullPercentage
 }
 
-func (g *base) String() string { return "" }
+func (g *base) String() {}

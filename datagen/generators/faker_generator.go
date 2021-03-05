@@ -26,6 +26,6 @@ func (g *fakerGenerator) Value() {
 	g.buffer.WriteSingleByte(byte(0))
 }
 
-func (g *fakerGenerator) String() string {
-	return g.f()
+func (g *fakerGenerator) String() {
+	g.buffer.Write([]byte(g.f()))
 }

@@ -24,8 +24,11 @@ func (g *objectIDGenerator) Value() {
 	g.buffer.Write(g.randomObjectID())
 }
 
-func (g *objectIDGenerator) String() string {
-	return string(hex.EncodeToString(g.randomObjectID()))
+func (g *objectIDGenerator) String() {
+
+	dst := make([]byte, hex.EncodedLen(12))
+	hex.Encode(dst, g.randomObjectID())
+	g.buffer.Write(dst)
 }
 
 var (

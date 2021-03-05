@@ -34,8 +34,8 @@ func (g *doubleGenerator) Value() {
 	g.buffer.Write(float64Bytes(g.boundedFloat64()))
 }
 
-func (g *doubleGenerator) String() string {
-	return strconv.FormatFloat(g.boundedFloat64(), 'f', 10, 64)
+func (g *doubleGenerator) String() {
+	g.buffer.Write([]byte(strconv.FormatFloat(g.boundedFloat64(), 'f', 10, 64)))
 }
 
 func (g *doubleGenerator) boundedFloat64() float64 {

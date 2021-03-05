@@ -34,8 +34,8 @@ func (g *longGenerator) Value() {
 	g.buffer.Write(int64Bytes(g.boundedInt64()))
 }
 
-func (g *longGenerator) String() string {
-	return strconv.FormatInt(g.boundedInt64(), 10)
+func (g *longGenerator) String() {
+	g.buffer.Write([]byte(strconv.FormatInt(g.boundedInt64(), 10)))
 }
 
 func (g *longGenerator) boundedInt64() int64 {
