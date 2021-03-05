@@ -205,7 +205,7 @@ Generators have a common structure:
 }
 ```
 
-List of main `<generator>` types:
+List of basic `<generator>` types:
 
 - [string](#string)
 - [int](#int)
@@ -214,20 +214,22 @@ List of main `<generator>` types:
 - [decimal](#decimal)
 - [boolean](#boolean)
 - [objectId](#objectid)
-- [array](#array)
-- [object](#object)
 - [binary](#binary)
 - [date](#date)
-
-List of custom `<generator>` types:
-
-- [faker](#faker)
+- [UUID](#uuid)
 - [position](#position)
+- [faker](#faker)
+
+
+List of composite `<generator>` types:
+
+- [array](#array)
+- [object](#object)
 - [constant](#constant)
 - [autoincrement](#autoincrement)
 - [reference](#ref)
 - [fromArray](#fromarray)
-- [UUID](#uuid)
+- [stringFromParts](#stringFromParts)
 - [countAggregator](#countAggregator)
 - [valueAggregator](#valueAggregator)
 - [boundAggregator](#boundAggregator)
@@ -505,6 +507,22 @@ Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github
 "fieldName": {
     "type": "uuid",          // required
     "nullPercentage": `int`  // optional
+}
+```
+
+### StringFromParts
+
+Generate a random string from several generators
+
+```JSON5
+"fieldName": {
+    "type": "stringFromParts",  // required
+    "nullPercentage": `int`     // optional
+    "parts": [                  // required. Can't be empty. An array of generators of
+      `generator`,              // any basic type
+      `generator`
+      ...
+    ], 
 }
 ```
 

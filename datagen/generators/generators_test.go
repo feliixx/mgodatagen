@@ -48,6 +48,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 				Sk int32 `bson:"s-k"`
 			} `bson:"sub-ob"`
 		} `bson:"object"`
+		StringFromParts string `bson:"stringFromPart"`
 	}
 
 	fullDocumentTests := []struct {
@@ -424,9 +425,32 @@ func TestNewGenerator(t *testing.T) {
 			name: "max distinct value > coll.Count",
 			config: generators.Config{
 				Type:             generators.TypePosition,
-				MaxDistinctValue: 101},
+				MaxDistinctValue: 101,
+			},
 			correct: true,
 			version: []int{4},
+		},
+		{
+			name: "stringFromParts generator with no generators",
+			config: generators.Config{
+				Type: generators.TypeStringFromParts,
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "stringFromParts generator with invalid generator",
+			config: generators.Config{
+				Type: generators.TypeStringFromParts,
+				Parts: []generators.Config{
+					{
+						Type:      generators.TypeString,
+						MinLength: -1,
+					},
+				},
+			},
+			correct: false,
+			version: []int{3, 6},
 		},
 	}
 	// all possible faker methods

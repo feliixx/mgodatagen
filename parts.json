@@ -1,0 +1,27 @@
+[
+    {
+        "database": "dbName",
+        "collection": "collName",
+        "count": 1000000,
+        "content": {
+            "email": {
+                "type": "stringFromParts",
+                "parts": [
+                  {
+                    "type": "constant",
+                    "constVal": "customer"
+                  },
+                  {
+                    "type": "autoincrement",
+                    "autoType": "int",
+                    "startInt": 1
+                  },
+                  {
+                    "type": "constant",
+                    "constVal": "@exemple.com"
+                  }
+                ]
+              }
+        }
+    }
+]		

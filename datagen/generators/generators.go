@@ -68,6 +68,8 @@ type Generator interface {
 	Value()
 	// Exists returns true if the generation should be performed.
 	Exists() bool
+	// String return the random value as a string
+	String() string
 }
 
 // base implements Key(), Type() and Exists() methods. Intended to be
@@ -107,6 +109,10 @@ func (g *base) Exists() bool {
 
 // Type return the bson type of the element created by the generator
 func (g *base) Type() bsontype.Type { return g.bsonType }
+
+func (g *base) String() string {
+	return ""
+}
 
 // Generator for creating random string of a length within [`MinLength`, `MaxLength`]
 type stringGenerator struct {
@@ -153,6 +159,10 @@ func (g *int32Generator) Value() {
 	g.buffer.Write(int32Bytes(int32(g.pcg32.Bounded(uint32(g.max-g.min))) + g.min))
 }
 
+func (g *int32Generator) String() string {
+	return strconv.Itoa(int(int32(g.pcg32.Bounded(uint32(g.max-g.min))) + g.min))
+}
+
 // Generator for creating random int64 between `Min` and `Max`
 type int64Generator struct {
 	base
@@ -165,6 +175,10 @@ func (g *int64Generator) Value() {
 	g.buffer.Write(int64Bytes(int64(g.pcg64.Bounded(uint64(g.max-g.min))) + g.min))
 }
 
+func (g *int64Generator) String() string {
+	return strconv.FormatInt(int64(g.pcg64.Bounded(uint64(g.max-g.min)))+g.min, 10)
+}
+
 // Generator for creating random float64 between `Min` and `Max`
 type float64Generator struct {
 	base
@@ -175,6 +189,10 @@ type float64Generator struct {
 
 func (g *float64Generator) Value() {
 	g.buffer.Write(float64Bytes((float64(g.pcg64.Random())/(1<<64))*g.stdDev + g.mean))
+}
+
+func (g *float64Generator) String() string {
+	return strconv.FormatFloat(float64(g.pcg64.Random())/(1<<64)*g.stdDev+g.mean, 'f', 10, 64)
 }
 
 // Generator for creating random decimal128
@@ -196,6 +214,13 @@ type boolGenerator struct {
 
 func (g *boolGenerator) Value() {
 	g.buffer.WriteSingleByte(byte(g.pcg32.Random() & 0x01))
+}
+
+func (g *boolGenerator) String() string {
+	if g.pcg32.Random()&0x01 == 0 {
+		return "true"
+	}
+	return "false"
 }
 
 // readMachineId generates and returns a machine id.
@@ -250,6 +275,25 @@ func (g *objectIDGenerator) Value() {
 			byte(i),
 		},
 	)
+}
+
+func (g *objectIDGenerator) String() string {
+	t := uint32(time.Now().Unix())
+	i := atomic.AddUint32(&objectIDCounter, 1)
+	return string([]byte{
+		byte(t >> 24),
+		byte(t >> 16),
+		byte(t >> 8),
+		byte(t),
+		machineID[0], // Machine, first 3 bytes of md5(hostname)
+		machineID[1],
+		machineID[2],
+		byte(processID >> 8), // Pid, 2 bytes, specs don't specify endianness, but we use big endian.
+		byte(processID),
+		byte(i >> 16), // Increment, 3 bytes, big endian
+		byte(i >> 8),
+		byte(i),
+	})
 }
 
 // Generator for creating embedded documents
@@ -384,11 +428,16 @@ func (g *positionGenerator) Value() {
 // type and the key in addition of the actual value
 type constGenerator struct {
 	base
-	val []byte
+	originalStrVal string
+	val            []byte
 }
 
 func (g *constGenerator) Value() {
 	g.buffer.Write(g.val)
+}
+
+func (g *constGenerator) String() string {
+	return g.originalStrVal
 }
 
 // Generator for creating auto-incremented int32
@@ -402,6 +451,12 @@ func (g *autoIncrementGenerator32) Value() {
 	g.counter++
 }
 
+func (g *autoIncrementGenerator32) String() string {
+	val := strconv.Itoa(int(g.counter))
+	g.counter++
+	return val
+}
+
 // Generator for creating auto-incremented int64
 type autoIncrementGenerator64 struct {
 	base
@@ -413,14 +468,21 @@ func (g *autoIncrementGenerator64) Value() {
 	g.counter++
 }
 
+func (g *autoIncrementGenerator64) String() string {
+	val := strconv.FormatInt(g.counter, 10)
+	g.counter++
+	return val
+}
+
 // Generator for creating a random value from an array of user-defined values
 type fromArrayGenerator struct {
 	base
-	size          int
-	array         [][]byte
-	index         int
-	randomOrder   bool
-	doNotTruncate bool
+	size           int
+	array          [][]byte
+	originStrArray []string
+	index          int
+	randomOrder    bool
+	doNotTruncate  bool
 }
 
 func (g *fromArrayGenerator) Value() {
@@ -433,6 +495,17 @@ func (g *fromArrayGenerator) Value() {
 
 	g.buffer.Write(g.array[g.index])
 	g.index++
+}
+
+func (g *fromArrayGenerator) String() string {
+	if g.randomOrder {
+		g.index = int(g.base.pcg32.Bounded(uint32(g.size)))
+	} else if g.index == g.size {
+		g.index = 0
+	}
+	val := g.originStrArray[g.index]
+	g.index++
+	return val
 }
 
 type uuidGenerator struct {
@@ -448,6 +521,11 @@ func (g *uuidGenerator) Value() {
 	g.buffer.WriteSingleByte(byte(0))
 }
 
+func (g *uuidGenerator) String() string {
+	uuid, _ := uuid.NewV4()
+	return uuid.String()
+}
+
 // Generator for creating random string using faker library
 type fakerGenerator struct {
 	base
@@ -459,4 +537,32 @@ func (g *fakerGenerator) Value() {
 	g.buffer.Write(int32Bytes(int32(len(fakerVal) + 1)))
 	g.buffer.Write(fakerVal)
 	g.buffer.WriteSingleByte(byte(0))
+}
+
+func (g *fakerGenerator) String() string {
+	return g.f()
+}
+
+type stringFromPartGenerator struct {
+	base
+	parts []Generator
+}
+
+func (g *stringFromPartGenerator) Value() {
+
+	start := g.buffer.Len()
+	g.buffer.Reserve()
+	length := uint32(0)
+
+	for _, p := range g.parts {
+		s := p.String()
+		if len(s) == 0 {
+			continue
+		}
+		length += uint32(len(s))
+		g.buffer.Write([]byte(s))
+	}
+	g.buffer.WriteSingleByte(0)
+
+	g.buffer.WriteAt(start, uint32Bytes(length+1))
 }
