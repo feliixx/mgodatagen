@@ -48,7 +48,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 				Sk int32 `bson:"s-k"`
 			} `bson:"sub-ob"`
 		} `bson:"object"`
-		StringFromParts string `bson:"stringFromPart"`
+		StringFromParts string `bson:"stringFromParts"`
 	}
 
 	fullDocumentTests := []struct {
