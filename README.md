@@ -103,11 +103,11 @@ See **MongoDB documentation** for details on parameters:
   {
    // REQUIRED FIELDS
    //
-   "database":     `string`,          // required, database name
-   "collection":   `string`,          // required, collection name
-   "count":        `int`,             // required, number of document to insert in the collection
-   "content": {                       // required, the actual schema to generate documents
-     "fieldName1": `generator`,       // optional, see Generator below
+   "database":     `string`,    // required, database name
+   "collection":   `string`,    // required, collection name
+   "count":        `int`,       // required, number of document to insert in the collection
+   "content": {                 // required, the actual schema to generate documents
+     "fieldName1": `generator`, // optional, see Generator below
      "fieldName2": `generator`,
      ...
    },
@@ -118,7 +118,7 @@ See **MongoDB documentation** for details on parameters:
    // - none
    // - snappy
    // - zlib
-   "compressionLevel": `string`,      // optional, default: snappy
+   "compressionLevel": `string`, // optional, default: snappy
 
    // configuration for sharded collection
    "shardConfig": {                          // optional
@@ -127,21 +127,21 @@ See **MongoDB documentation** for details on parameters:
       "unique":           `boolean`,         // optional, default: false
       "numInitialChunks": `int`,             // optional
 
-      "collation": {       // optional
-        "locale":          `string`,         // required
-        "caseLevel":       `boolean`,        // optional
-        "caseFirst":       `string`,         // optional
-        "strength":        `int`,            // optional
-        "numericOrdering": `boolean`,        // optional
-        "alternate":       `string`,         // optional
-        "maxVariable":     `string`,         // optional 
-        "backwards":       `boolean`,        // optional
-        "normalization":   `string`          // optional
+      "collation": {                  // optional
+        "locale":          `string`,  // required
+        "caseLevel":       `boolean`, // optional
+        "caseFirst":       `string`,  // optional
+        "strength":        `int`,     // optional
+        "numericOrdering": `boolean`, // optional
+        "alternate":       `string`,  // optional
+        "maxVariable":     `string`,  // optional 
+        "backwards":       `boolean`, // optional
+        "normalization":   `string`   // optional
       }
    },
 
    // list of index to build
-   "indexes": [                // optional
+   "indexes": [                           // optional
       {
          "name":               `string`,  // required, index name
          "key":                `object`,  // required, index key, eg: {"name": 1}
@@ -158,16 +158,16 @@ See **MongoDB documentation** for details on parameters:
          "textIndexVersion":   `int`,     // optional, for text index only
          "partialFilterExpression": `object`, // optional
 
-         "collation": {       // optional
-           "locale":          `string`,       // required 
-           "caseLevel":       `boolean`,      // optional
-           "caseFirst":       `string`,       // optional
-           "strength":        `int`,          // optional
-           "numericOrdering": `boolean`,      // optional
-           "alternate":       `string`,       // optional
-           "maxVariable":     `string`,       // optional
-           "backwards":       `boolean`,      // optional
-           "normalization":   `string`        // optional
+         "collation": {                  // optional
+           "locale":          `string`,  // required 
+           "caseLevel":       `boolean`, // optional
+           "caseFirst":       `string`,  // optional
+           "strength":        `int`,     // optional
+           "numericOrdering": `boolean`, // optional
+           "alternate":       `string`,  // optional
+           "maxVariable":     `string`,  // optional
+           "backwards":       `boolean`, // optional
+           "normalization":   `string`   // optional
          }
    ]
   },
@@ -198,10 +198,11 @@ Generators have a common structure:
 ```JSON5
 "fieldName": {                  // required, field name in generated document
   "type":             `string`, // required, type of the field
-  "nullPercentage":   `int`,    // optional, int between 0 and 100. Percentage of documents
-                                // that will have this field
+  "typeParam":        ...,      // specific parameters for this type
+
   "maxDistinctValue": `int`,    // optional, maximum number of distinct values for this field
-  "typeParam": ...              // specific parameters for this type
+  "nullPercentage":   `int`     // optional, int between 0 and 100. Percentage of documents
+                                // that will have this field
 }
 ```
 
@@ -212,6 +213,7 @@ List of basic `<generator>` types:
 - [long](#long)
 - [double](#double)
 - [decimal](#decimal)
+- [autoincrement](#autoincrement)
 - [boolean](#boolean)
 - [objectId](#objectid)
 - [binary](#binary)
@@ -226,7 +228,6 @@ List of composite `<generator>` types:
 - [array](#array)
 - [object](#object)
 - [constant](#constant)
-- [autoincrement](#autoincrement)
 - [reference](#ref)
 - [fromArray](#fromarray)
 - [stringFromParts](#stringFromParts)
@@ -241,12 +242,12 @@ Generates a random string of a certain length. String is composed of char within
 
 ```JSON5
 "fieldName": {
-    "type": "string",           // required
-    "nullPercentage":   `int`,  // optional
-    "maxDistinctValue": `int`,  // optional
-    "unique":           `bool`, // optional, see details below
-    "minLength":        `int`,  // required, must be >= 0
-    "maxLength":        `int`   // required, must be >= minLength
+    "type":             "string", // required
+    "minLength":        `int`,    // required, must be >= 0
+    "maxLength":        `int`,    // required, must be >= minLength
+    "unique":           `bool`,   // optional, see details below
+    "nullPercentage":   `int`,    // optional
+    "maxDistinctValue": `int`     // optional
 }
 ```
 
@@ -275,11 +276,11 @@ Generates a random `int` within bounds.
 
 ```JSON5
 "fieldName": {
-    "type": "int",             // required
-    "nullPercentage":   `int`, // optional
-    "maxDistinctValue": `int`, // optional
+    "type":             "int", // required
     "minInt":           `int`, // optional
-    "maxInt":           `int`  // optional, must be >= minInt
+    "maxInt":           `int`, // optional, must be >= minInt
+    "nullPercentage":   `int`, // optional
+    "maxDistinctValue": `int`  // optional
 }
 ```
 
@@ -289,11 +290,11 @@ Generates a random `long` within bounds.
 
 ```JSON5
 "fieldName": {
-    "type": "long",             // required
-    "nullPercentage":   `int`,  // optional
-    "maxDistinctValue": `int`,  // optional
+    "type":             "long", // required
     "minLong":          `long`, // optional
-    "maxLong":          `long`  // optional, must be >= minLong
+    "maxLong":          `long`, // optional, must be >= minLong
+    "nullPercentage":   `int`,  // optional
+    "maxDistinctValue": `int`   // optional
 }
 ```
 
@@ -303,11 +304,11 @@ Generates a random `double` within bounds.
 
 ```JSON5
 "fieldName": {
-    "type": "double",             // required
-    "nullPercentage":   `int`,    // optional
-    "maxDistinctValue": `int`,    // optional
+    "type":             "double", // required
     "minDouble":        `double`, // optional
-    "maxDouble":        `double`  // optional, must be >= minDouble
+    "maxDouble":        `double`, // optional, must be >= minDouble
+    "nullPercentage":   `int`,    // optional
+    "maxDistinctValue": `int`     // optional
 }
 ```
 
@@ -317,9 +318,9 @@ Generates a random `decimal128`.
 
 ```JSON5
 "fieldName": {
-    "type": "decimal",         // required
-    "nullPercentage":   `int`, // optional
-    "maxDistinctValue": `int`, // optional
+    "type":             "decimal", // required
+    "nullPercentage":   `int`,     // optional
+    "maxDistinctValue": `int`,     // optional
 }
 ```
 
@@ -329,9 +330,9 @@ Generates a random `boolean`.
 
 ```JSON5
 "fieldName": {
-    "type": "boolean",         // required
-    "nullPercentage":   `int`, // optional
-    "maxDistinctValue": `int`  // optional
+    "type":             "boolean", // required
+    "nullPercentage":   `int`,     // optional
+    "maxDistinctValue": `int`      // optional
 }
 ```
 
@@ -341,9 +342,9 @@ Generates a random `objectId`.
 
 ```JSON5
 "fieldName": {
-    "type": "objectId",        // required
-    "nullPercentage":   `int`, // optional
-    "maxDistinctValue": `int`  // optional
+    "type":             "objectId", // required
+    "nullPercentage":   `int`,      // optional
+    "maxDistinctValue": `int`       // optional
 }
 ```
 
@@ -353,12 +354,12 @@ Generates a random array of bson object.
 
 ```JSON5
 "fieldName": {
-    "type": "array",                 // required
-    "nullPercentage":   `int`,       // optional
-    "maxDistinctValue": `int`,       // optional
+    "type":             "array",     // required
     "size":             `int`,       // required, size of the array
-    "arrayContent":     `generator`  // generator use to create element to fill the array.
+    "arrayContent":     `generator`, // generator use to create element to fill the array.
                                      // can be of any type
+    "nullPercentage":   `int`,       // optional
+    "maxDistinctValue": `int`        // optional
 }
 ```
 
@@ -368,14 +369,14 @@ Generates random nested object.
 
 ```JSON5
 "fieldName": {
-    "type": "object",                    // required
-    "nullPercentage":      `int`,        // optional
-    "maxDistinctValue":    `int`,        // optional
-    "objectContent": {                   // required, list of generator used to
-       "nestedFieldName1": `generator`,  // generate the nested document
+    "type":                "object",    // required
+    "objectContent": {                  // required, list of generator used to
+       "nestedFieldName1": `generator`, // generate the nested document
        "nestedFieldName2": `generator`,
        ...
-    }
+    },
+    "nullPercentage":      `int`,       // optional
+    "maxDistinctValue":    `int`        // optional
 }
 ```
 
@@ -385,11 +386,11 @@ Generates random binary data of length within bounds.
 
 ```JSON5
 "fieldName": {
-    "type": "binary",           // required
-    "nullPercentage":   `int`,  // optional
-    "maxDistinctValue": `int`,  // optional
-    "minLength":        `int`,  // required, must be >= 0
-    "maxLength":        `int`   // required, must be >= minLength
+    "type":             "binary", // required
+    "minLength":        `int`,    // required, must be >= 0
+    "maxLength":        `int`,    // required, must be >= minLength
+    "nullPercentage":   `int`,    // optional
+    "maxDistinctValue": `int`     // optional
 }
 ```
 
@@ -403,11 +404,11 @@ Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/r
 
 ```JSON5
 "fieldName": {
-    "type": "date",               // required
-    "nullPercentage":   `int`,    // optional
-    "maxDistinctValue": `int`,    // optional
+    "type":             "date",   // required
     "startDate":        `string`, // required
-    "endDate":          `string`  // required, must be >= startDate
+    "endDate":          `string`, // required, must be >= startDate
+    "nullPercentage":   `int`,    // optional
+    "maxDistinctValue": `int`     // optional
 }
 ```
 
@@ -418,9 +419,9 @@ eg : [40.741895, -73.989308]
 
 ```JSON5
 "fieldName": {
-    "type": "position",         // required
-    "nullPercentage":   `int`,  // optional
-    "maxDistinctValue": `int`   // optional
+    "type":             "position", // required
+    "nullPercentage":   `int`,      // optional
+    "maxDistinctValue": `int`       // optional
 }
 ```
 
@@ -430,10 +431,10 @@ Add the same value to each document.
 
 ```JSON5
 "fieldName": {
-    "type": "constant",         // required
-    "nullPercentage": `int`,    // optional
-    "constVal":       `object`  // required, can be of any type including object and array
-                                // eg: {"k": 1, "v": "val"}
+    "type":           "constant", // required
+    "constVal":       `object`,   // required, can be of any type including object and array
+                                  // eg: {"k": 1, "v": "val"}
+    "nullPercentage": `int`       // optional
 }
 ```
 
@@ -443,11 +444,11 @@ Generates an autoincremented value (type `<long>` or `<int>`).
 
 ```JSON5
 "fieldName": {
-    "type": "autoincrement",    // required
-    "nullPercentage": `int`,    // optional
-    "autoType":       `string`, // required, can be `int` or `long`
-    "startLong":      `long`,   // optional, start value if autoType = long
-    "startInt":       `int`     // optional, start value if autoType = int
+    "type":           "autoincrement", // required
+    "autoType":       `string`,        // required, can be `int` or `long`
+    "startLong":      `long`,          // optional, start value if autoType = long
+    "startInt":       `int`,           // optional, start value if autoType = int
+    "nullPercentage": `int`            // optional
 }
 ```
 
@@ -459,12 +460,12 @@ generator in first collection:
 
 ```JSON5
 "fieldName":{
-    "type":"ref",                    // required
-    "nullPercentage":   `int`,       // optional
-    "maxDistinctValue": `int`,       // optional
+    "type":             "ref",       // required
     "id":               `int`,       // required, generator id used to link
                                      // field between collections
-    "refContent":       `generator`  // required
+    "refContent":       `generator`, // required
+    "nullPercentage":   `int`,       // optional
+    "maxDistinctValue": `int`        // optional
 }
 ```
 
@@ -472,10 +473,10 @@ generator in other collections:
 
 ```JSON5
 "fieldName": {
-    "type": "ref",              // required
-    "nullPercentage":   `int`,  // optional
-    "maxDistinctValue": `int`,  // optional
-    "id":               `int`   // required, same id as previous generator
+    "type":             "ref", // required
+    "id":               `int`, // required, same id as previous generator
+    "nullPercentage":   `int`, // optional
+    "maxDistinctValue": `int`  // optional
 }
 ```
 
@@ -487,15 +488,16 @@ in the order where they appear.
 
 ```JSON5
 "fieldName": {
-    "type": "fromArray",      // required
-    "nullPercentage": `int`,  // optional
-    "in": [                   // required. Can't be empty. An array of object of
-      `object`,               // any type, including object and array.
+    "type":           "fromArray", // required
+    "in": [                        // required. Can't be empty. An array of object of
+      `object`,                    // any type, including object and array.
       `object`
       ...
     ], 
-    "randomOrder":    `bool`  // optional. If set to true, objects will be picked 
+    "randomOrder":    `bool`, // optional. If set to true, objects will be picked 
                               // from the array in random order.
+    "nullPercentage": `int`   // optional
+
 }
 ```
 
@@ -505,8 +507,8 @@ Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github
 
 ```JSON5
 "fieldName": {
-    "type": "uuid",          // required
-    "nullPercentage": `int`  // optional
+    "type":           "uuid", // required
+    "nullPercentage": `int`   // optional
 }
 ```
 
@@ -516,13 +518,44 @@ Generate a random string from several generators
 
 ```JSON5
 "fieldName": {
-    "type": "stringFromParts",  // required
-    "nullPercentage": `int`     // optional
-    "parts": [                  // required. Can't be empty. An array of generators of
-      `generator`,              // any basic type
+    "type":           "stringFromParts", // required
+    "parts": [                           // required. Can't be empty. An array 
+      `generator`,                       // of generators of any basic type
       `generator`
       ...
-    ], 
+    ],
+    "nullPercentage": `int`              // optional
+}
+```
+
+**Example:**
+
+To generate phone number like `'(555) 565-2431'`, you can combine several generators 
+like this: 
+
+```JSON5
+"phone": {
+  "type": "stringFromParts",
+  "parts": [
+    {
+      "type": "constant",
+      "constVal": "(555) "
+    },
+    {
+      "type": "int",
+      "minInt": 100,
+      "maxInt": 999
+    },
+    {
+      "type": "constant",
+      "constVal": "-"
+    },
+            {
+      "type": "int",
+      "minInt": 1000,
+      "maxInt": 9999
+    },
+  ]
 }
 ```
 
@@ -720,10 +753,10 @@ Generate 'real' data using [gofakeit library](https://github.com/brianvoe/gofake
 
 ```JSON5
 "fieldName": {
-    "type": "faker",             // required
-    "nullPercentage":   `int`,   // optional
-    "maxDistinctValue": `int`,   // optional
-    "method":           `string` // faker method to use, for example: City / Email...
+    "type":             "faker",  // required
+    "method":           `string`, // required, faker method to use, for example: Name
+    "nullPercentage":   `int`,    // optional
+    "maxDistinctValue": `int`     // optional
 }
 ```
 
