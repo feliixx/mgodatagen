@@ -156,6 +156,54 @@
                 "maxInt": 10
               }
             }
+          },
+          "stringFromParts": {
+            "type": "stringFromParts",
+            "parts": [
+              {
+                "type": "autoincrement",
+                "autoType": "int",
+                "startInt": 1
+              },
+              {
+                "type": "constant",
+                "constVal": "@"
+              },
+              {
+                "type": "fromArray",
+                "in": ["gmail.com", "github.com", "mongoplayground.net"]
+              },
+              {
+                "type": "objectId"
+              },
+              {
+                "type": "autoincrement",
+                "autoType": "long",
+                "startLong": 1
+              },
+              {
+                "type": "faker",
+                "method": "URL"
+              },
+              {
+                "type": "uuid"
+              },
+              {
+                "type": "int",
+                "minInt": 0,
+                "maxInt": 10
+              },
+              {
+                "type": "long",
+                "minLong": 33,
+                "maxLong": 34
+              },
+              {
+                "type": "double",
+                "minDouble": 0.1,
+                "maxDouble": 0.2
+              }
+            ]
           }
         }
       }

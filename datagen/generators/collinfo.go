@@ -99,6 +99,13 @@ type Config struct {
 	AutoType string `json:"autoType"`
 	// For `faker` type only. Method to use
 	Method string `json:"method"`
+	// for `stringFromParts` type only. Generators used to create the string
+	Parts []Config `json:"parts"            "parts": {
+		"type": "stringFromParts",
+		"parts": [
+			
+		]
+	}`
 	// For `ref` type only. Used to retrieve the array storing the value
 	// for this field
 	ID int `json:"id"`
@@ -116,24 +123,25 @@ type Config struct {
 
 // available generator types, see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
 const (
-	TypeString        = "string"
-	TypeInt           = "int"
-	TypeLong          = "long"
-	TypeDouble        = "double"
-	TypeDecimal       = "decimal"
-	TypeBoolean       = "boolean"
-	TypeObjectID      = "objectId"
-	TypeArray         = "array"
-	TypePosition      = "position"
-	TypeObject        = "object"
-	TypeFromArray     = "fromArray"
-	TypeConstant      = "constant"
-	TypeRef           = "ref"
-	TypeAutoincrement = "autoincrement"
-	TypeBinary        = "binary"
-	TypeDate          = "date"
-	TypeUUID          = "uuid"
-	TypeFaker         = "faker"
+	TypeString          = "string"
+	TypeInt             = "int"
+	TypeLong            = "long"
+	TypeDouble          = "double"
+	TypeDecimal         = "decimal"
+	TypeBoolean         = "boolean"
+	TypeObjectID        = "objectId"
+	TypeArray           = "array"
+	TypePosition        = "position"
+	TypeObject          = "object"
+	TypeFromArray       = "fromArray"
+	TypeConstant        = "constant"
+	TypeRef             = "ref"
+	TypeAutoincrement   = "autoincrement"
+	TypeBinary          = "binary"
+	TypeDate            = "date"
+	TypeUUID            = "uuid"
+	TypeFaker           = "faker"
+	TypeStringFromParts = "stringFromParts"
 )
 
 // available aggregator types
@@ -243,24 +251,25 @@ const (
 )
 
 var mapTypes = map[string]bsontype.Type{
-	TypeString:        bson.TypeString,
-	TypeInt:           bson.TypeInt32,
-	TypeLong:          bson.TypeInt64,
-	TypeDouble:        bson.TypeDouble,
-	TypeDecimal:       bson.TypeDecimal128,
-	TypeBoolean:       bson.TypeBoolean,
-	TypeObjectID:      bson.TypeObjectID,
-	TypeArray:         bson.TypeArray,
-	TypePosition:      bson.TypeArray,
-	TypeObject:        bson.TypeEmbeddedDocument,
-	TypeFromArray:     bson.TypeNull, // can be of any bson type
-	TypeConstant:      bson.TypeNull, // can be of any bson type
-	TypeRef:           bson.TypeNull, // can be of any bson type
-	TypeAutoincrement: bson.TypeNull, // type bson.ElementInt32 or bson.ElementInt64
-	TypeBinary:        bson.TypeBinary,
-	TypeDate:          bson.TypeDateTime,
-	TypeUUID:          bson.TypeString,
-	TypeFaker:         bson.TypeString,
+	TypeString:          bson.TypeString,
+	TypeInt:             bson.TypeInt32,
+	TypeLong:            bson.TypeInt64,
+	TypeDouble:          bson.TypeDouble,
+	TypeDecimal:         bson.TypeDecimal128,
+	TypeBoolean:         bson.TypeBoolean,
+	TypeObjectID:        bson.TypeObjectID,
+	TypeArray:           bson.TypeArray,
+	TypePosition:        bson.TypeArray,
+	TypeObject:          bson.TypeEmbeddedDocument,
+	TypeFromArray:       bson.TypeNull, // can be of any bson type
+	TypeConstant:        bson.TypeNull, // can be of any bson type
+	TypeRef:             bson.TypeNull, // can be of any bson type
+	TypeAutoincrement:   bson.TypeNull, // type bson.ElementInt32 or bson.ElementInt64
+	TypeBinary:          bson.TypeBinary,
+	TypeDate:            bson.TypeDateTime,
+	TypeUUID:            bson.TypeString,
+	TypeFaker:           bson.TypeString,
+	TypeStringFromParts: bson.TypeString,
 
 	TypeCountAggregator: bson.TypeNull,
 	TypeValueAggregator: bson.TypeNull,
@@ -612,19 +621,22 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			return nil, errors.New("'in' array can't be null or empty")
 		}
 		array := make([][]byte, len(config.In))
+		arrayStr := make([]string, len(config.In))
 		for i, v := range config.In {
 			raw, err := bsonValue(key, v)
 			if err != nil {
 				return nil, err
 			}
 			array[i] = raw
+			arrayStr[i] = fmt.Sprint(v)
 		}
 		return &fromArrayGenerator{
-			base:        base,
-			array:       array,
-			size:        len(config.In),
-			index:       0,
-			randomOrder: config.RandomOrder,
+			base:           base,
+			array:          array,
+			originStrArray: arrayStr,
+			size:           len(config.In),
+			index:          0,
+			randomOrder:    config.RandomOrder,
 		}, nil
 
 	case TypeBinary:
@@ -684,7 +696,25 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			base: base,
 			f:    method,
 		}, nil
+	case TypeStringFromParts:
 
+		if len(config.Parts) == 0 {
+			return nil, errors.New("'parts' can't be null or empty")
+		}
+
+		parts := make([]Generator, 0, len(config.Parts))
+		for _, c := range config.Parts {
+			g, err := ci.newGenerator(buffer, "", &c)
+			if err != nil {
+				return nil, fmt.Errorf("invalid parts generator: %v", err)
+			}
+			parts = append(parts, g)
+		}
+
+		return &stringFromPartGenerator{
+			base:  base,
+			parts: parts,
+		}, nil
 	case TypeRef:
 		_, ok := ci.mapRef[config.ID]
 		if !ok {
@@ -709,6 +739,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 			doNotTruncate: true,
 		}, nil
 	}
+
 	return nil, nil
 }
 
@@ -720,8 +751,9 @@ func constGeneratorFromValue(base base, value interface{}) (Generator, error) {
 	// the bson type is already included in raw, so make sure that it's 'unset' from base
 	base.bsonType = bson.TypeNull
 	return &constGenerator{
-		base: base,
-		val:  raw,
+		base:           base,
+		originalStrVal: fmt.Sprintf("%v", value),
+		val:            raw,
 	}, nil
 }
 
