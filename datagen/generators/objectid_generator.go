@@ -2,6 +2,7 @@ package generators
 
 import (
 	"crypto/md5"
+	"encoding/hex"
 	"os"
 	"sync/atomic"
 	"time"
@@ -24,7 +25,7 @@ func (g *objectIDGenerator) Value() {
 }
 
 func (g *objectIDGenerator) String() string {
-	return string(g.randomObjectID())
+	return string(hex.EncodeToString(g.randomObjectID()))
 }
 
 var (

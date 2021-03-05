@@ -274,6 +274,7 @@ func TestCollectionContent(t *testing.T) {
 				Sk int32 `bson:"s-k"`
 			} `bson:"sub-ob"`
 		} `bson:"object"`
+		StringFromParts string `bson:"stringFromParts"`
 	}
 	cursor, err := c.Find(context.Background(), bson.M{})
 	if err != nil {
@@ -369,6 +370,9 @@ func TestCollectionContent(t *testing.T) {
 		if r.Object.Subob.Sk < 0 || r.Object.Subob.Sk > 10 {
 			t.Errorf("'object.subob.sk' should be 0 < object.subob < 10, but was %d", r.Object.Subob.Sk)
 		}
+		if len(r.StringFromParts) == 0 {
+			t.Error("'stringFromParts' should no be empty")
+		}
 	}
 	// null percentage test, allow 2.5% error
 	if count < 75 || count > 125 {
@@ -392,6 +396,7 @@ func TestCollectionContent(t *testing.T) {
 		"boolean":                 2,
 		"float":                   1000,
 		"position":                2000,
+		"stringFromParts":         1000,
 	}
 	for key, value := range maxDistinctValuesTests {
 		nb := nbDistinctValue(t, collections[0].DB, collections[0].Name, key)
