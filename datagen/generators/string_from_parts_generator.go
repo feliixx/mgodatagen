@@ -32,19 +32,13 @@ func newStringFromPartsGenerator(config *Config, base base, ci *CollInfo, buffer
 
 func (g *stringFromPartGenerator) Value() {
 
-	start := g.buffer.Len()
+	sizePos := g.buffer.Len()
 	g.buffer.Reserve()
-	length := uint32(0)
+	start := g.buffer.Len()
 
 	for _, p := range g.parts {
-		s := p.String()
-		if len(s) == 0 {
-			continue
-		}
-		length += uint32(len(s))
-		g.buffer.Write([]byte(s))
+		p.String()
 	}
 	g.buffer.WriteSingleByte(0)
-
-	g.buffer.WriteAt(start, uint32Bytes(length+1))
+	g.buffer.WriteAt(sizePos, int32Bytes(int32(g.buffer.Len()-start)))
 }

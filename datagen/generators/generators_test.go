@@ -668,7 +668,7 @@ func loadCollConfig(t *testing.T, filename string) []map[string]generators.Confi
 
 func BenchmarkGeneratorAll(b *testing.B) {
 
-	contentList := loadCollConfig(nil, "ref.json")
+	contentList := loadCollConfig(nil, "part.json")
 
 	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed, map[int][][]byte{}, map[int]bsontype.Type{})
 	docGenerator, err := ci.NewDocumentGenerator(contentList[0])

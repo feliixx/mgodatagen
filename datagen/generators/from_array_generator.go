@@ -9,8 +9,8 @@ import (
 type fromArrayGenerator struct {
 	base
 	size          int
-	array         [][]byte
-	strArray      []string
+	bsonArray     [][]byte
+	strArray      [][]byte
 	index         int
 	randomOrder   bool
 	doNotTruncate bool
@@ -25,18 +25,18 @@ func newFromArrayGenerator(config *Config, base base) (Generator, error) {
 	}
 
 	array := make([][]byte, size)
-	arrayStr := make([]string, size)
+	arrayStr := make([][]byte, size)
 	for i, v := range config.In {
 		raw, err := bsonValue(string(base.key), v)
 		if err != nil {
 			return nil, err
 		}
 		array[i] = raw
-		arrayStr[i] = fmt.Sprint(v)
+		arrayStr[i] = []byte(fmt.Sprint(v))
 	}
 	return &fromArrayGenerator{
 		base:        base,
-		array:       array,
+		bsonArray:   array,
 		strArray:    arrayStr,
 		size:        size,
 		index:       0,
@@ -47,7 +47,7 @@ func newFromArrayGenerator(config *Config, base base) (Generator, error) {
 func newFromArrayGeneratorWithPregeneratedValues(base base, values [][]byte, doNotTruncate bool) (Generator, error) {
 	return &fromArrayGenerator{
 		base:          base,
-		array:         values,
+		bsonArray:     values,
 		size:          len(values),
 		index:         0,
 		doNotTruncate: doNotTruncate,
@@ -55,11 +55,11 @@ func newFromArrayGeneratorWithPregeneratedValues(base base, values [][]byte, doN
 }
 
 func (g *fromArrayGenerator) Value() {
-	g.buffer.Write(g.array[g.randomIndex()])
+	g.buffer.Write(g.bsonArray[g.randomIndex()])
 }
 
-func (g *fromArrayGenerator) String() string {
-	return g.strArray[g.randomIndex()]
+func (g *fromArrayGenerator) String() {
+	g.buffer.Write(g.strArray[g.randomIndex()])
 }
 
 func (g *fromArrayGenerator) randomIndex() int {

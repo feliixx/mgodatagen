@@ -296,7 +296,7 @@ func TestCollectionContent(t *testing.T) {
 	for i, r := range results {
 
 		if len(r.UUID) != 36 {
-			t.Errorf("len(uuid) should be 16, but was %d", len(r.UUID))
+			t.Errorf("len(uuid) should be 36, but was %d", len(r.UUID))
 		}
 
 		if len(r.String) < 15 || len(r.String) > 20 {

@@ -30,8 +30,8 @@ func (g *intGenerator) Value() {
 	g.buffer.Write(int32Bytes(g.boundedInt32()))
 }
 
-func (g *intGenerator) String() string {
-	return strconv.Itoa(int(g.boundedInt32()))
+func (g *intGenerator) String() {
+	g.buffer.Write([]byte(strconv.Itoa(int(g.boundedInt32()))))
 }
 
 func (g *intGenerator) boundedInt32() int32 {

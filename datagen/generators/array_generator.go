@@ -32,12 +32,12 @@ func newArrayGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuffe
 	case *fromArrayGenerator:
 		// if array is generated with preGenerate(), this step is not needed
 		if !g.doNotTruncate {
-			g.bsonType = bsontype.Type(g.array[0][0])
+			g.bsonType = bsontype.Type(g.bsonArray[0][0])
 			// do not write first 3 bytes, ie
 			// bson type, byte("k"), byte(0) to avoid conflict with
 			// array index, because index is the key
-			for i := range g.array {
-				g.array[i] = g.array[i][3:]
+			for i := range g.bsonArray {
+				g.bsonArray[i] = g.bsonArray[i][3:]
 			}
 		}
 	case *constGenerator:

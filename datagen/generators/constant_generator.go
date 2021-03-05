@@ -10,7 +10,7 @@ import (
 // type and the key in addition of the actual value
 type constGenerator struct {
 	base
-	strVal  string
+	strVal  []byte
 	bsonVal []byte
 }
 
@@ -24,7 +24,7 @@ func newConstantGenerator(base base, value interface{}) (Generator, error) {
 
 	return &constGenerator{
 		base:    base,
-		strVal:  fmt.Sprint(value),
+		strVal:  []byte(fmt.Sprint(value)),
 		bsonVal: raw,
 	}, nil
 }
@@ -33,8 +33,8 @@ func (g *constGenerator) Value() {
 	g.buffer.Write(g.bsonVal)
 }
 
-func (g *constGenerator) String() string {
-	return g.strVal
+func (g *constGenerator) String() {
+	g.buffer.Write(g.strVal)
 }
 
 func bsonValue(key string, val interface{}) ([]byte, error) {

@@ -11,14 +11,15 @@ func newUUIDGenerator(base base) (Generator, error) {
 }
 
 func (g *uuidGenerator) Value() {
-	strUUID := g.String()
+	uuid, _ := uuid.NewV4()
+	strUUID := uuid.String()
 
 	g.buffer.Write(int32Bytes(int32(len(strUUID) + 1)))
 	g.buffer.Write([]byte(strUUID))
 	g.buffer.WriteSingleByte(byte(0))
 }
 
-func (g *uuidGenerator) String() string {
+func (g *uuidGenerator) String() {
 	uuid, _ := uuid.NewV4()
-	return uuid.String()
+	g.buffer.Write([]byte(uuid.String()))
 }

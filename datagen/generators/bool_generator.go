@@ -13,11 +13,11 @@ func (g *boolGenerator) Value() {
 	g.buffer.WriteSingleByte(byte(g.randomByte()))
 }
 
-func (g *boolGenerator) String() string {
+func (g *boolGenerator) String() {
 	if g.randomByte() == 0 {
-		return "true"
+		g.buffer.Write([]byte("true"))
 	}
-	return "false"
+	g.buffer.Write([]byte("false"))
 }
 
 func (g *boolGenerator) randomByte() byte {
