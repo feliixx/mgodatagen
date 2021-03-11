@@ -550,7 +550,7 @@ like this:
       "type": "constant",
       "constVal": "-"
     },
-            {
+    {
       "type": "int",
       "minInt": 1000,
       "maxInt": 9999
