@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // ConstGenerator for creating constant value. Val already contains the bson element
@@ -38,7 +39,23 @@ func (g *constGenerator) EncodeValueAsString() {
 }
 
 func bsonValue(key string, val interface{}) ([]byte, error) {
-	raw, err := bson.Marshal(bson.M{key: val})
+
+	valToMarshal := bson.M{key: val}
+
+	doc, ok := val.(bson.M)
+	if ok && len(doc) == 1 {
+
+		str, ok := doc["$oid"].(string)
+		if ok && len(str) == 24 {
+
+			objectId, err := primitive.ObjectIDFromHex(str)
+			if err == nil {
+				valToMarshal = bson.M{key: objectId}
+			}
+		}
+	}
+
+	raw, err := bson.Marshal(valToMarshal)
 	if err != nil {
 		return nil, fmt.Errorf("fail to marshal '%s': %v", val, err)
 	}
