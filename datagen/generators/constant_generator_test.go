@@ -25,7 +25,7 @@ func TestDocumentWithValidConstantObjectID(t *testing.T) {
 	var d struct {
 		Key primitive.ObjectID `bson:"key"`
 	}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		err := bson.Unmarshal(docGenerator.Generate(), &d)
 		if err != nil {
 			t.Error(err)
@@ -56,7 +56,7 @@ func TestDocumentWithInvalidConstantObjectID(t *testing.T) {
 			Oid string `bson:"$oid"`
 		} `bson:"key"`
 	}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		err := bson.Unmarshal(docGenerator.Generate(), &d)
 		if err != nil {
 			t.Error(err)
