@@ -13,7 +13,7 @@ func TestDocumentWithValidConstantObjectID(t *testing.T) {
 	docGenerator, err := ci.NewDocumentGenerator(map[string]generators.Config{
 		"key": {
 			Type: generators.TypeConstant,
-			ConstVal: bson.M{
+			ConstVal: map[string]interface{}{
 				"$oid": "5a934e000102030405000001",
 			},
 		},
@@ -30,7 +30,6 @@ func TestDocumentWithValidConstantObjectID(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-
 		if d.Key == [12]byte{} {
 			t.Error("objectId is nil")
 		}
@@ -42,7 +41,7 @@ func TestDocumentWithInvalidConstantObjectID(t *testing.T) {
 	docGenerator, err := ci.NewDocumentGenerator(map[string]generators.Config{
 		"key": {
 			Type: generators.TypeConstant,
-			ConstVal: bson.M{
+			ConstVal: map[string]interface{}{
 				"$oid": "5a9",
 			},
 		},
