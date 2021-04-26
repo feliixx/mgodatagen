@@ -15,9 +15,13 @@ type arrayGenerator struct {
 }
 
 func newArrayGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuffer) (Generator, error) {
-	if config.Size <= 0 {
+	if config.Size < 0 {
 		return nil, errors.New("make sure that 'size' >= 0")
 	}
+	if config.Size == 0 {
+		return newConstantGenerator(base, []int{})
+	}
+
 	g, err := ci.newGenerator(buffer, "", config.ArrayContent)
 	if err != nil {
 		return nil, err

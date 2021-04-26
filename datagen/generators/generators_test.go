@@ -452,6 +452,15 @@ func TestNewGenerator(t *testing.T) {
 			correct: false,
 			version: []int{3, 6},
 		},
+		{
+			name: "array with specified length of 0",
+			config: generators.Config{
+				Type: generators.TypeArray,
+				Size: 0,
+			},
+			correct: true,
+			version: []int{3, 6},
+		},
 	}
 	// all possible faker methods
 	fakerVal := []string{
