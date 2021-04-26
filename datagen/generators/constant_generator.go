@@ -42,9 +42,8 @@ func bsonValue(key string, val interface{}) ([]byte, error) {
 
 	valToMarshal := bson.M{key: val}
 
-	doc, ok := val.(bson.M)
+	doc, ok := val.(map[string]interface{})
 	if ok && len(doc) == 1 {
-
 		str, ok := doc["$oid"].(string)
 		if ok && len(str) == 24 {
 

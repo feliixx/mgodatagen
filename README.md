@@ -434,6 +434,7 @@ Add the same value to each document.
     "type":           "constant", // required
     "constVal":       `object`,   // required, can be of any type including object and array
                                   // eg: {"k": 1, "v": "val"}
+                                  // to set constant ObjectId eg: { "$oid": "5a934e000102030405000001" }
     "nullPercentage": `int`       // optional
 }
 ```
