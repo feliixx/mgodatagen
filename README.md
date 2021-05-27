@@ -33,7 +33,7 @@ First, make sure that go is installed on your machine (see [install go](https://
 ```
 git clone https://github.com/feliixx/mgodatagen.git
 cd mgodatagen
-go install
+go build
 ```
 
 ## Options
