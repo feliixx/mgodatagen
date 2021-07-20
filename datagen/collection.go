@@ -66,8 +66,7 @@ type ShardingConfig struct {
 
 // ParseConfig returns a list of Collection to create from a
 // json configuration file
-func ParseConfig(content []byte, ignoreMissingDb bool) ([]Collection, error) {
-	var collectionList []Collection
+func ParseConfig(content []byte, ignoreMissingDb bool) (collections []Collection, err error) {
 
 	// Use a decoder here se we can disallow unknow fields. Decode will return an
 	// error if some fields from content can't be matched
@@ -75,17 +74,17 @@ func ParseConfig(content []byte, ignoreMissingDb bool) ([]Collection, error) {
 	decoder := json.NewDecoder(bytes.NewReader(content))
 	decoder.DisallowUnknownFields()
 
-	err := decoder.Decode(&collectionList)
+	err = decoder.Decode(&collections)
 	if err != nil {
 		return nil, fmt.Errorf("error in configuration file: object / array / Date badly formatted: \n\n\t\t%v", err)
 	}
-	for _, v := range collectionList {
-		if v.Name == "" || (v.DB == "" && !ignoreMissingDb) {
+	for _, c := range collections {
+		if c.Name == "" || (c.DB == "" && !ignoreMissingDb) {
 			return nil, fmt.Errorf("error in configuration file: \n\t'collection' and 'database' fields can't be empty")
 		}
-		if v.Count <= 0 {
-			return nil, fmt.Errorf("error in configuration file: \n\tfor collection %s, 'count' has to be > 0", v.Name)
+		if c.Count <= 0 {
+			return nil, fmt.Errorf("error in configuration file: \n\tfor collection %s, 'count' has to be > 0", c.Name)
 		}
 	}
-	return collectionList, nil
+	return collections, nil
 }

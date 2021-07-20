@@ -36,11 +36,7 @@ func run(options *Options, out io.Writer) error {
 		out = ioutil.Discard
 	}
 	if options.New != "" {
-		err := createEmptyCfgFile(options.New)
-		if err != nil {
-			return fmt.Errorf("could not create an empty configuration file: %v", err)
-		}
-		return nil
+		return createEmptyCfgFile(options.New)
 	}
 	if options.ConfigFile == "" {
 		return fmt.Errorf("no configuration file provided, try mgodatagen --help for more informations ")
@@ -140,15 +136,14 @@ func connectToDB(conn *Connection, out io.Writer) (*mongo.Client, []int, error) 
 	if err != nil {
 		buildInfo.Version = "3.4.0"
 	}
+	fmt.Fprintf(out, "\nMongoDB server version %s\n\n", buildInfo.Version)
 
 	version := strings.Split(buildInfo.Version, ".")
 	versionInt := make([]int, len(version))
-
 	for i := range version {
 		v, _ := strconv.Atoi(version[i])
 		versionInt[i] = v
 	}
-	fmt.Fprintf(out, "\nMongoDB server version %s\n\n", buildInfo.Version)
 
 	var shardConfig struct {
 		Shards []bson.M
@@ -199,6 +194,7 @@ func createClientOptions(conn *Connection) *options.ClientOptions {
 }
 
 func createEmptyCfgFile(filename string) error {
+
 	_, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
 	if err != nil {
 		fmt.Printf("file %s already exists, overwrite it ?  [y/n]: ", filename)
@@ -213,7 +209,7 @@ func createEmptyCfgFile(filename string) error {
 	}
 	f, err := os.Create(filename)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not create an empty configuration file: %v", err)
 	}
 	defer f.Close()
 
