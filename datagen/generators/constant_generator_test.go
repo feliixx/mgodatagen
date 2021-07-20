@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
+	
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )

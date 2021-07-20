@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/jessevdk/go-flags"
-
 	"github.com/feliixx/mgodatagen/datagen"
+
+	"github.com/jessevdk/go-flags"
 )
 
 // Version of mgodatagen. Should be linked via ld_flags when compiling
