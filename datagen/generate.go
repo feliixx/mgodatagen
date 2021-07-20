@@ -153,6 +153,13 @@ func connectToDB(conn *Connection, out io.Writer) (*mongo.Client, []int, error) 
 	result = session.Database("admin").RunCommand(context.Background(), bson.M{"listShards": 1})
 	err = result.Decode(&shardConfig)
 	if err == nil && result.Err() == nil {
+
+		// starting in MongoDB 5.0, topology time appears in shard list. Remove
+		// it for tests
+		for i := range shardConfig.Shards {
+			delete(shardConfig.Shards[i], "topologyTime")
+		}
+
 		shardList, err := json.MarshalIndent(shardConfig.Shards, "", "  ")
 		if err == nil {
 			fmt.Fprintf(out, "shard list: %v\n", string(shardList))
