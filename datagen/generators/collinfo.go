@@ -94,7 +94,7 @@ type Config struct {
 	StartInt int32 `json:"startInt"`
 	// For `autoincrement` type only. Start value
 	StartLong int64 `json:"startLong"`
-	// For `autoincrement` type only. Type of the field, can be int | long
+	// For `autoincrement` type only. Type of the field, must be one of [ 'int', 'long' ]
 	AutoType string `json:"autoType"`
 	// For `faker` type only. Method to use
 	Method string `json:"method"`
@@ -105,6 +105,8 @@ type Config struct {
 	ID int `json:"id"`
 	// For `ref` type only. generator for the field
 	RefContent *Config `json:"refContent"`
+	// For `uuid` type only. Type of the field, must be one of [ 'string', 'binary' ]
+	UUIDFormat string `json:"format"`
 	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
 	Collection string `json:"collection"`
 	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
@@ -258,10 +260,10 @@ var mapTypes = map[string]bsontype.Type{
 	TypeFromArray:       bson.TypeNull, // can be of any bson type
 	TypeConstant:        bson.TypeNull, // can be of any bson type
 	TypeRef:             bson.TypeNull, // can be of any bson type
-	TypeAutoincrement:   bson.TypeNull, // type bson.ElementInt32 or bson.ElementInt64
+	TypeAutoincrement:   bson.TypeNull, // type Int32 or Int64
 	TypeBinary:          bson.TypeBinary,
 	TypeDate:            bson.TypeDateTime,
-	TypeUUID:            bson.TypeString,
+	TypeUUID:            bson.TypeNull, // type String or Binary
 	TypeFaker:           bson.TypeString,
 	TypeStringFromParts: bson.TypeString,
 
@@ -529,11 +531,19 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		case TypeLong:
 			return newAutoIncrementLongGenerator(config, base)
 		default:
-			return nil, fmt.Errorf("invalid type '%s'", config.Type)
+			return nil, fmt.Errorf("invalid type '%s', must be one of ['int', 'long']", config.Type)
 		}
 
 	case TypeUUID:
-		return newUUIDGenerator(base)
+		switch config.UUIDFormat {
+		case "", // default is string
+			TypeString:
+			return newStringUUIDGenerator(base)
+		case TypeBinary:
+			return newBinaryUUIDGenerator(base)
+		default:
+			return nil, fmt.Errorf("invalid format '%s', must be one of ['string', 'binary']", config.UUIDFormat)
+		}
 
 	case TypeFaker:
 		return newFakerGenerator(config, base)

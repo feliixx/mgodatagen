@@ -14,6 +14,10 @@
       "uuid": {
         "type": "uuid"
       },
+      "uuidBinary": {
+        "type": "uuid",
+        "format": "binary"
+      },
       "string": {
         "type": "string",
         "maxDistinctValue": 500,
@@ -66,13 +70,13 @@
         "type": "fromArray",
         "in": [
           1,
-          4, 
+          4,
           12,
-          22, 
+          22,
           484844,
-          3747, 
+          3747,
           222
-        ], 
+        ],
         "randomOrder": true
       },
       "arrayFromArray": {
@@ -173,7 +177,11 @@
           },
           {
             "type": "fromArray",
-            "in": ["gmail.com", "github.com", "mongoplayground.net"]
+            "in": [
+              "gmail.com",
+              "github.com",
+              "mongoplayground.net"
+            ]
           },
           {
             "type": "objectId"
@@ -189,6 +197,10 @@
           },
           {
             "type": "uuid"
+          },
+          {
+            "type": "uuid",
+            "format": "binary"
           },
           {
             "type": "int",
