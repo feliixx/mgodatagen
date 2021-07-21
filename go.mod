@@ -10,6 +10,6 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
-	github.com/satori/go.uuid v1.2.1-0.20181028125025-b2ce2384e17b
+	github.com/google/uuid v1.3.0
 	go.mongodb.org/mongo-driver v1.5.1
 )

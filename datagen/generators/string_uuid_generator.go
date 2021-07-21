@@ -1,7 +1,7 @@
 package generators
 
 import (
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -15,8 +15,7 @@ func newStringUUIDGenerator(base base) (Generator, error) {
 }
 
 func (g *stringUUIDGenerator) EncodeValue() {
-	uuid, _ := uuid.NewV4()
-	s := uuid.String()
+	s := uuid.NewString()
 
 	g.buffer.Write(int32Bytes(int32(len(s) + 1)))
 	g.buffer.Write([]byte(s))
@@ -24,6 +23,5 @@ func (g *stringUUIDGenerator) EncodeValue() {
 }
 
 func (g *stringUUIDGenerator) EncodeValueAsString() {
-	uuid, _ := uuid.NewV4()
-	g.buffer.Write([]byte(uuid.String()))
+	g.buffer.Write([]byte(uuid.NewString()))
 }

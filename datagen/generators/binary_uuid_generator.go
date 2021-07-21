@@ -1,7 +1,7 @@
 package generators
 
 import (
-	uuid "github.com/satori/go.uuid"
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
@@ -18,8 +18,7 @@ func newBinaryUUIDGenerator(base base) (Generator, error) {
 const binaryUUIDSubtype = 0x04
 
 func (g *binaryUUIDGenerator) EncodeValue() {
-	uuid, _ := uuid.NewV4()
-	b := uuid.Bytes()
+	b, _ := uuid.New().MarshalBinary()
 
 	g.buffer.Write(int32Bytes(int32(len(b))))
 	g.buffer.WriteSingleByte(binaryUUIDSubtype)
@@ -27,6 +26,5 @@ func (g *binaryUUIDGenerator) EncodeValue() {
 }
 
 func (g *binaryUUIDGenerator) EncodeValueAsString() {
-	uuid, _ := uuid.NewV4()
-	g.buffer.Write([]byte(uuid.String()))
+	g.buffer.Write([]byte(uuid.NewString()))
 }
