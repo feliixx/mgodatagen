@@ -427,7 +427,7 @@ eg : [40.741895, -73.989308]
 
 ### Constant
 
-Add the same value to each document.
+Adds the same value to each document.
 
 ```JSON5
 "fieldName": {
@@ -483,7 +483,7 @@ generator in other collections:
 
 ### FromArray
 
-Pick an object from an array as value for the field. Currently, objects in the
+Picks an object from an array as value for the field. Currently, objects in the
 array have to be of the same type. By default, items are picked from the array 
 in the order where they appear.
 
@@ -504,7 +504,7 @@ in the order where they appear.
 
 ### UUID
 
-Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github.com/satori/go.uuid#NewV4)).
+Generates a random UUID
 
 ```JSON5
 "fieldName": {
@@ -521,7 +521,7 @@ If `format` is `"string"`, the field will be a simple string like `"f1b9b567-9b3
 
 ### StringFromParts
 
-Generate a random string from several generators
+Generates a random string from several generators
 
 ```JSON5
 "fieldName": {
