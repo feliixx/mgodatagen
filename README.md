@@ -446,9 +446,9 @@ Generates an autoincremented value (type `<long>` or `<int>`).
 ```JSON5
 "fieldName": {
     "type":           "autoincrement", // required
-    "autoType":       `string`,        // required, can be `int` or `long`
-    "startLong":      `long`,          // optional, start value if autoType = long
-    "startInt":       `int`,           // optional, start value if autoType = int
+    "autoType":       `string`,        // required, either "int" or "long"
+    "startLong":      `long`,          // optional, start value if autoType = "long"
+    "startInt":       `int`,           // optional, start value if autoType = "int"
     "nullPercentage": `int`            // optional
 }
 ```
@@ -508,10 +508,16 @@ Generate a random UUID ( using [satori/go.uuid NewV4()](https://godoc.org/github
 
 ```JSON5
 "fieldName": {
-    "type":           "uuid", // required
-    "nullPercentage": `int`   // optional
+    "type":           "uuid",  // required
+    "format":         `string` // optional, either "string" or "binary".
+                               // default is "string" 
+    "nullPercentage": `int`    // optional
 }
 ```
+
+If `format` is `"string"`, the field will be a simple string like `"f1b9b567-9b34-45af-9d9c-35f565d57716"`.
+
+ If `format` is `"binary"`, the field will be stored as a [bson UUID](https://docs.mongodb.com/manual/reference/method/UUID/) like `UUID("f1b9b567-9b34-45af-9d9c-35f565d57716")`
 
 ### StringFromParts
 
