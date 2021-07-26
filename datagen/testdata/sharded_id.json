@@ -1,10 +1,10 @@
 [
     {
-        "database": "datagen_it_test",
+        "database": "mgodatagen_test",
         "collection": "test_bson",
         "count": 15000,
         "shardConfig": {
-            "shardCollection": "datagen_it_test.test_bson",
+            "shardCollection": "mgodatagen_test.test_bson",
             "key": {
                 "_id": "hashed"
             }

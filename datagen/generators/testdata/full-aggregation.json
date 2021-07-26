@@ -1,6 +1,6 @@
 [
     {
-        "database": "datagen_it_test",
+        "database": "mgodatagen_test",
         "collection": "test",
         "count": 10000,
         "content": {
@@ -33,7 +33,7 @@
         }
     },
     {
-        "database": "datagen_it_test",
+        "database": "mgodatagen_test",
         "collection": "test_bson",
         "count": 6,
         "content": {
@@ -45,7 +45,7 @@
             "AG-FI": {
                 "type": "countAggregator",
                 "collection": "test",
-                "database": "datagen_it_test",
+                "database": "mgodatagen_test",
                 "query": {
                     "link": "$$_id"
                 }
@@ -53,7 +53,7 @@
             "AG-CI": {
                 "type": "boundAggregator",
                 "collection": "test",
-                "database": "datagen_it_test",
+                "database": "mgodatagen_test",
                 "field": "field1",
                 "query": {
                     "link": "$$_id"
@@ -62,7 +62,7 @@
             "AG-VA": {
                 "type": "valueAggregator",
                 "collection": "test",
-                "database": "datagen_it_test",
+                "database": "mgodatagen_test",
                 "field": "field",
                 "query": {
                     "link": "$$_id"

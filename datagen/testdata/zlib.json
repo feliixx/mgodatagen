@@ -1,6 +1,6 @@
 [
     {
-        "database": "datagen_it_test",
+        "database": "mgodatagen_test",
         "collection": "zlib",
         "compressionLevel": "zlib",
         "count": 1,

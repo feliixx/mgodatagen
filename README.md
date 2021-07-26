@@ -189,7 +189,7 @@ and run
 ```
 
 This will insert 1000 random documents in collections `test` and `link` of database
-`datagen_it_test` with the structure defined in the config file.
+`mgodatagen_test` with the structure defined in the config file.
 
 # Generator types
 

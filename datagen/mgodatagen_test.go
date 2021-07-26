@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 
 	retCode := m.Run()
 
-	err = session.Database("datagen_it_test").Drop(context.Background())
+	err = session.Database("mgodatagen_test").Drop(context.Background())
 	if err != nil {
 		fmt.Printf("couldn't drop db: %v\n", err)
 		os.Exit(1)
@@ -971,7 +971,7 @@ func TestGenerate(t *testing.T) {
 					t.Errorf("expected no error for options %v, but got %v", tt.options, err)
 				}
 				if tt.expectedNbDoc > 0 {
-					count, err := session.Database("datagen_it_test").Collection("test_bson").CountDocuments(context.Background(), bson.M{})
+					count, err := session.Database("mgodatagen_test").Collection("test_bson").CountDocuments(context.Background(), bson.M{})
 					if err != nil {
 						t.Error(err)
 					}
@@ -1067,7 +1067,7 @@ func BenchmarkGenerate(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 
 		b.StopTimer()
-		err := session.Database("datagen_it_test").Drop(context.Background())
+		err := session.Database("mgodatagen_test").Drop(context.Background())
 		if err != nil {
 			b.Error(err)
 		}

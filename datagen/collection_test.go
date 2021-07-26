@@ -34,7 +34,7 @@ func TestParseConfig(t *testing.T) {
 		{
 			name: "invalid content",
 			configBytes: []byte(`[{
-				"database": "datagen_it_test", 
+				"database": "mgodatagen_test", 
 				"collection": "test",
 				"count": 1000,
 				"content": { "k": invalid }
@@ -59,7 +59,7 @@ func TestParseConfig(t *testing.T) {
 		{
 			name: "count > 0",
 			configBytes: []byte(`[{
-				"database": "datagen_it_test", 
+				"database": "mgodatagen_test", 
 				"collection": "test",
 				"count": 0,
 				"content": {}
