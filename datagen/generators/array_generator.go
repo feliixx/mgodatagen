@@ -10,16 +10,27 @@ import (
 // Generator for creating random array
 type arrayGenerator struct {
 	base
-	size      int
+	minLength uint32
+	maxLength uint32
 	generator Generator
 }
 
 func newArrayGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuffer) (Generator, error) {
-	if config.Size < 0 {
-		return nil, errors.New("make sure that 'size' >= 0")
+
+	if config.MinLength == 0 && config.MaxLength == 0 {
+
+		// config.Size is the old attribute for array length, 
+		// use it if MinLength/MaxLength aren't specified
+		if config.Size == 0 {
+			return newConstantGenerator(base, []int{})
+		} else {
+			config.MinLength = config.Size
+			config.MaxLength = config.Size
+		}
 	}
-	if config.Size == 0 {
-		return newConstantGenerator(base, []int{})
+
+	if config.MinLength < 0 || config.MinLength > config.MaxLength {
+		return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'")
 	}
 
 	g, err := ci.newGenerator(buffer, "", config.ArrayContent)
@@ -53,7 +64,8 @@ func newArrayGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuffe
 
 	return &arrayGenerator{
 		base:      base,
-		size:      config.Size,
+		minLength: uint32(config.MinLength),
+		maxLength: uint32(config.MaxLength),
 		generator: g,
 	}, nil
 }
@@ -77,12 +89,18 @@ var indexesBytes = [10]byte{
 }
 
 func (g *arrayGenerator) EncodeValue() {
+
+	length := g.minLength
+	if g.minLength != g.maxLength {
+		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
+	}
+
 	current := g.buffer.Len()
 	g.buffer.Reserve()
 	// array looks like this:
 	// size (byte(index) byte(0) value)... byte(0)
 	// where index is a string: ["1", "2", "3"...]
-	for i := 0; i < g.size; i++ {
+	for i := 0; i < int(length); i++ {
 		g.buffer.WriteSingleByte(byte(g.generator.Type()))
 		if i < 10 {
 			g.buffer.WriteSingleByte(indexesBytes[i])
