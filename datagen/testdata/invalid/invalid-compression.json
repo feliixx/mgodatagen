@@ -1,6 +1,6 @@
 [
     {
-        "database": "datagen_it_test",
+        "database": "mgodatagen_test",
         "collection": "invalid-compression",
         "compressionLevel": "unknown",
         "count": 1,

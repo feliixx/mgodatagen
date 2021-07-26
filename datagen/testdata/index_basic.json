@@ -1,6 +1,6 @@
 [
     {
-        "database": "datagen_it_test",
+        "database": "mgodatagen_test",
         "collection": "index_basic",
         "count": 3,
         "content": {

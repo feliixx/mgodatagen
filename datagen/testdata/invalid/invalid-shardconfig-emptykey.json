@@ -1,10 +1,10 @@
 [
     {
-        "database": "datagen_it_test",
+        "database": "mgodatagen_test",
         "collection": "invalid-shardconfig-emptykey",
         "count": 1,
         "shardConfig": {
-            "shardCollection": "datagen_it_test.invalid-shardconfig-emptykey",
+            "shardCollection": "mgodatagen_test.invalid-shardconfig-emptykey",
             "key": {}
         },
         "content": {}

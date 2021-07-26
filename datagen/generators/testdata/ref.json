@@ -1,6 +1,6 @@
 [
   {
-    "database": "datagen_it_test",
+    "database": "mgodatagen_test",
     "collection": "test",
     "count": 1000,
     "content": {
@@ -99,7 +99,7 @@
     }
   },
   {
-    "database": "datagen_it_test",
+    "database": "mgodatagen_test",
     "collection": "link",
     "count": 1000,
     "content": {

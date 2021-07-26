@@ -1,6 +1,6 @@
 [
   {
-    "database": "datagen_it_test",
+    "database": "mgodatagen_test",
     "collection": "test_bson",
     "count": 1000,
     "content": {

@@ -163,7 +163,7 @@ func TestAggregatorUpdate(t *testing.T) {
 			config: generators.Config{
 				Type:       generators.TypeCountAggregator,
 				Collection: "test",
-				Database:   "datagen_it_test",
+				Database:   "mgodatagen_test",
 				Query: bson.M{
 					"local": "$$_id",
 				},
@@ -183,7 +183,7 @@ func TestAggregatorUpdate(t *testing.T) {
 			config: generators.Config{
 				Type:       generators.TypeValueAggregator,
 				Collection: "test",
-				Database:   "datagen_it_test",
+				Database:   "mgodatagen_test",
 				Field:      "_id",
 				Query: bson.M{
 					"local": "$$_id",
@@ -204,7 +204,7 @@ func TestAggregatorUpdate(t *testing.T) {
 			config: generators.Config{
 				Type:       generators.TypeBoundAggregator,
 				Collection: "test",
-				Database:   "datagen_it_test",
+				Database:   "mgodatagen_test",
 				Field:      "_id",
 				Query: bson.M{
 					"local": "$$_id",
@@ -224,7 +224,7 @@ func TestAggregatorUpdate(t *testing.T) {
 			config: generators.Config{
 				Type:       generators.TypeCountAggregator,
 				Collection: "test",
-				Database:   "datagen_it_test",
+				Database:   "mgodatagen_test",
 				Query: bson.M{
 					"field": 1,
 				},

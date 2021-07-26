@@ -1,12 +1,12 @@
 [
     {
-        "database": "datagen_it_test",
+        "database": "mgodatagen_test",
         "collection": "test_bson",
         "count": 11479,
         "content": {
             "c32": {
-                "type": "int", 
-                "minInt": 1, 
+                "type": "int",
+                "minInt": 1,
                 "maxInt": 10
             }
         },
