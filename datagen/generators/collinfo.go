@@ -72,8 +72,6 @@ type Config struct {
 	MinDouble float64 `json:"minDouble"`
 	// For `double` type only. Higher bound for the float64 to generate
 	MaxDouble float64 `json:"maxDouble"`
-	// For `array` only. Size of the array
-	Size int `json:"size"`
 	// For `array` only. Config to fill the array. Need to
 	// pass a pointer here to avoid 'invalid recursive type' error
 	ArrayContent *Config `json:"arrayContent"`
@@ -115,6 +113,9 @@ type Config struct {
 	Field string `json:"field"`
 	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
 	Query bson.M `json:"query"`
+
+	// Deprecated. Use MinLength/MaxLength instead
+	Size int `json:"size"`
 }
 
 // available generator types, see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
@@ -430,7 +431,7 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 		Generators: make([]Generator, 0, len(content)),
 	}
 
-	// a field can reference another field in the same collection. As go map are unordered, 
+	// a field can reference another field in the same collection. As go map are unordered,
 	// we need to make sure that the initial 'ref' field is initialized before it's reference
 	fields := make([]string, 0)
 	for k, v := range content {

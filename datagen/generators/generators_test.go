@@ -21,7 +21,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 	var expectedDoc struct {
 		ID                      primitive.ObjectID `bson:"_id"`
 		UUID                    string             `bson:"uuid"`
-		UUIDBinary 				[]byte			   `bson:"uuidBinary"`
+		UUIDBinary              []byte             `bson:"uuidBinary"`
 		String                  string             `bson:"string"`
 		Int32                   int32              `bson:"int32"`
 		Int64                   int64              `bson:"int64"`
@@ -415,6 +415,25 @@ func TestNewGenerator(t *testing.T) {
 				Size: 0,
 			},
 			correct: true,
+			version: []int{3, 6},
+		},
+		{
+			name: "array with minLength < 0 ",
+			config: generators.Config{
+				Type:      generators.TypeArray,
+				MinLength: -1,
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "array with minLength > maxLength ",
+			config: generators.Config{
+				Type:      generators.TypeArray,
+				MinLength: 3,
+				MaxLength: 1,
+			},
+			correct: false,
 			version: []int{3, 6},
 		},
 		{

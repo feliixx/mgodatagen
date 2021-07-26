@@ -81,7 +81,8 @@
       },
       "arrayFromArray": {
         "type": "array",
-        "size": 6,
+        "minLength": 6,
+        "maxLength": 6,
         "arrayContent": {
           "type": "fromArray",
           "in": [
@@ -94,7 +95,8 @@
       },
       "constArray": {
         "type": "array",
-        "size": 2,
+        "minLength": 2,
+        "maxLength": 2,
         "arrayContent": {
           "type": "constant",
           "constVal": "const"
@@ -130,7 +132,8 @@
       },
       "arrayInt32": {
         "type": "array",
-        "size": 3,
+        "minLength": 3,
+        "maxLength": 3,
         "arrayContent": {
           "type": "int",
           "minInt": 0,

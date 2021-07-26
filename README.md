@@ -355,7 +355,8 @@ Generates a random array of bson object.
 ```JSON5
 "fieldName": {
     "type":             "array",     // required
-    "size":             `int`,       // required, size of the array
+    "minLength":        `int`,       // required, must be >= 0
+    "maxLength":        `int`,       // required, must be >= minLength
     "arrayContent":     `generator`, // generator use to create element to fill the array.
                                      // can be of any type
     "nullPercentage":   `int`,       // optional

@@ -57,7 +57,8 @@
       },
       "array": {
         "type": "array",
-        "size": 3,
+        "minLength": 2,
+        "maxLength": 2,
         "arrayContent": {
           "type": "string",
           "minLength": 1,
@@ -111,7 +112,8 @@
       },
       "arrRef": {
         "type": "array",
-        "size": 3,
+        "minLength": 3,
+        "maxLength": 4,
         "arrayContent": {
           "type": "ref",
           "id": 1
