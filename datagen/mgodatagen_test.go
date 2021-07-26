@@ -783,6 +783,12 @@ func TestGenerate(t *testing.T) {
 			expectedNbDoc: 467,
 		},
 		{
+			name:          "reference inner collection",
+			options:       defaultOpts("testdata/reference_same_collection.json"),
+			correct:       true,
+			expectedNbDoc: 2167,
+		},
+		{
 			name: "non-listenning port with uri",
 			options: datagen.Options{
 				Connection: datagen.Connection{
