@@ -429,10 +429,24 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 		Buffer:     buffer,
 		Generators: make([]Generator, 0, len(content)),
 	}
+
+	// a field can reference another field in the same collection. As go map are unordered, 
+	// we need to make sure that the initial 'ref' field is initialized before it's reference
+	fields := make([]string, 0)
 	for k, v := range content {
-		g, err := ci.newGenerator(buffer, k, &v)
+		if v.Type == "ref" && v.RefContent == nil {
+			fields = append(fields, k)
+		} else {
+			fields = append([]string{k}, fields...)
+		}
+	}
+
+	for _, field := range fields {
+
+		c := content[field]
+		g, err := ci.newGenerator(buffer, field, &c)
 		if err != nil {
-			return nil, fmt.Errorf("invalid generator for field '%s'\n  cause: %v", k, err)
+			return nil, fmt.Errorf("invalid generator for field '%s'\n  cause: %v", field, err)
 		}
 		d.Add(g)
 	}

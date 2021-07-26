@@ -481,6 +481,8 @@ generator in other collections:
 }
 ```
 
+It can also be used to duplicate a field in a single collection ( see [reference_same_collection.json](https://github.com/feliixx/mgodatagen/tree/master/datagen/testdata/reference_same_collection.json) ) 
+
 ### FromArray
 
 Picks an object from an array as value for the field. Currently, objects in the
