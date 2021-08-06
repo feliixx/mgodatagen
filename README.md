@@ -524,7 +524,7 @@ If `format` is `"string"`, the field will be a simple string like `"f1b9b567-9b3
 
 ### StringFromParts
 
-Generates a random string from several generators
+Generates a random string from several generators. `parts` generators can't have `unique` or `maxDistinctValue` attributes set. 
 
 ```JSON5
 "fieldName": {

@@ -445,6 +445,38 @@ func TestNewGenerator(t *testing.T) {
 			correct: false,
 			version: []int{3, 6},
 		},
+		{
+			name: "string from parts with part with unique",
+			config: generators.Config{
+				Type: generators.TypeStringFromParts,
+				Parts: []generators.Config{
+					{
+						Type:      generators.TypeString,
+						MinLength: 0,
+						MaxLength: 2,
+						Unique:    true,
+					},
+				},
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "string from parts with part with maxDistinctValue",
+			config: generators.Config{
+				Type: generators.TypeStringFromParts,
+				Parts: []generators.Config{
+					{
+						Type:             generators.TypeDouble,
+						MinDouble:        -20.565,
+						MaxDouble:        2,
+						MaxDistinctValue: 10,
+					},
+				},
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
 	}
 	// all possible faker methods
 	fakerVal := []string{
