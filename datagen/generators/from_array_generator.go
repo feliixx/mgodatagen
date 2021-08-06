@@ -59,6 +59,10 @@ func (g *fromArrayGenerator) EncodeValue() {
 }
 
 func (g *fromArrayGenerator) EncodeValueAsString() {
+	if len(g.strArray) == 0 {
+		return
+	}
+
 	g.buffer.Write(g.strArray[g.randomIndex()])
 }
 
