@@ -6,7 +6,6 @@ on:
       - 'v*'
 
 env:
-  TZ: Pacific/Noumea
   LD_FLAGS: "-w -s -X main.Version=$(git describe --tags $(git rev-list --tags --max-count=1))"
 
 jobs:
@@ -21,7 +20,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16
+          go-version: 1.17
           
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
