@@ -37,13 +37,13 @@ var (
 	shardInfo = `
 shard list: [
   {
-    "_id": "shard0000",
-    "host": "localhost:27021",
+    "_id": "shardRs1",
+    "host": "shardRs1/localhost:27021,localhost:27022",
     "state": 1
   },
   {
-    "_id": "shard0001",
-    "host": "localhost:27022",
+    "_id": "shardRs2",
+    "host": "shardRs2/localhost:27023,localhost:27024",
     "state": 1
   }
 ]`
