@@ -24,14 +24,14 @@ jobs:
       - name: Lint code
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.42.0
+          version: v1.42.1
 
   build:
     needs: static_check
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        mongodb-version: [4.2.15, 4.4.8, 4.4.8-sharded, 5.0.2]
+        mongodb-version: [4.2.16, 4.4.9, 5.0.3, 5.0.3-sharded]
 
     steps:
       - name: Check out code
@@ -58,9 +58,8 @@ jobs:
         if: contains(matrix.mongodb-version, 'sharded')
         run: |
           wget https://raw.githubusercontent.com/feliixx/mongodbShardedCluster/master/deploy.sh
-          wget https://raw.githubusercontent.com/feliixx/mongodbShardedCluster/master/config.txt
           chmod +x deploy.sh
-          ./deploy.sh config.txt $PWD/db
+          ./deploy.sh $PWD/db 2
 
       - name: Setup a standalone db
         if: contains(matrix.mongodb-version, 'sharded') == false
