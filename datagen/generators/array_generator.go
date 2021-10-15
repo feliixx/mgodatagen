@@ -19,7 +19,7 @@ func newArrayGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuffe
 
 	if config.MinLength == 0 && config.MaxLength == 0 {
 
-		// config.Size is the old attribute for array length, 
+		// config.Size is the old attribute for array length,
 		// use it if MinLength/MaxLength aren't specified
 		if config.Size == 0 {
 			return newConstantGenerator(base, []int{})
@@ -31,6 +31,10 @@ func newArrayGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuffe
 
 	if config.MinLength < 0 || config.MinLength > config.MaxLength {
 		return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'")
+	}
+
+	if config.ArrayContent == nil {
+		return nil, errors.New("'arrayContent' can't be null")
 	}
 
 	g, err := ci.newGenerator(buffer, "", config.ArrayContent)

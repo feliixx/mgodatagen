@@ -205,6 +205,9 @@ func TestNewGenerator(t *testing.T) {
 			config: generators.Config{
 				Type: generators.TypeArray,
 				Size: -1,
+				ArrayContent: &generators.Config{
+					Type: generators.TypeObjectID,
+				},
 			},
 			correct: false,
 			version: []int{3, 6},
@@ -413,6 +416,9 @@ func TestNewGenerator(t *testing.T) {
 			config: generators.Config{
 				Type: generators.TypeArray,
 				Size: 0,
+				ArrayContent: &generators.Config{
+					Type: generators.TypeObjectID,
+				},
 			},
 			correct: true,
 			version: []int{3, 6},
@@ -422,6 +428,9 @@ func TestNewGenerator(t *testing.T) {
 			config: generators.Config{
 				Type:      generators.TypeArray,
 				MinLength: -1,
+				ArrayContent: &generators.Config{
+					Type: generators.TypeObjectID,
+				},
 			},
 			correct: false,
 			version: []int{3, 6},
@@ -431,6 +440,19 @@ func TestNewGenerator(t *testing.T) {
 			config: generators.Config{
 				Type:      generators.TypeArray,
 				MinLength: 3,
+				MaxLength: 1,
+				ArrayContent: &generators.Config{
+					Type: generators.TypeObjectID,
+				},
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "array without array content ",
+			config: generators.Config{
+				Type:      generators.TypeArray,
+				MinLength: 1,
 				MaxLength: 1,
 			},
 			correct: false,
