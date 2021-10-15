@@ -11,5 +11,5 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/olekukonko/tablewriter v0.0.4
-	go.mongodb.org/mongo-driver v1.7.0
+	go.mongodb.org/mongo-driver v1.7.3
 )
