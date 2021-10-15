@@ -36,6 +36,12 @@ cd mgodatagen
 go build
 ```
 
+If you are using go 1.17 or higher, you can simply use `go install`: 
+
+```
+go install github.com/feliixx/mgodatagen@latest
+```
+
 ## Options
 
 Several options are available (use `mgodatagen --help` to print this):
