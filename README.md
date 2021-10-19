@@ -12,11 +12,11 @@ Try it online: [**mongoplayground.net**](https://mongoplayground.net/)
 
 - Support all bson types listed in [MongoDB bson types](https://docs.mongodb.com/manual/reference/bson-types/)
 - Generate _real_ data using [gofakeit](https://github.com/brianvoe/gofakeit)
-- Create referenced fields accross collections
+- Create referenced fields across collections
 - Aggregate data across collections
 - Create sharded collection
 - Create collections in multiple databases
-- Cross-plateform
+- Cross-platform
 
 ![Demo](demo.gif)
 
@@ -711,7 +711,7 @@ The query can't be empty or null
   "collection": `string`,    // required, collection to use to perform aggregation
   "key":        `string`,    // required, the field for which to return distinct values.
   "query":      `object`     // required, query that specifies the documents from which
-                             // to retrieve lower/higer value
+                             // to retrieve lower/higher value
 }
 ```
 
