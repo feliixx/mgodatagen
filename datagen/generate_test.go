@@ -16,11 +16,13 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/feliixx/mgodatagen/datagen"
+	"github.com/feliixx/mgodatagen/datagen/generators"
 )
 
 var (
@@ -1297,4 +1299,39 @@ func BenchmarkGenerate(b *testing.B) {
 		datagen.Generate(&opts, ioutil.Discard)
 	}
 
+}
+
+func FuzzDocGenerator(f *testing.F) {
+
+	fullBsonConfig, err := os.ReadFile("generators/testdata/full-bson.json")
+	if err != nil {
+		f.Errorf("fail to open base config file: %v", err)
+	}
+	f.Add(fullBsonConfig)
+
+	f.Fuzz(func(t *testing.T, content []byte) {
+
+		collections, err := datagen.ParseConfig(content, false)
+		if err != nil && len(collections) >= 1 {
+			return
+		}
+
+		mapRef := make(map[int][][]byte)
+		mapRefType := make(map[int]bsontype.Type)
+
+		for i := 0; i < len(collections); i++ {
+
+			ci := generators.NewCollInfo(collections[i].Count, []int{5, 0, 5}, uint64(0), mapRef, mapRefType)
+
+			docGen, err := ci.NewDocumentGenerator(collections[i].Content)
+			if err != nil {
+				return
+			}
+			doc := docGen.Generate()
+
+			if err = bson.Raw(doc).Validate(); err != nil {
+				t.Errorf("Generated doc is not valid BSON: %v", doc)
+			}
+		}
+	})
 }
