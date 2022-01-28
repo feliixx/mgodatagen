@@ -24,7 +24,7 @@ jobs:
       - name: Lint code
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.42.1
+          version: v1.44.0
 
   build:
     needs: static_check
