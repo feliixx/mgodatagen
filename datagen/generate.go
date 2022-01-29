@@ -32,6 +32,7 @@ func Generate(options *Options, out io.Writer) error {
 }
 
 func run(options *Options, out io.Writer) error {
+
 	if options.Quiet {
 		out = ioutil.Discard
 	}
@@ -53,6 +54,7 @@ func run(options *Options, out io.Writer) error {
 Actual collection count may not match the 'count' specified in config file
 `)
 	}
+
 	content, err := ioutil.ReadFile(options.ConfigFile)
 	if err != nil {
 		return fmt.Errorf("fail to read file %s\n  cause: %v", options.ConfigFile, err)
@@ -80,7 +82,12 @@ Actual collection count may not match the 'count' specified in config file
 	}
 
 	start := time.Now()
-	seed := uint64(start.Unix())
+	seed := options.Seed
+	if seed == 0 {
+		seed = uint64(start.Unix())
+	}
+
+	fmt.Fprintf(out, "Using seed: %d\n\n", seed)
 
 	// build all generators / aggregators before generating the collection, so we can
 	// return the any config error fater.

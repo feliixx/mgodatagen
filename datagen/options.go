@@ -30,6 +30,7 @@ type Configuration struct {
 	IndexFirst      bool   `short:"x" long:"indexfirst" description:"if present, mgodatagen will create index before\n inserting documents"`
 	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU"`
 	BatchSize       int    `short:"b" long:"batchsize" value-name:"<size>" description:"bulk insert batch size" default:"1000"`
+	Seed            uint64 `short:"s" long:"seed" value-name:"<seed>" description:"specific seed to use. Passing the same seed garentees\n the same output for evey run with the same config.\n Has to be in [1, 18446744073709551615]"`
 }
 
 // Template struct that stores info on config file to generate
