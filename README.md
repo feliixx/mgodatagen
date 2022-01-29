@@ -64,6 +64,9 @@ configuration:
   -n, --numWorker=<nb>                         number of concurrent workers inserting documents
                                                in database. Default is number of CPU
   -b, --batchsize=<size>                       bulk insert batch size (default: 1000)
+  -s, --seed=<seed>                            specific seed to use. Passing the same seed garentees
+                                               the same output for evey run with the same config.
+                                               Has to be in [1, 18446744073709551615]
 
 connection infos:
       --uri=<uri>                              connection string URI. If present, takes precedence over all
@@ -84,7 +87,7 @@ general:
   -q, --quiet                                  quieter output
 ```
 
-Only the configuration file need to be specified ( **-f | --file flag**). A basic usage of mgodatagen would be
+Only the configuration file is required ( **-f | --file flag**). A basic usage of mgodatagen would be
 
 ```
 ./mgodatagen -f config.json

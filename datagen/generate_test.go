@@ -156,6 +156,7 @@ func TestProgressOutput(t *testing.T) {
 	configFile := "testdata/empty.json"
 	opts := defaultOpts(configFile)
 	opts.Quiet = false
+	opts.Seed = 123456789
 
 	var buffer bytes.Buffer
 	err := datagen.Generate(&opts, &buffer)
@@ -183,6 +184,7 @@ func TestInvalidGeneratorOutput(t *testing.T) {
 	configFile := "testdata/invalid/invalid-generator.json"
 	opts := defaultOpts(configFile)
 	opts.Quiet = false
+	opts.Seed = 123456789
 
 	var buffer bytes.Buffer
 	err := datagen.Generate(&opts, &buffer)
@@ -191,6 +193,8 @@ func TestInvalidGeneratorOutput(t *testing.T) {
 	want := fmt.Sprintf(`connecting to mongodb://127.0.0.1:27017
 MongoDB server version %v
 %s
+Using seed: 123456789
+
 fail to create DocumentGenerator for collection 'collection_invalid'
 invalid generator for field '_id'
   cause: invalid type 'invalid'
@@ -206,6 +210,7 @@ func TestInvalidAggregatorOutput(t *testing.T) {
 	configFile := "testdata/invalid/invalid-aggregator.json"
 	opts := defaultOpts(configFile)
 	opts.Quiet = false
+	opts.Seed = 123456789
 
 	var buffer bytes.Buffer
 	err := datagen.Generate(&opts, &buffer)
@@ -214,6 +219,8 @@ func TestInvalidAggregatorOutput(t *testing.T) {
 	want := fmt.Sprintf(`connecting to mongodb://127.0.0.1:27017
 MongoDB server version %s
 %s
+Using seed: 123456789
+
 fail to create Aggregator for collection 'collection_invalid'
 invalid generator for field 'invalid-aggregator'
   cause: 'query' can't be null or empty
