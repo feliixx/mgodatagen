@@ -16,58 +16,118 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
-	"go.mongodb.org/mongo-driver/bson/mgocompat"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 )
 
-type dtg struct {
-	out        io.Writer
-	bar        *uiprogress.Bar
+type mongoWriter struct {
+	*basicGenerator
+	logger io.Writer
+
 	session    *mongo.Client
 	version    []int
+	indexFirst bool
+	indexOnly  bool
+	append     bool
+	numWorker  int
+
 	mapRef     map[int][][]byte
 	mapRefType map[int]bsontype.Type
-	Options
 }
 
-func (d *dtg) generate(collection *Collection) error {
+func newMongoWriter(options *Options, logger io.Writer) (writer, error) {
+
+	session, version, err := connectToDB(&options.Connection, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mongoWriter{
+		basicGenerator: &basicGenerator{
+			batchSize: options.BatchSize,
+		},
+		logger:     logger,
+		session:    session,
+		version:    version,
+		indexFirst: options.IndexFirst,
+		indexOnly:  options.IndexOnly,
+		append:     options.Append,
+		numWorker:  options.NumInsertWorker,
+		mapRef:     make(map[int][][]byte),
+		mapRefType: make(map[int]bsontype.Type),
+	}, nil
+}
+
+func (w *mongoWriter) write(collections []Collection, seed uint64) (err error) {
+
+	defer w.session.Disconnect(context.Background())
+
+	// build all generators / aggregators before generating the collection, so we can
+	// return any config error faster.
+	// That way, if the config contains an error in the n-th collection, we don't have to
+	// wait for the n-1 first collections to be generated to get the error
+	for i := 0; i < len(collections); i++ {
+
+		ci := generators.NewCollInfo(collections[i].Count, w.version, seed, w.mapRef, w.mapRefType)
+
+		collections[i].docGenerator, err = ci.NewDocumentGenerator(collections[i].Content)
+		if err != nil {
+			return fmt.Errorf("fail to create DocumentGenerator for collection '%s'\n%v", collections[i].Name, err)
+		}
+		collections[i].aggregators, err = ci.NewAggregatorSlice(collections[i].Content)
+		if err != nil {
+			return fmt.Errorf("fail to create Aggregator for collection '%s'\n%v", collections[i].Name, err)
+		}
+	}
+
+	for _, collection := range collections {
+		err = w.generate(&collection)
+		if err != nil {
+			return err
+		}
+	}
+	w.printStats(collections)
+
+	return nil
+}
+
+func (w *mongoWriter) generate(collection *Collection) error {
 
 	var steps = []struct {
 		name     string
 		size     int
-		stepFunc func(dtg *dtg, collection *Collection) error
+		stepFunc func(dtg *mongoWriter, collection *Collection) error
 	}{
 		{
 			name:     "creating",
 			size:     2,
-			stepFunc: (*dtg).createCollection,
+			stepFunc: (*mongoWriter).createCollection,
 		},
 		{
 			name:     "generating",
 			size:     collection.Count,
-			stepFunc: (*dtg).fillCollection,
+			stepFunc: (*mongoWriter).fillCollection,
 		},
 		{
 			name:     "aggregating",
 			size:     collection.Count * 10 / 100,
-			stepFunc: (*dtg).updateWithAggregators,
+			stepFunc: (*mongoWriter).updateWithAggregators,
 		},
 		{
 			name:     "indexing",
 			size:     collection.Count * 10 / 100,
-			stepFunc: (*dtg).ensureIndex,
+			stepFunc: (*mongoWriter).ensureIndex,
 		},
 	}
 
-	if d.Options.IndexFirst {
+	if w.indexFirst {
 		steps[1], steps[3] = steps[3], steps[1]
 	}
 
 	progress := uiprogress.New()
-	progress.SetOut(d.out)
+	progress.SetOut(w.logger)
 	progress.SetRefreshInterval(50 * time.Millisecond)
 	progress.Start()
 	defer progress.Stop()
@@ -79,7 +139,7 @@ func (d *dtg) generate(collection *Collection) error {
 		bounds = append(bounds, total-1)
 	}
 
-	d.bar = progress.AddBar(total).AppendCompleted().PrependFunc(func(b *uiprogress.Bar) string {
+	w.progressBar = progress.AddBar(total).AppendCompleted().PrependFunc(func(b *uiprogress.Bar) string {
 
 		current := b.Current()
 		stepName := "done"
@@ -90,20 +150,20 @@ func (d *dtg) generate(collection *Collection) error {
 	})
 
 	for _, s := range steps {
-		err := s.stepFunc(d, collection)
+		err := s.stepFunc(w, collection)
 		if err != nil {
 			return err
 		}
-		d.bar.Set(d.bar.Current() + s.size)
+		w.progressBar.Set(w.progressBar.Current() + s.size)
 	}
 	return nil
 }
 
 // create a collection with specific options
-func (d *dtg) createCollection(coll *Collection) error {
-	c := d.session.Database(coll.DB).Collection(coll.Name)
+func (w *mongoWriter) createCollection(coll *Collection) error {
+	c := w.session.Database(coll.DB).Collection(coll.Name)
 
-	if d.Append || d.IndexOnly {
+	if w.append || w.indexOnly {
 		return nil
 	}
 	err := c.Drop(context.Background())
@@ -117,7 +177,7 @@ func (d *dtg) createCollection(coll *Collection) error {
 	if coll.CompressionLevel != "" {
 		createCommand = append(createCommand, bson.E{Key: "storageEngine", Value: bson.M{"wiredTiger": bson.M{"configString": "block_compressor=" + coll.CompressionLevel}}})
 	}
-	err = d.session.Database(coll.DB).RunCommand(context.Background(), createCommand).Err()
+	err = w.session.Database(coll.DB).RunCommand(context.Background(), createCommand).Err()
 	if err != nil {
 		return fmt.Errorf("coulnd't create collection with compression level '%s'\n  cause: %v", coll.CompressionLevel, err)
 	}
@@ -130,14 +190,14 @@ func (d *dtg) createCollection(coll *Collection) error {
 		if len(coll.ShardConfig.Key) == 0 {
 			return fmt.Errorf("wrong value for 'shardConfig.key', can't be null and must be an object like {'_id': 'hashed'}, found: %v", coll.ShardConfig.Key)
 		}
-		err := d.session.Database("admin").RunCommand(context.Background(), bson.D{bson.E{Key: "enableSharding", Value: coll.DB}}).Err()
+		err := w.session.Database("admin").RunCommand(context.Background(), bson.D{bson.E{Key: "enableSharding", Value: coll.DB}}).Err()
 		if err != nil {
 			return fmt.Errorf("fail to enable sharding on db '%s'\n  cause: %v", coll.DB, err)
 		}
 		// as the collection is empty, no need to create the indexes on the sharded key before creating the collection,
 		// because it will be created automatically by mongodb. See https://docs.mongodb.com/manual/core/sharding-shard-key/#shard-key-indexes
 		// for details
-		err = d.runMgoCompatCommand(context.Background(), "admin", coll.ShardConfig)
+		err = runMgoCompatCommand(context.Background(), w.session, "admin", coll.ShardConfig)
 		if err != nil {
 			return fmt.Errorf("fail to shard collection '%s' in db '%s'\n  cause: %v", coll.Name, coll.DB, err)
 		}
@@ -145,37 +205,15 @@ func (d *dtg) createCollection(coll *Collection) error {
 	return nil
 }
 
-type rawChunk struct {
-	documents  [][]byte
-	nbToInsert int
-}
+func (w *mongoWriter) fillCollection(coll *Collection) error {
 
-// use a sync.Pool to reduce memory consumption
-// also reduce the nb of items to send to the channel
-var pool = sync.Pool{
-	New: func() interface{} {
-		list := make([][]byte, 1000)
-		for i := range list {
-			// use 256 bytes as default buffer size, because it's close to the
-			// average bson document size out there (mongodb-go-driver use the
-			// same value internally)
-			list[i] = make([]byte, 256)
-		}
-		return &rawChunk{
-			documents: list,
-		}
-	},
-}
-
-func (d *dtg) fillCollection(coll *Collection) error {
-
-	if d.IndexOnly {
+	if w.indexOnly {
 		return nil
 	}
 
 	nbInsertingGoRoutines := runtime.NumCPU()
-	if d.NumInsertWorker > 0 {
-		nbInsertingGoRoutines = d.NumInsertWorker
+	if w.numWorker > 0 {
+		nbInsertingGoRoutines = w.numWorker
 	}
 
 	taskBufferSize := 10
@@ -195,9 +233,9 @@ func (d *dtg) fillCollection(coll *Collection) error {
 
 	for i := 0; i < nbInsertingGoRoutines; i++ {
 		wg.Add(1)
-		go d.insertDocumentFromChannel(ctx, cancel, &wg, coll, tasks, errs)
+		go w.insertDocumentFromChannel(ctx, cancel, &wg, coll, tasks, errs)
 	}
-	d.generateDocument(ctx, tasks, coll.Count, coll.docGenerator)
+	w.generateDocument(ctx, tasks, coll.Count, coll.docGenerator)
 
 	wg.Wait()
 
@@ -211,11 +249,11 @@ func (d *dtg) fillCollection(coll *Collection) error {
 	return nil
 }
 
-func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.CancelFunc, wg *sync.WaitGroup, coll *Collection, tasks <-chan *rawChunk, errs chan error) {
+func (w *mongoWriter) insertDocumentFromChannel(ctx context.Context, cancel context.CancelFunc, wg *sync.WaitGroup, coll *Collection, tasks <-chan *rawChunk, errs chan error) {
 
 	defer wg.Done()
 
-	c := d.session.Database(coll.DB).Collection(coll.Name)
+	c := w.session.Database(coll.DB).Collection(coll.Name)
 
 	insertOpts := options.InsertMany()
 	// if indexfirst mode is set, specify that writes are unordered so failed
@@ -225,7 +263,7 @@ func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.Canc
 	// and we can't guarantee that there will be no duplicate in generated collection,
 	// so the only option left is to ignore insert that fail because of duplicates
 	// writes
-	if d.Options.IndexFirst {
+	if w.indexFirst {
 		insertOpts.SetOrdered(false)
 	}
 
@@ -244,7 +282,7 @@ func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.Canc
 		}
 
 		_, err := c.InsertMany(ctx, docs, insertOpts)
-		if !d.Options.IndexFirst && err != nil {
+		if !w.indexFirst && err != nil {
 			// if the bulk insert fails, push the error to the error channel
 			// so that we can use it from the main thread
 			select {
@@ -260,51 +298,10 @@ func (d *dtg) insertDocumentFromChannel(ctx context.Context, cancel context.Canc
 	}
 }
 
-func (d *dtg) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
-
-	count := 0
-	for count < nbDoc {
-
-		select {
-		case <-ctx.Done(): // if an error occurred in one of the 'inserting' goroutines, close the channel
-			break
-		default:
-		}
-
-		rc := pool.Get().(*rawChunk)
-
-		rc.nbToInsert = d.BatchSize
-		if nbDoc-count < d.BatchSize {
-			rc.nbToInsert = nbDoc - count
-		}
-
-		for i := 0; i < rc.nbToInsert; i++ {
-			docBytes := docGenerator.Generate()
-
-			// if doc is not large enough, allocate a new one.
-			// Otherwise, reslice it.
-			// Checking the cap of the slice instead of its length
-			// allows to avoid a few more allocations
-			if cap(rc.documents[i]) < len(docBytes) {
-				rc.documents[i] = make([]byte, len(docBytes))
-			} else {
-				rc.documents[i] = rc.documents[i][:len(docBytes)]
-			}
-			copy(rc.documents[i], docBytes)
-		}
-
-		count += rc.nbToInsert
-		d.bar.Set(d.bar.Current() + rc.nbToInsert)
-
-		tasks <- rc
-	}
-	close(tasks)
-}
-
 // Update documents with pre-computed aggregations
-func (d *dtg) updateWithAggregators(coll *Collection) error {
+func (w *mongoWriter) updateWithAggregators(coll *Collection) error {
 
-	if d.IndexOnly {
+	if w.indexOnly {
 		return nil
 	}
 
@@ -316,9 +313,9 @@ func (d *dtg) updateWithAggregators(coll *Collection) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	tasks := make(chan [2]bson.M, d.BatchSize)
+	tasks := make(chan [2]bson.M, w.batchSize)
 	errs := make(chan error)
-	collection := d.session.Database(coll.DB).Collection(coll.Name)
+	collection := w.session.Database(coll.DB).Collection(coll.Name)
 
 	// run updates in a new goroutine
 	var wg sync.WaitGroup
@@ -344,7 +341,7 @@ Loop:
 		var distinct struct {
 			Values []interface{}
 		}
-		result := d.session.Database(coll.DB).RunCommand(ctx, bson.D{
+		result := w.session.Database(coll.DB).RunCommand(ctx, bson.D{
 			bson.E{Key: "distinct", Value: coll.Name},
 			bson.E{Key: "key", Value: localVar},
 		})
@@ -364,7 +361,7 @@ Loop:
 			default:
 			}
 
-			update, aggregationError := aggregator.Update(d.session, value)
+			update, aggregationError := aggregator.Update(w.session, value)
 			if aggregationError != nil {
 				break Loop
 			}
@@ -376,13 +373,13 @@ Loop:
 	return aggregationError
 }
 
-func (d *dtg) ensureIndex(coll *Collection) error {
+func (w *mongoWriter) ensureIndex(coll *Collection) error {
 
 	if len(coll.Indexes) == 0 {
 		return nil
 	}
 
-	_, err := d.session.Database(coll.DB).Collection(coll.Name).Indexes().DropAll(context.Background())
+	_, err := w.session.Database(coll.DB).Collection(coll.Name).Indexes().DropAll(context.Background())
 	if err != nil {
 		return fmt.Errorf("error while dropping index for collection '%s'\n  cause: %v", coll.Name, err)
 	}
@@ -390,7 +387,7 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer cancel()
 
-	err = d.runMgoCompatCommand(ctx, coll.DB, bson.D{
+	err = runMgoCompatCommand(ctx, w.session, coll.DB, bson.D{
 		bson.E{Key: "createIndexes", Value: coll.Name},
 		bson.E{Key: "indexes", Value: coll.Indexes},
 	})
@@ -400,9 +397,9 @@ func (d *dtg) ensureIndex(coll *Collection) error {
 	return nil
 }
 
-func (d *dtg) printStats(collections []Collection) {
+func (w *mongoWriter) printStats(collections []Collection) {
 
-	if d.Options.Quiet {
+	if w.logger == io.Discard {
 		return
 	}
 
@@ -410,7 +407,7 @@ func (d *dtg) printStats(collections []Collection) {
 
 	for _, coll := range collections {
 
-		result := d.session.Database(coll.DB).RunCommand(context.Background(), bson.D{
+		result := w.session.Database(coll.DB).RunCommand(context.Background(), bson.D{
 			bson.E{Key: "collStats", Value: coll.Name},
 			bson.E{Key: "scale", Value: 1024},
 		})
@@ -422,7 +419,7 @@ func (d *dtg) printStats(collections []Collection) {
 		}
 		err := result.Decode(&stats)
 		if err != nil {
-			fmt.Fprintf(d.out, "fail to parse stats result\n  cause: %v", err)
+			fmt.Fprintf(w.logger, "fail to parse stats result\n  cause: %v", err)
 		}
 
 		indexes := make([]string, 0, len(stats.IndexSizes))
@@ -437,22 +434,9 @@ func (d *dtg) printStats(collections []Collection) {
 		})
 	}
 
-	fmt.Fprintf(d.out, "\n")
-	table := tablewriter.NewWriter(d.out)
+	fmt.Fprintf(w.logger, "\n")
+	table := tablewriter.NewWriter(w.logger)
 	table.SetHeader([]string{"collection", "count", "avg object size", "indexes"})
 	table.AppendBulk(rows)
 	table.Render()
-}
-
-func (d *dtg) runMgoCompatCommand(ctx context.Context, db string, cmd interface{}) error {
-	// With the default registry, index.Collation is kept event when it's empty,
-	// and it make the command fail
-	// to fix this, marshal the command to a bson.Raw with the mgocompat registry
-	// providing the same behavior that the old mgo driver
-	mgoRegistry := mgocompat.NewRespectNilValuesRegistryBuilder().Build()
-	_, cmdBytes, err := bson.MarshalValueWithRegistry(mgoRegistry, cmd)
-	if err != nil {
-		return fmt.Errorf("fait to generate mgocompat command\n  cause: %v", err)
-	}
-	return d.session.Database(db).RunCommand(ctx, cmdBytes).Err()
 }

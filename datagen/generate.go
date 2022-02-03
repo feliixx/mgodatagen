@@ -3,38 +3,24 @@
 package datagen
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
-	"strings"
 	"time"
-
-	"github.com/feliixx/mgodatagen/datagen/generators"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/bsontype"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-const defaultTimeout = 10 * time.Second
-
-// Generate creates a database from options. Logs and progress are send
-// to out
-func Generate(options *Options, out io.Writer) error {
-	return run(options, out)
+// Generate creates documents from options. Logs and progress are send
+// to logger
+func Generate(options *Options, logger io.Writer) error {
+	return run(options, logger)
 }
 
-func run(options *Options, out io.Writer) error {
+func run(options *Options, logger io.Writer) error {
 
 	if options.Quiet {
-		out = ioutil.Discard
+		logger = ioutil.Discard
 	}
 	if options.New != "" {
 		return createEmptyCfgFile(options.New)
@@ -50,7 +36,7 @@ func run(options *Options, out io.Writer) error {
 	}
 
 	if options.IndexFirst {
-		fmt.Fprint(out, `WARNING: when -x | --indexfirst flag is set, all write errors are ignored.
+		fmt.Fprint(logger, `WARNING: when -x | --indexfirst flag is set, all write errors are ignored.
 Actual collection count may not match the 'count' specified in config file
 `)
 	}
@@ -63,22 +49,10 @@ Actual collection count may not match the 'count' specified in config file
 	if err != nil {
 		return err
 	}
-	if options.Connection.Timeout == 0 {
-		options.Connection.Timeout = defaultTimeout
-	}
-	session, version, err := connectToDB(&options.Connection, out)
+
+	writer, err := newWriter(options, logger)
 	if err != nil {
 		return err
-	}
-	defer session.Disconnect(context.Background())
-
-	dtg := &dtg{
-		out:        out,
-		session:    session,
-		version:    version,
-		mapRef:     make(map[int][][]byte),
-		mapRefType: make(map[int]bsontype.Type),
-		Options:    *options,
 	}
 
 	start := time.Now()
@@ -87,124 +61,19 @@ Actual collection count may not match the 'count' specified in config file
 		seed = uint64(start.Unix())
 	}
 
-	fmt.Fprintf(out, "Using seed: %d\n\n", seed)
-
-	// build all generators / aggregators before generating the collection, so we can
-	// return the any config error fater.
-	// That way, if the config contains an error in the n-th collection, we don't have to
-	// wait for the n-1 first collections to be generated to get the error
-	for i := 0; i < len(collections); i++ {
-
-		ci := generators.NewCollInfo(collections[i].Count, dtg.version, seed, dtg.mapRef, dtg.mapRefType)
-
-		collections[i].docGenerator, err = ci.NewDocumentGenerator(collections[i].Content)
-		if err != nil {
-			return fmt.Errorf("fail to create DocumentGenerator for collection '%s'\n%v", collections[i].Name, err)
-		}
-		collections[i].aggregators, err = ci.NewAggregatorSlice(collections[i].Content)
-		if err != nil {
-			return fmt.Errorf("fail to create Aggregator for collection '%s'\n%v", collections[i].Name, err)
-		}
+	fmt.Fprintf(logger, "Using seed: %d\n\n", seed)
+	err = writer.write(collections, seed)
+	if err != nil {
+		return err
 	}
 
-	for _, collection := range collections {
-		err = dtg.generate(&collection)
-		if err != nil {
-			return err
-		}
-	}
-	dtg.printStats(collections)
-	printElapsedTime(out, start)
-
+	printElapsedTime(logger, start)
 	return nil
 }
 
-// get a connection from Connection args
-func connectToDB(conn *Connection, out io.Writer) (*mongo.Client, []int, error) {
-
-	opts := createClientOptions(conn)
-	fmt.Fprintf(out, "connecting to %s", opts.GetURI())
-
-	session, err := mongo.Connect(context.Background(), opts)
-	if err != nil {
-		return nil, nil, fmt.Errorf("connection failed\n  cause: %v", err)
-	}
-
-	err = session.Ping(context.Background(), readpref.Primary())
-	if err != nil {
-		return nil, nil, fmt.Errorf("connection failed\n  cause: %v", err)
-	}
-
-	result := session.Database("admin").RunCommand(context.Background(), bson.M{"buildInfo": 1})
-	var buildInfo struct {
-		Version string
-	}
-	err = result.Decode(&buildInfo)
-	if err != nil {
-		buildInfo.Version = "3.4.0"
-	}
-	fmt.Fprintf(out, "\nMongoDB server version %s\n\n", buildInfo.Version)
-
-	version := strings.Split(buildInfo.Version, ".")
-	versionInt := make([]int, len(version))
-	for i := range version {
-		v, _ := strconv.Atoi(version[i])
-		versionInt[i] = v
-	}
-
-	var shardConfig struct {
-		Shards []bson.M
-	}
-	// if it's a sharded cluster, print the list of shards. Don't bother with the error
-	// if cluster is not sharded / user not allowed to run command against admin db
-	result = session.Database("admin").RunCommand(context.Background(), bson.M{"listShards": 1})
-	err = result.Decode(&shardConfig)
-	if err == nil && result.Err() == nil {
-
-		// starting in MongoDB 5.0, topology time appears in shard list. Remove
-		// it for tests
-		for i := range shardConfig.Shards {
-			delete(shardConfig.Shards[i], "topologyTime")
-		}
-
-		shardList, err := json.MarshalIndent(shardConfig.Shards, "", "  ")
-		if err == nil {
-			fmt.Fprintf(out, "shard list: %v\n", string(shardList))
-		}
-	}
-	return session, versionInt, nil
-}
-
-func createClientOptions(conn *Connection) *options.ClientOptions {
-
-	connOpts := options.Client().
-		ApplyURI(fmt.Sprintf("mongodb://%s:%s", conn.Host, conn.Port)).
-		SetConnectTimeout(conn.Timeout).
-		SetServerSelectionTimeout(conn.Timeout).
-		SetRetryWrites(false) // this is only needed for sharded cluster, it default to false on standalone instance
-
-	if conn.URI != "" {
-		connOpts.ApplyURI(conn.URI)
-		return connOpts // return to avoid UserName / Password / AuthMechanism is set
-	}
-	if conn.UserName == "" && conn.Password == "" && conn.AuthMechanism == "" {
-		return connOpts
-	}
-
-	var credentials options.Credential
-	if conn.UserName != "" && conn.Password != "" {
-		credentials.Username = conn.UserName
-		credentials.Password = conn.Password
-	}
-	if conn.AuthMechanism != "" {
-		credentials.AuthMechanism = conn.AuthMechanism
-	}
-
-	if conn.TLSCAFile != "" || conn.TLSCertKeyFile != "" {
-		connOpts.ApplyURI(fmt.Sprintf("mongodb://%s:%s/?tlsCAFile=%s&tlsCertificateKeyFile=%s", conn.Host, conn.Port, conn.TLSCAFile, conn.TLSCertKeyFile))
-	}
-
-	return connOpts.SetAuth(credentials)
+func printElapsedTime(out io.Writer, start time.Time) {
+	elapsed := time.Since(start).Round(10 * time.Millisecond)
+	fmt.Fprintf(out, "\nrun finished in %s\n", elapsed.String())
 }
 
 func createEmptyCfgFile(filename string) error {
@@ -241,9 +110,4 @@ func createEmptyCfgFile(filename string) error {
 `)
 	_, err = f.Write(templateByte[1:])
 	return err
-}
-
-func printElapsedTime(out io.Writer, start time.Time) {
-	elapsed := time.Since(start).Round(10 * time.Millisecond)
-	fmt.Fprintf(out, "\nrun finished in %s\n", elapsed.String())
 }
