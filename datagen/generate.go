@@ -41,6 +41,14 @@ Actual collection count may not match the 'count' specified in config file
 `)
 	}
 
+	if options.Output == "" {
+		options.Output = mongodbOutput
+	}
+	// if docs are written to stdout, do not pollute the output with logs
+	if options.Output == stdoutOutput {
+		logger = io.Discard
+	}
+
 	content, err := ioutil.ReadFile(options.ConfigFile)
 	if err != nil {
 		return fmt.Errorf("fail to read file %s\n  cause: %v", options.ConfigFile, err)

@@ -2,11 +2,18 @@ package datagen
 
 import (
 	"context"
+	"errors"
 	"io"
 	"sync"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 	"github.com/gosuri/uiprogress"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
+)
+
+const (
+	mongodbOutput = "mongodb"
+	stdoutOutput  = "stdout"
 )
 
 type writer interface {
@@ -15,7 +22,14 @@ type writer interface {
 }
 
 func newWriter(options *Options, logger io.Writer) (writer, error) {
-	return newMongoWriter(options, logger)
+	switch options.Output {
+	case mongodbOutput:
+		return newMongoWriter(options, logger)
+	case stdoutOutput:
+		return newStdoutWriter(options)
+	default:
+		return nil, errors.New("not implemented yet")
+	}
 }
 
 type rawChunk struct {
@@ -41,8 +55,10 @@ var pool = sync.Pool{
 }
 
 type basicGenerator struct {
-	batchSize   int
 	progressBar *uiprogress.Bar
+	batchSize   int
+	mapRef      map[int][][]byte
+	mapRefType  map[int]bsontype.Type
 }
 
 func (b *basicGenerator) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {

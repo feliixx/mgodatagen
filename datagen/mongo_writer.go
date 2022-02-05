@@ -32,9 +32,6 @@ type mongoWriter struct {
 	indexOnly  bool
 	append     bool
 	numWorker  int
-
-	mapRef     map[int][][]byte
-	mapRefType map[int]bsontype.Type
 }
 
 func newMongoWriter(options *Options, logger io.Writer) (writer, error) {
@@ -46,7 +43,9 @@ func newMongoWriter(options *Options, logger io.Writer) (writer, error) {
 
 	return &mongoWriter{
 		basicGenerator: &basicGenerator{
-			batchSize: options.BatchSize,
+			batchSize:  options.BatchSize,
+			mapRef:     make(map[int][][]byte),
+			mapRefType: make(map[int]bsontype.Type),
 		},
 		logger:     logger,
 		session:    session,
@@ -55,8 +54,6 @@ func newMongoWriter(options *Options, logger io.Writer) (writer, error) {
 		indexOnly:  options.IndexOnly,
 		append:     options.Append,
 		numWorker:  options.NumInsertWorker,
-		mapRef:     make(map[int][][]byte),
-		mapRefType: make(map[int]bsontype.Type),
 	}, nil
 }
 
@@ -82,8 +79,8 @@ func (w *mongoWriter) write(collections []Collection, seed uint64) (err error) {
 		}
 	}
 
-	for _, collection := range collections {
-		err = w.generate(&collection)
+	for i := 0; i < len(collections); i++ {
+		err = w.generate(&collections[i])
 		if err != nil {
 			return err
 		}
