@@ -86,21 +86,9 @@ func printElapsedTime(out io.Writer, start time.Time) {
 
 func createEmptyCfgFile(filename string) error {
 
-	_, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+	f, err := tryToCreateFile(filename)
 	if err != nil {
-		fmt.Printf("file %s already exists, overwrite it ?  [y/n]: ", filename)
-		response := make([]byte, 2)
-		_, err := os.Stdin.Read(response)
-		if err != nil {
-			return fmt.Errorf("couldn't read from user, aborting: %v", err)
-		}
-		if string(response[0]) != "y" {
-			return nil
-		}
-	}
-	f, err := os.Create(filename)
-	if err != nil {
-		return fmt.Errorf("could not create an empty configuration file: %v", err)
+		return err
 	}
 	defer f.Close()
 
@@ -118,4 +106,24 @@ func createEmptyCfgFile(filename string) error {
 `)
 	_, err = f.Write(templateByte[1:])
 	return err
+}
+
+func tryToCreateFile(filename string) (*os.File, error) {
+	_, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0666)
+	if err != nil {
+		fmt.Printf("file %s already exists, overwrite it ?  [y/n]: ", filename)
+		response := make([]byte, 2)
+		_, err := os.Stdin.Read(response)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't read from user, aborting: %v", err)
+		}
+		if string(response[0]) != "y" {
+			return nil, errors.New("aborting")
+		}
+	}
+	f, err := os.Create(filename)
+	if err != nil {
+		return nil, fmt.Errorf("could not create file: %v", err)
+	}
+	return f, nil
 }
