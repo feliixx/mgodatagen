@@ -2,8 +2,8 @@ package datagen
 
 import (
 	"context"
-	"errors"
 	"io"
+	"os"
 	"sync"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
@@ -26,9 +26,13 @@ func newWriter(options *Options, logger io.Writer) (writer, error) {
 	case mongodbOutput:
 		return newMongoWriter(options, logger)
 	case stdoutOutput:
-		return newStdoutWriter(options)
+		return newFileWriter(options, logger, os.Stdout), nil
 	default:
-		return nil, errors.New("not implemented yet")
+		f, err := tryToCreateFile(options.Output)
+		if err != nil {
+			return nil, err
+		}
+		return newFileWriter(options, logger, f), nil
 	}
 }
 
@@ -56,9 +60,11 @@ var pool = sync.Pool{
 
 type basicGenerator struct {
 	progressBar *uiprogress.Bar
-	batchSize   int
-	mapRef      map[int][][]byte
-	mapRefType  map[int]bsontype.Type
+	logger      io.Writer
+
+	batchSize  int
+	mapRef     map[int][][]byte
+	mapRefType map[int]bsontype.Type
 }
 
 func (b *basicGenerator) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
