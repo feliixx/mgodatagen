@@ -16,7 +16,7 @@ Try it online: [**mongoplayground.net**](https://mongoplayground.net/)
 - Aggregate data across collections
 - Create sharded collection
 - Create collections in multiple databases
-- Cross-platform
+- Output result as JSON
 
 ![Demo](demo.gif)
 
@@ -67,6 +67,12 @@ configuration:
   -s, --seed=<seed>                            specific seed to use. Passing the same seed garentees
                                                the same output for evey run with the same config.
                                                Has to be in [1, 18446744073709551615]
+  -o, --output=<output>                        where documents should be written. Options are:
+                                               - mongodb (default)
+                                               - stdout
+                                               - filename
+      --prettyprint                            if present, indent the output. Only for stdout or file
+                                               output
 
 connection infos:
       --uri=<uri>                              connection string URI. If present, takes precedence over all
