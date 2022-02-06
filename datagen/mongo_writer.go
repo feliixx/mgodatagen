@@ -23,7 +23,7 @@ import (
 )
 
 type mongoWriter struct {
-	*basicGenerator
+	*baseWriter
 
 	session    *mongo.Client
 	version    []int
@@ -41,7 +41,7 @@ func newMongoWriter(options *Options, logger io.Writer) (writer, error) {
 	}
 
 	return &mongoWriter{
-		basicGenerator: &basicGenerator{
+		baseWriter: &baseWriter{
 			batchSize:  options.BatchSize,
 			mapRef:     make(map[int][][]byte),
 			mapRefType: make(map[int]bsontype.Type),
