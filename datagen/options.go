@@ -31,8 +31,8 @@ type Configuration struct {
 	NumInsertWorker int    `short:"n" long:"numWorker" value-name:"<nb>" description:"number of concurrent workers inserting documents\n in database. Default is number of CPU"`
 	BatchSize       int    `short:"b" long:"batchsize" value-name:"<size>" description:"bulk insert batch size" default:"1000"`
 	Seed            uint64 `short:"s" long:"seed" value-name:"<seed>" description:"specific seed to use. Passing the same seed garentees\n the same output for evey run with the same config.\n Has to be in [1, 18446744073709551615]"`
-	Output          string `short:"o" long:"output" value-name:"<output>" description:"where document should be written. Options are:\n  - mongodb (default)\n  - stdout\n  - filename"`
-	PrettyPrint     bool   `long:"prettyprint" description:"if present, indent the output. Only for stdout or file output"`
+	Output          string `short:"o" long:"output" value-name:"<output>" description:"where documents should be written. Options are:\n - mongodb (default)\n - stdout\n - filename"`
+	PrettyPrint     bool   `long:"prettyprint" description:"if present, indent the output. Only for stdout or file\n output"`
 }
 
 // Template struct that stores info on config file to generate
