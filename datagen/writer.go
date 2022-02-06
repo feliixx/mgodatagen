@@ -18,7 +18,6 @@ const (
 
 type writer interface {
 	write(collections []Collection, seed uint64) error
-	generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator)
 }
 
 func newWriter(options *Options, logger io.Writer) (writer, error) {
@@ -58,7 +57,7 @@ var pool = sync.Pool{
 	},
 }
 
-type basicGenerator struct {
+type baseWriter struct {
 	progressBar *uiprogress.Bar
 	logger      io.Writer
 
@@ -67,7 +66,7 @@ type basicGenerator struct {
 	mapRefType map[int]bsontype.Type
 }
 
-func (b *basicGenerator) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
+func (b *baseWriter) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
 
 	count := 0
 	for count < nbDoc {

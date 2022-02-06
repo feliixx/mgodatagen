@@ -17,7 +17,7 @@ import (
 )
 
 type fileWriter struct {
-	*basicGenerator
+	*baseWriter
 
 	prettyPrint  bool
 	out          io.Writer
@@ -27,7 +27,7 @@ type fileWriter struct {
 func newFileWriter(options *Options, logger, out io.Writer) writer {
 
 	w := &fileWriter{
-		basicGenerator: &basicGenerator{
+		baseWriter: &baseWriter{
 			batchSize:  1000,
 			mapRef:     make(map[int][][]byte),
 			mapRefType: make(map[int]bsontype.Type),
@@ -90,37 +90,38 @@ func (w *fileWriter) generate(coll *Collection) {
 
 	tasks := make(chan *rawChunk, 5)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	var wg sync.WaitGroup
 	wg.Add(1)
-	go w.writeToStdout(ctx, cancel, &wg, coll, tasks)
+	go w.writeToStdout(&wg, coll, tasks)
 
-	w.generateDocument(ctx, tasks, coll.Count, coll.docGenerator)
+	w.generateDocument(context.Background(), tasks, coll.Count, coll.docGenerator)
 
 	wg.Wait()
 }
 
-func (w *fileWriter) writeToStdout(ctx context.Context, cancel context.CancelFunc, wg *sync.WaitGroup, coll *Collection, tasks <-chan *rawChunk) {
+func (w *fileWriter) writeToStdout(wg *sync.WaitGroup, coll *Collection, tasks <-chan *rawChunk) {
 
 	defer wg.Done()
 
 	buffer := bytes.NewBuffer(make([]byte, 0, 64000))
-	fmt.Fprintf(buffer, `{
-  "%s.%s": [
-`, coll.DB, coll.Name)
+
+	// format is : 
+	//
+	// {
+	//   "dbName.collectionName": [
+	//	   {...},
+	//	   {...},
+	//	   {...}
+	//   ]  	
+	// }
+	buffer.WriteByte('{')
+	buffer.WriteByte('\n')
+	fmt.Fprintf(buffer, `  "%s.%s": [`, coll.DB, coll.Name)
+	buffer.WriteByte('\n')
 
 	prefix := "    "
 
 	for t := range tasks {
-		// if an error occurs in one of the goroutine, 'return' is called which trigger
-		// wg.Done() ==> the goroutine stops
-		select {
-		case <-ctx.Done():
-			return
-		default:
-		}
 
 		for _, doc := range t.documents[:t.nbToInsert] {
 
@@ -145,9 +146,13 @@ func (w *fileWriter) writeToStdout(ctx context.Context, cancel context.CancelFun
 
 	// remove the last trailing comma
 	buffer.Truncate(buffer.Len() - 2)
-	fmt.Fprintln(buffer, `
-  ]
-}`)
+
+	buffer.WriteByte('\n')
+	buffer.WriteByte(' ')
+	buffer.WriteByte(' ')
+	buffer.WriteByte(']')
+	buffer.WriteByte('\n')
+	buffer.WriteByte('}')
 
 	if buffer.Len() > 0 {
 		w.out.Write(buffer.Bytes())
