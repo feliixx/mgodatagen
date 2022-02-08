@@ -3,6 +3,7 @@ package datagen
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -61,6 +62,11 @@ func (w *fileWriter) write(collections []Collection, seed uint64) (err error) {
 		if err != nil {
 			return fmt.Errorf("fail to create DocumentGenerator for collection '%s'\n%v", collections[i].Name, err)
 		}
+
+		aggs, err := ci.NewAggregatorSlice(collections[i].Content)
+		if len(aggs) > 0 || err != nil {
+			return errors.New("Aggregators are not supported for stdout or file output")
+		}
 	}
 
 	for i := 0; i < len(collections); i++ {
@@ -105,14 +111,14 @@ func (w *fileWriter) writeToStdout(wg *sync.WaitGroup, coll *Collection, tasks <
 
 	buffer := bytes.NewBuffer(make([]byte, 0, 64000))
 
-	// format is : 
+	// format is :
 	//
 	// {
 	//   "dbName.collectionName": [
 	//	   {...},
 	//	   {...},
 	//	   {...}
-	//   ]  	
+	//   ]
 	// }
 	buffer.WriteByte('{')
 	buffer.WriteByte('\n')

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -227,6 +228,120 @@ invalid generator for field 'invalid-aggregator'
 `, version, shardInfo)
 
 	if got := buffer.String(); want != got {
+		t.Errorf("expected\n\n'%s'\n\nbut got\n\n'%s'", want, got)
+	}
+}
+
+func TestJSONOutputToStdout(t *testing.T) {
+	opts := datagen.Options{
+		Configuration: datagen.Configuration{
+			ConfigFile: "testdata/only_id.json",
+			BatchSize:  1000,
+			Output:     "stdout",
+			Seed:       123456789,
+		},
+	}
+
+	var buffer bytes.Buffer
+	err := datagen.Generate(&opts, &buffer)
+	if err != nil {
+		t.Errorf("fail to write to stdout: %v", err)
+	}
+
+	if want, got := "", buffer.String(); want != got {
+		t.Errorf("No logs should be written with output=stdout, but got %s", got)
+	}
+}
+
+func TestJSONOutputToFile(t *testing.T) {
+
+	outputFileName := "/tmp/id.json"
+
+	defer os.Remove(outputFileName)
+
+	opts := datagen.Options{
+		Configuration: datagen.Configuration{
+			ConfigFile: "testdata/only_id.json",
+			BatchSize:  1000,
+			Output:     outputFileName,
+			Seed:       123456789,
+		},
+	}
+
+	var buffer bytes.Buffer
+	err := datagen.Generate(&opts, &buffer)
+	if err != nil {
+		t.Errorf("fail to write to file: %v", err)
+	}
+
+	logs := buffer.String()
+	if !strings.HasPrefix(logs, "Using seed: 123456789") {
+		t.Error("Logs should not be empty")
+	}
+
+	want := `{
+  "mgodatagen_test.test": [
+    {"_id": {"$numberInt":"0"}},
+    {"_id": {"$numberInt":"1"}},
+    {"_id": {"$numberInt":"2"}}
+  ]
+}`
+	got, err := os.ReadFile(outputFileName)
+	if err != nil {
+		t.Errorf("fail to read from %s: %v", outputFileName, err)
+	}
+
+	if want != string(got) {
+		t.Errorf("expected\n\n'%s'\n\nbut got\n\n'%s'", want, got)
+	}
+}
+func TestIndentJSONOutputToFile(t *testing.T) {
+
+	outputFileName := "/tmp/id_indented.json"
+
+	defer os.Remove(outputFileName)
+
+	opts := datagen.Options{
+		Configuration: datagen.Configuration{
+			ConfigFile:  "testdata/only_id.json",
+			BatchSize:   100,
+			Output:      outputFileName,
+			PrettyPrint: true,
+			Seed:        123456789,
+		},
+	}
+
+	err := datagen.Generate(&opts, io.Discard)
+	if err != nil {
+		t.Errorf("fail to write to file: %v", err)
+	}
+
+	want := `{
+  "mgodatagen_test.test": [
+    {
+      "_id": {
+        "$numberInt": "0"
+      }
+    },
+    {
+      "_id": {
+        "$numberInt": "1"
+      }
+    },
+    {
+      "_id": {
+        "$numberInt": "2"
+      }
+    }
+  ]
+}`
+
+	got, err := os.ReadFile(outputFileName)
+	if err != nil {
+		t.Errorf("fail to read from %s: %v", outputFileName, err)
+	}
+
+	if want != string(got) {
 		t.Errorf("expected\n\n'%s'\n\nbut got\n\n'%s'", want, got)
 	}
 }
@@ -713,6 +828,8 @@ func TestCollectionWithIndexes(t *testing.T) {
 
 func TestGenerate(t *testing.T) {
 
+	defer os.Remove("/tmp/output.json")
+
 	type generateTest struct {
 		name          string
 		options       datagen.Options
@@ -903,6 +1020,45 @@ func TestGenerate(t *testing.T) {
 			},
 			correct:     false,
 			errMsgRegex: regexp.MustCompile("^-i | --indexonly and -x | --indexfirst can't be present at the same time. Try to remove the -x | --indexfirst flag.*"),
+		},
+		{
+			name: "stdout output",
+			options: datagen.Options{
+				Configuration: datagen.Configuration{
+					ConfigFile: "testdata/only_id.json",
+					BatchSize:  1000,
+					Output:     "stdout",
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       true,
+			expectedNbDoc: 0,
+		},
+		{
+			name: "json file output",
+			options: datagen.Options{
+				Configuration: datagen.Configuration{
+					ConfigFile: "testdata/only_id.json",
+					BatchSize:  1000,
+					Output:     "/tmp/output.json",
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       true,
+			expectedNbDoc: 0,
+		},
+		{
+			name: "stdout output with aggregators",
+			options: datagen.Options{
+				Configuration: datagen.Configuration{
+					ConfigFile: "generators/testdata/full-aggregation.json",
+					BatchSize:  1000,
+					Output:     "stdout",
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:     false,
+			errMsgRegex: regexp.MustCompile("^Aggregators are not supported for stdout or file output.*"),
 		},
 	}
 

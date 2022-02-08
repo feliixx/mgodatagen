@@ -1,0 +1,13 @@
+[
+  {
+    "database": "mgodatagen_test",
+    "collection": "test",
+    "count": 3,
+    "content": {
+      "_id": {
+        "type": "autoincrement",
+        "autoType": "int"
+      }
+    }
+  }
+]
