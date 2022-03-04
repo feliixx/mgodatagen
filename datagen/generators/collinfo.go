@@ -78,8 +78,9 @@ type Config struct {
 	// For `object` only. List of GeneratorJSON to generate the content
 	// of the object
 	ObjectContent map[string]Config `json:"objectContent"`
-	// For `fromArray` only. If specified, the generator pick one of the item of the array
-	In []interface{} `json:"in"`
+	// For `enum` ( formerly `fromArray`) only. If specified, the generator
+	// pick one of the item of the array
+	Values []interface{}
 	// For `fromArray` only. If set to true, items are picked from the array in random order
 	RandomOrder bool `json:"randomOrder"`
 	// For `date` only. Lower bound for the date to generate
@@ -114,8 +115,10 @@ type Config struct {
 	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
 	Query bson.M `json:"query"`
 
-	// Deprecated. Use MinLength/MaxLength instead
+	// Deprecated. Use 'MinLength' and 'MaxLength' instead
 	Size int `json:"size"`
+	// Deprecated. Use 'Values' instead
+	In []interface{} `json:"in"`
 }
 
 // available generator types, see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details
@@ -131,6 +134,7 @@ const (
 	TypePosition        = "position"
 	TypeObject          = "object"
 	TypeFromArray       = "fromArray"
+	TypeEnum            = "enum"
 	TypeConstant        = "constant"
 	TypeRef             = "ref"
 	TypeAutoincrement   = "autoincrement"
@@ -259,6 +263,7 @@ var mapTypes = map[string]bsontype.Type{
 	TypePosition:        bson.TypeArray,
 	TypeObject:          bson.TypeEmbeddedDocument,
 	TypeFromArray:       bson.TypeNull, // can be of any bson type
+	TypeEnum:            bson.TypeNull, // can be of any bson type
 	TypeConstant:        bson.TypeNull, // can be of any bson type
 	TypeRef:             bson.TypeNull, // can be of any bson type
 	TypeAutoincrement:   bson.TypeNull, // type Int32 or Int64
@@ -524,7 +529,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 	case TypeObject:
 		return newEmbededGenerator(config, base, ci, buffer)
 
-	case TypeFromArray:
+	case TypeFromArray, TypeEnum:
 		return newFromArrayGenerator(config, base)
 
 	case TypeBinary:

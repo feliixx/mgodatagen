@@ -244,7 +244,7 @@ List of composite `<generator>` types:
 - [object](#object)
 - [constant](#constant)
 - [reference](#ref)
-- [fromArray](#fromarray)
+- [enum (formerly fromArray)](#fromarray)
 - [stringFromParts](#stringFromParts)
 - [countAggregator](#countAggregator)
 - [valueAggregator](#valueAggregator)
@@ -499,7 +499,7 @@ generator in other collections:
 
 It can also be used to duplicate a field in a single collection ( see [reference_same_collection.json](https://github.com/feliixx/mgodatagen/tree/master/datagen/testdata/reference_same_collection.json) ) 
 
-### FromArray
+### Enum ( formerly FromArray )
 
 Picks an object from an array as value for the field. Currently, objects in the
 array have to be of the same type. By default, items are picked from the array 
@@ -507,9 +507,9 @@ in the order where they appear.
 
 ```JSON5
 "fieldName": {
-    "type":           "fromArray", // required
-    "in": [                        // required. Can't be empty. An array of object of
-      `object`,                    // any type, including object and array.
+    "type":           "enum", // required
+    "values": [               // required. Can't be empty. An array of object of
+      `object`,               // any type, including object and array.
       `object`
       ...
     ], 
