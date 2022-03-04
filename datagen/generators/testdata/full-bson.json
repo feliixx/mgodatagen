@@ -227,6 +227,14 @@
             "type": "position"
           }
         ]
+      },
+      "enumAliasForFromArray": {
+        "type": "enum",
+        "values": [
+          "Taurus",
+          "Cancer",
+          "Virgo"
+        ]
       }
     }
   }

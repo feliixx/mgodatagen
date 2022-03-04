@@ -18,15 +18,20 @@ type fromArrayGenerator struct {
 
 func newFromArrayGenerator(config *Config, base base) (Generator, error) {
 
-	size := len(config.In)
+	// for backward compatibility
+	if len(config.Values) == 0 {
+		config.Values = config.In
+	}
+
+	size := len(config.Values)
 
 	if size == 0 {
-		return nil, errors.New("'in' array can't be null or empty")
+		return nil, errors.New("'values' array can't be null or empty")
 	}
 
 	array := make([][]byte, size)
 	arrayStr := make([][]byte, size)
-	for i, v := range config.In {
+	for i, v := range config.Values {
 		raw, err := bsonValue(string(base.key), v)
 		if err != nil {
 			return nil, err
