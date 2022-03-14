@@ -8,6 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gosuri/uilive v0.0.4 // indirect
 	github.com/gosuri/uiprogress v0.0.1
+	github.com/iancoleman/orderedmap v0.2.0
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/olekukonko/tablewriter v0.0.5

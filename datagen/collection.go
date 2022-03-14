@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/iancoleman/orderedmap"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -35,21 +36,23 @@ type Collection struct {
 
 // Index struct used to create an index from `db.runCommand({"createIndexes": "collName", ...})`
 type Index struct {
-	Name                    string            `bson:"name"`
-	Key                     bson.M            `bson:"key"`
-	Unique                  bool              `bson:"unique,omitempty"`
-	Sparse                  bool              `bson:"sparse,omitempty"`
-	Bits                    int               `bson:"bits,omitempty"`
-	Min                     float64           `bson:"min,omitempty"`
-	Max                     float64           `bson:"max,omitempty"`
-	BucketSize              float64           `bson:"bucketSize,omitempty"`
-	ExpireAfter             int               `bson:"expireAfterSeconds,omitempty" json:"expireAfterSeconds"`
-	Weights                 bson.M            `bson:"weights,omitempty"`
-	DefaultLanguage         string            `bson:"default_language,omitempty"`
-	LanguageOverride        string            `bson:"language_override,omitempty"`
-	TextIndexVersion        int               `bson:"textIndexVersion,omitempty"`
-	PartialFilterExpression bson.M            `bson:"partialFilterExpression,omitempty"`
-	Collation               options.Collation `bson:"collation,omitempty"`
+	Name string `bson:"name"`
+	// use an ordered map because key order matters for compound index,
+	// see https://docs.mongodb.com/manual/core/index-compound/
+	Key                     orderedmap.OrderedMap `bson:"key"`
+	Unique                  bool                  `bson:"unique,omitempty"`
+	Sparse                  bool                  `bson:"sparse,omitempty"`
+	Bits                    int32                 `bson:"bits,omitempty"`
+	Min                     float64               `bson:"min,omitempty"`
+	Max                     float64               `bson:"max,omitempty"`
+	BucketSize              int32                 `bson:"bucketSize,omitempty"`
+	ExpireAfter             int32                 `bson:"expireAfterSeconds,omitempty" json:"expireAfterSeconds"`
+	Weights                 bson.M                `bson:"weights,omitempty"`
+	DefaultLanguage         string                `bson:"default_language,omitempty"`
+	LanguageOverride        string                `bson:"language_override,omitempty"`
+	TextIndexVersion        int32                 `bson:"textIndexVersion,omitempty"`
+	PartialFilterExpression bson.M                `bson:"partialFilterExpression,omitempty"`
+	Collation               options.Collation     `bson:"collation,omitempty"`
 
 	// ignored from mongodb 4.2+
 	Background bool `bson:"background,omitempty"`
