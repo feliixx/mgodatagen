@@ -1,0 +1,34 @@
+[
+    {
+        "database": "mgodatagen_test",
+        "collection": "index_compound",
+        "count": 3,
+        "content": {
+            "suID": {
+                "type": "int",
+                "minInt": 0,
+                "maxInt": 10
+            },
+            "dvID": {
+                "type": "long",
+                "minLong": 0,
+                "maxLong": 10
+            },
+            "tm": {
+                "type": "string",
+                "minLength": 2,
+                "maxLength": 12
+            }
+        },
+        "indexes": [
+            {
+                "name": "compound",
+                "key": {
+                    "suID": 1,
+                    "dvID": 1,
+                    "tm": 1
+                }
+            }
+        ]
+    }
+]

@@ -788,14 +788,16 @@ func TestCollectionWithIndexes(t *testing.T) {
 			err := datagen.Generate(&opts, ioutil.Discard)
 			if tt.correct {
 				if err != nil {
-					t.Errorf("ensureIndex with indexes %v should not fail: \n%v", tt.indexes, err)
+					t.Errorf("ensureIndex with indexes for test %v should not fail: \n%v", tt.name, err)
 				}
 				cursor, err := session.Database(collections[0].DB).Collection(collections[0].Name).Indexes().List(context.Background())
 				if err != nil {
 					t.Error(err)
 				}
 
-				var idx datagen.Index
+				var idx struct {
+					Name string
+				}
 
 				i := 0
 				for cursor.Next(context.Background()) {
@@ -824,6 +826,43 @@ func TestCollectionWithIndexes(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCompoundIndexOrder(t *testing.T) {
+
+	opts := defaultOpts("testdata/index_compound.json")
+	err := datagen.Generate(&opts, ioutil.Discard)
+	if err != nil {
+		t.Errorf("fail to create collection with compound index: %v", err)
+	}
+
+	collections := parseConfig(t, opts.ConfigFile)
+	cursor, err := session.Database(collections[0].DB).Collection(collections[0].Name).Indexes().List(context.Background())
+	if err != nil {
+		t.Error(err)
+	}
+
+	var idx struct {
+		Name string
+		Key  bson.D
+	}
+	for cursor.Next(context.Background()) {
+
+		if err := cursor.Decode(&idx); err != nil {
+			t.Error(err)
+		}
+		// index on "_id" is created by default
+		if idx.Name == "_id_" {
+			continue
+		}
+		want := `[{"Key":"suID","Value":1},{"Key":"dvID","Value":1},{"Key":"tm","Value":1}]`
+		got, _ := json.Marshal(idx.Key)
+
+		if want != string(got) {
+			t.Errorf("index order does not match: expected %s, got %s", want, got)
+		}
+	}
+
 }
 
 func TestGenerate(t *testing.T) {
