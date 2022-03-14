@@ -34,29 +34,35 @@ type Collection struct {
 	aggregators  []generators.Aggregator
 }
 
-// Index struct used to create an index from `db.runCommand({"createIndexes": "collName", ...})`
+// Index struct used to create an index
 type Index struct {
-	Name string `bson:"name"`
+	Name string
 	// use an ordered map because key order matters for compound index,
 	// see https://docs.mongodb.com/manual/core/index-compound/
-	Key                     orderedmap.OrderedMap `bson:"key"`
-	Unique                  bool                  `bson:"unique,omitempty"`
-	Sparse                  bool                  `bson:"sparse,omitempty"`
-	Bits                    int32                 `bson:"bits,omitempty"`
-	Min                     float64               `bson:"min,omitempty"`
-	Max                     float64               `bson:"max,omitempty"`
-	BucketSize              int32                 `bson:"bucketSize,omitempty"`
-	ExpireAfter             int32                 `bson:"expireAfterSeconds,omitempty" json:"expireAfterSeconds"`
-	Weights                 bson.M                `bson:"weights,omitempty"`
-	DefaultLanguage         string                `bson:"default_language,omitempty"`
-	LanguageOverride        string                `bson:"language_override,omitempty"`
-	TextIndexVersion        int32                 `bson:"textIndexVersion,omitempty"`
-	PartialFilterExpression bson.M                `bson:"partialFilterExpression,omitempty"`
-	Collation               options.Collation     `bson:"collation,omitempty"`
+	Key                     orderedmap.OrderedMap
+	Unique                  bool
+	Sparse                  bool
+	Bits                    int32
+	Min                     float64
+	Max                     float64
+	ExpireAfter             int32 `json:"expireAfterSeconds"`
+	Weights                 bson.M
+	DefaultLanguage         string
+	LanguageOverride        string
+	TextIndexVersion        int32
+	PartialFilterExpression bson.M
+	Collation               options.Collation
+	Hidden                  bool
+	StorageEngine           bson.M
+	WildcardProjection      bson.M
+	SphereIndexVersion      int32 `json:"2dsphereIndexVersion"`
 
 	// ignored from mongodb 4.2+
-	Background bool `bson:"background,omitempty"`
-	DropDups   bool `bson:"dropDups,omitempty"`
+	Background bool
+	DropDups   bool
+
+	// deprecated from mongodb 4.9
+	BucketSize int32
 }
 
 // ShardingConfig struct that holds information to shard the collection
