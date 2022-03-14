@@ -156,22 +156,26 @@ See **MongoDB documentation** for details on parameters:
    },
 
    // list of index to build
-   "indexes": [                           // optional
+   "indexes": [                                // optional
       {
-         "name":               `string`,  // required, index name
-         "key":                `object`,  // required, index key, eg: {"name": 1}
-         "sparse":             `boolean`, // optional, default: false
-         "unique":             `boolean`, // optional, default: false
-         "bits":               `int`,     // optional, for 2d indexes only, default: 26
-         "min":                `double`,  // optional, for 2d indexes only, default: -180.0
-         "max":                `double`,  // optional, for 2d index only, default: 180.0
-         "bucketSize":         `double`,  // optional, for geoHaystack indexes only
-         "expireAfterSeconds": `int`,     // optional, for TTL indexes only
-         "weights":            `string`,  // optional, for text indexes only
-         "defaultLanguage":    `string`,  // optional, for text index only
-         "languageOverride":   `string`,  // optional, for text index only
-         "textIndexVersion":   `int`,     // optional, for text index only
-         "partialFilterExpression": `object`, // optional
+         "name":                    `string`,  // required, index name
+         "key":                     `object`,  // required, index key, eg: {"name": 1}
+         "sparse":                  `boolean`, // optional, default: false
+         "unique":                  `boolean`, // optional, default: false
+         "bits":                    `int`,     // optional, for 2d indexes only, default: 26
+         "min":                     `double`,  // optional, for 2d indexes only, default: -180.0
+         "max":                     `double`,  // optional, for 2d index only, default: 180.0
+         "bucketSize":              `double`,  // optional, for geoHaystack indexes only
+         "expireAfterSeconds":      `int`,     // optional, for TTL indexes only
+         "weights":                 `string`,  // optional, for text indexes only
+         "defaultLanguage":         `string`,  // optional, for text index only
+         "languageOverride":        `string`,  // optional, for text index only
+         "textIndexVersion":        `int`,     // optional, for text index only
+         "partialFilterExpression": `object`,  // optional
+         "hidden":                  `boolean`, // optional 
+         "storageEngine":           `object`,  // optional 
+         "wildcardProjection":      `object`,  // optional, for wildcard index only
+         "2dsphereIndexVersion":    `int`,     // optional, for 2dsphere index only
 
          "collation": {                  // optional
            "locale":          `string`,  // required 

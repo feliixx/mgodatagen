@@ -437,6 +437,18 @@ func (w *mongoWriter) ensureIndex(coll *Collection) error {
 		if index.Collation.Locale != "" {
 			opts = opts.SetCollation(&index.Collation)
 		}
+		if index.SphereIndexVersion != 0 {
+			opts = opts.SetSphereVersion(index.SphereIndexVersion)
+		}
+		if index.Hidden {
+			opts = opts.SetHidden(true)
+		}
+		if index.StorageEngine != nil {
+			opts = opts.SetStorageEngine(index.StorageEngine)
+		}
+		if index.WildcardProjection != nil {
+			opts = opts.SetWildcardProjection(index.WildcardProjection)
+		}
 
 		models[i].Keys = ordered
 		models[i].Options = opts
