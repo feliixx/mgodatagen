@@ -135,7 +135,7 @@ const (
 	TypeObject          = "object"
 	TypeEnum            = "enum"
 	TypeConstant        = "constant"
-	TypeRef             = "ref"
+	TypeReference       = "reference"
 	TypeAutoincrement   = "autoincrement"
 	TypeBinary          = "binary"
 	TypeDate            = "date"
@@ -143,10 +143,12 @@ const (
 	TypeFaker           = "faker"
 	TypeStringFromParts = "stringFromParts"
 
-	// deprecated. Use TypeCoordinates instead
+	// deprecated. Use 'TypeCoordinates' instead
 	TypePosition = "position"
 	// deprecated. Use 'TypeEnum' instead
 	TypeFromArray = "fromArray"
+	// deprecated. Use 'TypeReference' instead
+	TypeRef = "ref"
 )
 
 // available aggregator types
@@ -271,6 +273,7 @@ var mapTypes = map[string]bsontype.Type{
 	TypeEnum:            bson.TypeNull, // can be of any bson type
 	TypeConstant:        bson.TypeNull, // can be of any bson type
 	TypeRef:             bson.TypeNull, // can be of any bson type
+	TypeReference:       bson.TypeNull, // can be of any bson type
 	TypeAutoincrement:   bson.TypeNull, // type Int32 or Int64
 	TypeBinary:          bson.TypeBinary,
 	TypeDate:            bson.TypeDateTime,
@@ -576,7 +579,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 	case TypeStringFromParts:
 		return newStringFromPartsGenerator(config, base, ci, buffer)
 
-	case TypeRef:
+	case TypeRef, TypeReference:
 		_, ok := ci.mapRef[config.ID]
 		if !ok {
 

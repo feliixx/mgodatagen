@@ -274,7 +274,7 @@ func TestNewGenerator(t *testing.T) {
 		{
 			name: "ref generator with invalid generator",
 			config: generators.Config{
-				Type: generators.TypeRef,
+				Type: generators.TypeReference,
 				RefContent: &generators.Config{
 					Type:      generators.TypeString,
 					MinLength: -1,
