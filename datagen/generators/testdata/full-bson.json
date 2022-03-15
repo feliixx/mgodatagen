@@ -5,7 +5,7 @@
     "count": 1000,
     "content": {
       "_id": {
-        "type": "ref",
+        "type": "reference",
         "id": 1,
         "refContent": {
           "type": "objectId"
@@ -55,11 +55,11 @@
         "type": "boolean"
       },
       "position": {
-        "type": "position"
+        "type": "coordinates"
       },
       "stringFromArray": {
-        "type": "fromArray",
-        "in": [
+        "type": "enum",
+        "values": [
           "2012-10-10",
           "2012-12-12",
           "2014-01-01",
@@ -67,8 +67,8 @@
         ]
       },
       "intFromArrayRandomOrder": {
-        "type": "fromArray",
-        "in": [
+        "type": "enum",
+        "values": [
           1,
           4,
           12,
@@ -84,8 +84,8 @@
         "minLength": 6,
         "maxLength": 6,
         "arrayContent": {
-          "type": "fromArray",
-          "in": [
+          "type": "enum",
+          "values": [
             "A",
             "C",
             "T",
@@ -179,8 +179,8 @@
             "constVal": "@"
           },
           {
-            "type": "fromArray",
-            "in": [
+            "type": "enum",
+            "values": [
               "gmail.com",
               "github.com",
               "mongoplayground.net"
@@ -224,20 +224,9 @@
             "type": "boolean"
           },
           {
-            "type": "position"
+            "type": "coordinates"
           }
         ]
-      },
-      "enumAliasForFromArray": {
-        "type": "enum",
-        "values": [
-          "Taurus",
-          "Cancer",
-          "Virgo"
-        ]
-      },
-      "coordinatesAliasForPosition": {
-        "type": "coordinates"
       }
     }
   }

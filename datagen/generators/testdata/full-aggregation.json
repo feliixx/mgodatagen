@@ -10,9 +10,9 @@
                 "maxInt": 5
             },
             "field": {
-                "type": "fromArray",
+                "type": "enum",
                 "nullPercentage": 40,
-                "in": [
+                "values": [
                     "a",
                     "b",
                     "c",

@@ -286,7 +286,7 @@ func TestNewGenerator(t *testing.T) {
 		{
 			name: "ref generator with no generator",
 			config: generators.Config{
-				Type: generators.TypeRef,
+				Type: generators.TypeReference,
 			},
 			correct: false,
 			version: []int{3, 6},

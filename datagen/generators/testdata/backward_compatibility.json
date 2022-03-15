@@ -1,0 +1,27 @@
+[
+  {
+    "database": "mgodatagen_test",
+    "collection": "test_bson",
+    "count": 5,
+    "content": {
+      "referenceAliasForRef": {
+        "type": "ref",
+        "id": 1,
+        "refContent": {
+          "type": "objectId"
+        }
+      },
+      "enumAliasForFromArray": {
+        "type": "fromArray",
+        "in": [
+          "Taurus",
+          "Cancer",
+          "Virgo"
+        ]
+      },
+      "coordinatesAliasForPosition": {
+        "type": "position"
+      }
+    }
+  }
+]

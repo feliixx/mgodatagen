@@ -8,17 +8,17 @@
         "type": "objectId"
       },
       "start": {
-        "type": "ref",
+        "type": "reference",
+        "id": 1
+      },
+      "createdAt": {
+        "type": "reference",
         "id": 1,
         "refContent": {
           "type": "date",
           "startDate": "2021-06-12T12:00:00+00:00",
           "endDate": "2021-06-12T13:00:00+00:00"
         }
-      },
-      "createdAt": {
-        "type": "ref",
-        "id": 1
       }
     }
   }

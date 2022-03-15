@@ -5,8 +5,8 @@
         "count": 32,
         "content": {
             "word": {
-                "type": "fromArray",
-                "in": [
+                "type": "enum",
+                "values": [
                     "Cafe",
                     "Cofee",
                     "Café",
@@ -16,9 +16,9 @@
                 ]
             },
             "language": {
-                "type": "fromArray",
+                "type": "enum",
                 "nullPercentage": 80,
-                "in": [
+                "values": [
                     "french",
                     "english"
                 ]
