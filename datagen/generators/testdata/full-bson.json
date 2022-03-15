@@ -235,6 +235,9 @@
           "Cancer",
           "Virgo"
         ]
+      },
+      "coordinatesAliasForPosition": {
+        "type": "coordinates"
       }
     }
   }

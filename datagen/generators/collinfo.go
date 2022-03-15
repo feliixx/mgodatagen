@@ -131,9 +131,8 @@ const (
 	TypeBoolean         = "boolean"
 	TypeObjectID        = "objectId"
 	TypeArray           = "array"
-	TypePosition        = "position"
+	TypeCoordinates     = "coordinates"
 	TypeObject          = "object"
-	TypeFromArray       = "fromArray"
 	TypeEnum            = "enum"
 	TypeConstant        = "constant"
 	TypeRef             = "ref"
@@ -143,6 +142,11 @@ const (
 	TypeUUID            = "uuid"
 	TypeFaker           = "faker"
 	TypeStringFromParts = "stringFromParts"
+
+	// deprecated. Use TypeCoordinates instead
+	TypePosition = "position"
+	// deprecated. Use 'TypeEnum' instead
+	TypeFromArray = "fromArray"
 )
 
 // available aggregator types
@@ -261,6 +265,7 @@ var mapTypes = map[string]bsontype.Type{
 	TypeObjectID:        bson.TypeObjectID,
 	TypeArray:           bson.TypeArray,
 	TypePosition:        bson.TypeArray,
+	TypeCoordinates:     bson.TypeArray,
 	TypeObject:          bson.TypeEmbeddedDocument,
 	TypeFromArray:       bson.TypeNull, // can be of any bson type
 	TypeEnum:            bson.TypeNull, // can be of any bson type
@@ -538,7 +543,7 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 	case TypeDate:
 		return newDateGenerator(config, base, ci.pcg64)
 
-	case TypePosition:
+	case TypePosition, TypeCoordinates:
 		return newPositionGenerator(base, ci.pcg64)
 
 	case TypeConstant:
