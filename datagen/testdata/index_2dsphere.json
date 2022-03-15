@@ -12,7 +12,7 @@
             "constVal": "Point"
           },
           "coordinates": {
-            "type": "position"
+            "type": "coordinates"
           }
         }
       }

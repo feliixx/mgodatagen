@@ -729,8 +729,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 					Name: "idx_2",
 				},
 			},
-			correct:     true,
-			errMsgRegex: nil,
+			correct: true,
 		},
 		{
 			name:       "TTL index",
@@ -740,8 +739,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 					Name: "expireAt_1",
 				},
 			},
-			correct:     true,
-			errMsgRegex: nil,
+			correct: true,
 		},
 		{
 			name:       "text index",
@@ -751,8 +749,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 					Name: "word_text",
 				},
 			},
-			correct:     true,
-			errMsgRegex: nil,
+			correct: true,
 		},
 		{
 			name:       "collation index",
@@ -762,8 +759,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 					Name: "collation_1",
 				},
 			},
-			correct:     true,
-			errMsgRegex: nil,
+			correct: true,
 		},
 		{
 			name:       "invalid index",
@@ -787,8 +783,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 					Name: "geo2d",
 				},
 			},
-			correct:     true,
-			errMsgRegex: nil,
+			correct: true,
 		},
 	}
 
@@ -1070,6 +1065,19 @@ func TestGenerate(t *testing.T) {
 			},
 			correct:     false,
 			errMsgRegex: regexp.MustCompile("^-i | --indexonly and -x | --indexfirst can't be present at the same time. Try to remove the -x | --indexfirst flag.*"),
+		},
+		{
+			name: "backward compatibility ",
+			options: datagen.Options{
+				Connection: defaultConnOpts,
+				Configuration: datagen.Configuration{
+					ConfigFile: "generators/testdata/backward_compatibility.json",
+					BatchSize:  1000,
+				},
+				General: defaultGeneralOpts,
+			},
+			correct:       true,
+			expectedNbDoc: 5,
 		},
 		{
 			name: "stdout output",
