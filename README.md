@@ -242,7 +242,7 @@ List of `<generator>` types:
 - [coordinates (formerly position)](#coordinates)
 - [constant](#constant)
 - [enum (formerly fromArray)](#enum)
-- [reference](#ref)
+- [reference](#reference)
 - [faker](#faker)
 - [array](#array)
 - [object](#object)
@@ -522,18 +522,17 @@ in the order where they appear.
 }
 ```
 
-### Ref
+### Reference
 
-If a field reference an other field in a different collection, you can use a ref generator.
-
-generator in first collection:
+Use the same list of values for fields in different collection.
 
 ```JSON5
 "fieldName":{
-    "type":             "ref",       // required
+    "type":             "reference", // required
     "id":               `int`,       // required, generator id used to link
                                      // field between collections
-    "refContent":       `generator`, // required
+    "refContent":       `generator`, // required, generator to use to create the
+                                     // list of values 
     "nullPercentage":   `int`,       // optional
     "maxDistinctValue": `int`        // optional
 }
@@ -543,10 +542,10 @@ generator in other collections:
 
 ```JSON5
 "fieldName": {
-    "type":             "ref", // required
-    "id":               `int`, // required, same id as previous generator
-    "nullPercentage":   `int`, // optional
-    "maxDistinctValue": `int`  // optional
+    "type":             "reference", // required
+    "id":               `int`,       // required, same id as previous generator
+    "nullPercentage":   `int`,       // optional
+    "maxDistinctValue": `int`        // optional
 }
 ```
 
@@ -563,8 +562,8 @@ Generates a random array of bson object.
     "type":             "array",     // required
     "minLength":        `int`,       // required, must be >= 0
     "maxLength":        `int`,       // required, must be >= minLength
-    "arrayContent":     `generator`, // generator use to create element to fill the array.
-                                     // can be of any type
+    "arrayContent":     `generator`, // required, generator use to create element
+                                     // to fill the array. Can be of any type
     "nullPercentage":   `int`,       // optional
     "maxDistinctValue": `int`        // optional
 }
