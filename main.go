@@ -14,9 +14,7 @@ import (
 // Use this to set version to last known tag:
 //
 //  go build -ldflags "-X main.Version=$(git describe --tags $(git rev-list --tags --max-count=1))"
-//
-// use debug.ReadBuildInfo() when https://github.com/golang/go/issues/37475 is implemented ( go 1.18? )
-var Version string = "v0.9.4"
+var Version string = "v0.10.0"
 
 func main() {
 	var options datagen.Options
