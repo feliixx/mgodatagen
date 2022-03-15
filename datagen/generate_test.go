@@ -446,11 +446,11 @@ func TestCollectionContent(t *testing.T) {
 		if r.ConstFloat != 0.0 {
 			t.Errorf("ConstFloat should always be 0.0, but was %f", r.ConstFloat)
 		}
-		if r.Position[0] < -90 || r.Position[0] > 90 {
-			t.Errorf("expected -90 < pos[0] < 90, but was %f", r.Position[0])
+		if r.Position[0] < -180 || r.Position[0] > 180 {
+			t.Errorf("expected -180 < pos[0] < 180, but was %f", r.Position[0])
 		}
-		if r.Position[1] < -180 || r.Position[1] > 180 {
-			t.Errorf("expected -180 < pos[1] < 180, but was %f", r.Position[1])
+		if r.Position[1] < -90 || r.Position[1] > 90 {
+			t.Errorf("expected -90 < pos[1] < 90, but was %f", r.Position[1])
 		}
 		idx := fromArr.Search(r.StringFromArray)
 		if idx == len(fromArr) || fromArr[idx] != r.StringFromArray {
@@ -778,6 +778,17 @@ func TestCollectionWithIndexes(t *testing.T) {
 			},
 			correct:     false,
 			errMsgRegex: regexp.MustCompile("^error while building indexes for collection.*\n cause.*"),
+		},
+		{
+			name:       "2dsphere index",
+			configFile: "testdata/index_2dsphere.json",
+			indexes: []datagen.Index{
+				{
+					Name: "geo2d",
+				},
+			},
+			correct:     true,
+			errMsgRegex: nil,
 		},
 	}
 

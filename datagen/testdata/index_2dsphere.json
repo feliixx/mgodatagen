@@ -1,0 +1,32 @@
+[
+  {
+    "database": "mgodatagen_test",
+    "collection": "index_2dsphere",
+    "count": 100,
+    "content": {
+      "location": {
+        "type": "object",
+        "objectContent": {
+          "type": {
+            "type": "constant",
+            "constVal": "Point"
+          },
+          "coordinates": {
+            "type": "position"
+          }
+        }
+      }
+    },
+    "indexes": [
+      {
+        "name": "geo2d",
+        "key": {
+          "location": "2dsphere"
+        },
+        "bits": 22,
+        "min": -180.0,
+        "max": 180.0
+      }
+    ]
+  }
+]
