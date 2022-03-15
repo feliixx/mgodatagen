@@ -21,13 +21,19 @@ func newPositionGenerator(base base, pcg64 *pcg.PCG64) (Generator, error) {
 func (g *positionGenerator) EncodeValue() {
 	current := g.buffer.Len()
 	g.buffer.Reserve()
-	for i := 0; i < 2; i++ {
-		g.buffer.WriteSingleByte(byte(bson.TypeDouble))
-		g.buffer.WriteSingleByte(indexesBytes[i])
-		g.buffer.WriteSingleByte(byte(0))
-		// 90*(i+1)(2*[0,1] - 1) ==> pos[0] in [-90, 90], pos[1] in [-180, 180]
-		g.buffer.Write(float64Bytes(90 * float64(i+1) * (2*(float64(g.pcg64.Random())/(1<<64)) - 1)))
-	}
+
+	// longitude, in [-180, 180]
+	g.buffer.WriteSingleByte(byte(bson.TypeDouble))
+	g.buffer.WriteSingleByte(indexesBytes[0])
+	g.buffer.WriteSingleByte(byte(0))
+	g.buffer.Write(float64Bytes(180 * (2*(float64(g.pcg64.Random())/(1<<64)) - 1)))
+
+	// latitude, in [-90, 90]
+	g.buffer.WriteSingleByte(byte(bson.TypeDouble))
+	g.buffer.WriteSingleByte(indexesBytes[1])
+	g.buffer.WriteSingleByte(byte(0))
+	g.buffer.Write(float64Bytes(90 * (2*(float64(g.pcg64.Random())/(1<<64)) - 1)))
+
 	g.buffer.WriteSingleByte(byte(0))
 	g.buffer.WriteAt(current, int32Bytes(int32(g.buffer.Len()-current)))
 }
