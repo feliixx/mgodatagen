@@ -225,9 +225,10 @@ Generators have a common structure:
 }
 ```
 
-List of basic `<generator>` types:
+List of `<generator>` types:
 
 - [string](#string)
+- [stringFromParts](#stringFromParts)
 - [int](#int)
 - [long](#long)
 - [double](#double)
@@ -235,21 +236,16 @@ List of basic `<generator>` types:
 - [autoincrement](#autoincrement)
 - [boolean](#boolean)
 - [objectId](#objectid)
+- [UUID](#uuid)
 - [binary](#binary)
 - [date](#date)
-- [UUID](#uuid)
-- [position](#position)
+- [coordinates (formerly position)](#coordinates)
+- [constant](#constant)
+- [enum (formerly fromArray)](#enum)
+- [reference](#ref)
 - [faker](#faker)
-
-
-List of composite `<generator>` types:
-
 - [array](#array)
 - [object](#object)
-- [constant](#constant)
-- [reference](#ref)
-- [enum (formerly fromArray)](#fromarray)
-- [stringFromParts](#stringFromParts)
 - [countAggregator](#countAggregator)
 - [valueAggregator](#valueAggregator)
 - [boundAggregator](#boundAggregator)
@@ -287,6 +283,53 @@ They will look like
 "aac",
 "aad",
 ...
+```
+
+### StringFromParts
+
+Generates a random string from several generators. `parts` generators can't have `unique` or `maxDistinctValue` attributes set. 
+
+```JSON5
+"fieldName": {
+    "type":           "stringFromParts", // required
+    "parts": [                           // required. Can't be empty. An array 
+      `generator`,                       // of generators of any basic type
+      `generator`
+      ...
+    ],
+    "nullPercentage": `int`              // optional
+}
+```
+
+**Example:**
+
+To generate phone number like `'(555) 565-2431'`, you can combine several generators 
+like this: 
+
+```JSON5
+"phone": {
+  "type": "stringFromParts",
+  "parts": [
+    {
+      "type": "constant",
+      "constVal": "(555) "
+    },
+    {
+      "type": "int",
+      "minInt": 100,
+      "maxInt": 999
+    },
+    {
+      "type": "constant",
+      "constVal": "-"
+    },
+    {
+      "type": "int",
+      "minInt": 1000,
+      "maxInt": 9999
+    },
+  ]
+}
 ```
 
 ### Int
@@ -343,6 +386,20 @@ Generates a random `decimal128`.
 }
 ```
 
+### Autoincrement
+
+Generates an autoincremented value (type `<long>` or `<int>`).
+
+```JSON5
+"fieldName": {
+    "type":           "autoincrement", // required
+    "autoType":       `string`,        // required, either "int" or "long"
+    "startLong":      `long`,          // optional, start value if autoType = "long"
+    "startInt":       `int`,           // optional, start value if autoType = "int"
+    "nullPercentage": `int`            // optional
+}
+```
+
 ### Boolean
 
 Generates a random `boolean`.
@@ -366,6 +423,136 @@ Generates a random `objectId`.
     "maxDistinctValue": `int`       // optional
 }
 ```
+
+### UUID
+
+Generates a random UUID
+
+```JSON5
+"fieldName": {
+    "type":           "uuid",  // required
+    "format":         `string` // optional, either "string" or "binary".
+                               // default is "string" 
+    "nullPercentage": `int`    // optional
+}
+```
+
+If `format` is `"string"`, the field will be a simple string like `"f1b9b567-9b34-45af-9d9c-35f565d57716"`.
+
+ If `format` is `"binary"`, the field will be stored as a [bson UUID](https://docs.mongodb.com/manual/reference/method/UUID/) like `UUID("f1b9b567-9b34-45af-9d9c-35f565d57716")`
+ 
+### Binary
+
+Generates random binary data of length within bounds.
+
+```JSON5
+"fieldName": {
+    "type":             "binary", // required
+    "minLength":        `int`,    // required, must be >= 0
+    "maxLength":        `int`,    // required, must be >= minLength
+    "nullPercentage":   `int`,    // optional
+    "maxDistinctValue": `int`     // optional
+}
+```
+
+### Date
+
+Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/reference/method/Date/) ).
+
+`startDate` and `endDate` are string representation of a Date following RFC3339:
+
+**format**: "yyyy-MM-ddThh:mm:ss+00:00"
+
+```JSON5
+"fieldName": {
+    "type":             "date",   // required
+    "startDate":        `string`, // required
+    "endDate":          `string`, // required, must be >= startDate
+    "nullPercentage":   `int`,    // optional
+    "maxDistinctValue": `int`     // optional
+}
+```
+
+### Coordinates
+
+Generates random [GeoJSON](https://docs.mongodb.com/manual/geospatial-queries/#std-label-geospatial-geojson) coordinates (a GPS position in WGS84 Decimal Degrees with folowing format: `[ longitude, latitude ]` )
+
+eg : [40.741895, -73.989308]
+
+```JSON5
+"fieldName": {
+    "type":             "coordinates", // required
+    "nullPercentage":   `int`,         // optional
+    "maxDistinctValue": `int`          // optional
+}
+```
+
+### Constant
+
+Adds the same value to each document.
+
+```JSON5
+"fieldName": {
+    "type":           "constant", // required
+    "constVal":       `object`,   // required, can be of any type including object and array
+                                  // eg: {"k": 1, "v": "val"}
+                                  // to set constant ObjectId eg: { "$oid": "5a934e000102030405000001" }
+    "nullPercentage": `int`       // optional
+}
+```
+
+### Enum
+
+Picks an object from an array as value for the field. Currently, objects in the
+array have to be of the same type. By default, items are picked from the array 
+in the order where they appear.
+
+```JSON5
+"fieldName": {
+    "type":           "enum", // required
+    "values": [               // required. Can't be empty. An array of object of
+      `object`,               // any type, including object and array.
+      `object`
+      ...
+    ], 
+    "randomOrder":    `bool`, // optional. If set to true, objects will be picked 
+                              // from the array in random order.
+    "nullPercentage": `int`   // optional
+
+}
+```
+
+### Ref
+
+If a field reference an other field in a different collection, you can use a ref generator.
+
+generator in first collection:
+
+```JSON5
+"fieldName":{
+    "type":             "ref",       // required
+    "id":               `int`,       // required, generator id used to link
+                                     // field between collections
+    "refContent":       `generator`, // required
+    "nullPercentage":   `int`,       // optional
+    "maxDistinctValue": `int`        // optional
+}
+```
+
+generator in other collections:
+
+```JSON5
+"fieldName": {
+    "type":             "ref", // required
+    "id":               `int`, // required, same id as previous generator
+    "nullPercentage":   `int`, // optional
+    "maxDistinctValue": `int`  // optional
+}
+```
+
+It can also be used to duplicate a field in a single collection ( see [reference_same_collection.json](https://github.com/feliixx/mgodatagen/tree/master/datagen/testdata/reference_same_collection.json) ) 
+
+
 
 ### Array
 
@@ -400,194 +587,6 @@ Generates random nested object.
 }
 ```
 
-### Binary
-
-Generates random binary data of length within bounds.
-
-```JSON5
-"fieldName": {
-    "type":             "binary", // required
-    "minLength":        `int`,    // required, must be >= 0
-    "maxLength":        `int`,    // required, must be >= minLength
-    "nullPercentage":   `int`,    // optional
-    "maxDistinctValue": `int`     // optional
-}
-```
-
-### Date
-
-Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/reference/method/Date/) ).
-
-`startDate` and `endDate` are string representation of a Date following RFC3339:
-
-**format**: "yyyy-MM-ddThh:mm:ss+00:00"
-
-```JSON5
-"fieldName": {
-    "type":             "date",   // required
-    "startDate":        `string`, // required
-    "endDate":          `string`, // required, must be >= startDate
-    "nullPercentage":   `int`,    // optional
-    "maxDistinctValue": `int`     // optional
-}
-```
-
-### Position
-
-Generates a random [GeoJSON](https://docs.mongodb.com/manual/geospatial-queries/#std-label-geospatial-geojson) coordinates (a GPS position in WGS84 Decimal Degrees with folowing format: `[ longitude, latitude ]` )
-
-eg : [40.741895, -73.989308]
-
-```JSON5
-"fieldName": {
-    "type":             "position", // required
-    "nullPercentage":   `int`,      // optional
-    "maxDistinctValue": `int`       // optional
-}
-```
-
-### Constant
-
-Adds the same value to each document.
-
-```JSON5
-"fieldName": {
-    "type":           "constant", // required
-    "constVal":       `object`,   // required, can be of any type including object and array
-                                  // eg: {"k": 1, "v": "val"}
-                                  // to set constant ObjectId eg: { "$oid": "5a934e000102030405000001" }
-    "nullPercentage": `int`       // optional
-}
-```
-
-### Autoincrement
-
-Generates an autoincremented value (type `<long>` or `<int>`).
-
-```JSON5
-"fieldName": {
-    "type":           "autoincrement", // required
-    "autoType":       `string`,        // required, either "int" or "long"
-    "startLong":      `long`,          // optional, start value if autoType = "long"
-    "startInt":       `int`,           // optional, start value if autoType = "int"
-    "nullPercentage": `int`            // optional
-}
-```
-
-### Ref
-
-If a field reference an other field in a different collection, you can use a ref generator.
-
-generator in first collection:
-
-```JSON5
-"fieldName":{
-    "type":             "ref",       // required
-    "id":               `int`,       // required, generator id used to link
-                                     // field between collections
-    "refContent":       `generator`, // required
-    "nullPercentage":   `int`,       // optional
-    "maxDistinctValue": `int`        // optional
-}
-```
-
-generator in other collections:
-
-```JSON5
-"fieldName": {
-    "type":             "ref", // required
-    "id":               `int`, // required, same id as previous generator
-    "nullPercentage":   `int`, // optional
-    "maxDistinctValue": `int`  // optional
-}
-```
-
-It can also be used to duplicate a field in a single collection ( see [reference_same_collection.json](https://github.com/feliixx/mgodatagen/tree/master/datagen/testdata/reference_same_collection.json) ) 
-
-### Enum ( formerly FromArray )
-
-Picks an object from an array as value for the field. Currently, objects in the
-array have to be of the same type. By default, items are picked from the array 
-in the order where they appear.
-
-```JSON5
-"fieldName": {
-    "type":           "enum", // required
-    "values": [               // required. Can't be empty. An array of object of
-      `object`,               // any type, including object and array.
-      `object`
-      ...
-    ], 
-    "randomOrder":    `bool`, // optional. If set to true, objects will be picked 
-                              // from the array in random order.
-    "nullPercentage": `int`   // optional
-
-}
-```
-
-### UUID
-
-Generates a random UUID
-
-```JSON5
-"fieldName": {
-    "type":           "uuid",  // required
-    "format":         `string` // optional, either "string" or "binary".
-                               // default is "string" 
-    "nullPercentage": `int`    // optional
-}
-```
-
-If `format` is `"string"`, the field will be a simple string like `"f1b9b567-9b34-45af-9d9c-35f565d57716"`.
-
- If `format` is `"binary"`, the field will be stored as a [bson UUID](https://docs.mongodb.com/manual/reference/method/UUID/) like `UUID("f1b9b567-9b34-45af-9d9c-35f565d57716")`
-
-### StringFromParts
-
-Generates a random string from several generators. `parts` generators can't have `unique` or `maxDistinctValue` attributes set. 
-
-```JSON5
-"fieldName": {
-    "type":           "stringFromParts", // required
-    "parts": [                           // required. Can't be empty. An array 
-      `generator`,                       // of generators of any basic type
-      `generator`
-      ...
-    ],
-    "nullPercentage": `int`              // optional
-}
-```
-
-**Example:**
-
-To generate phone number like `'(555) 565-2431'`, you can combine several generators 
-like this: 
-
-```JSON5
-"phone": {
-  "type": "stringFromParts",
-  "parts": [
-    {
-      "type": "constant",
-      "constVal": "(555) "
-    },
-    {
-      "type": "int",
-      "minInt": 100,
-      "maxInt": 999
-    },
-    {
-      "type": "constant",
-      "constVal": "-"
-    },
-    {
-      "type": "int",
-      "minInt": 1000,
-      "maxInt": 9999
-    },
-  ]
-}
-```
 
 ### CountAggregator
 
