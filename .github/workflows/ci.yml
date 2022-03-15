@@ -3,7 +3,7 @@ name: Run tests
 on: [ push, pull_request ]
 
 env:
-  go-version: 1.17
+  go-version: 1.18
 
 jobs:
   static_check:
@@ -24,7 +24,7 @@ jobs:
       - name: Lint code
         uses: golangci/golangci-lint-action@v2
         with:
-          version: v1.44.0
+          version: v1.44.2
 
   build:
     needs: static_check
