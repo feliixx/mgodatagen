@@ -22,9 +22,9 @@ jobs:
         run: go vet ./...
 
       - name: Lint code
-        uses: golangci/golangci-lint-action@v2
-        with:
-          version: v1.44.2
+        run: |
+          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.44.2
+          golangci-lint run ./... --timeout 2m0s
 
   build:
     needs: static_check
