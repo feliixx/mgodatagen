@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/iancoleman/orderedmap"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -32,37 +31,6 @@ type Collection struct {
 
 	docGenerator *generators.DocumentGenerator
 	aggregators  []generators.Aggregator
-}
-
-// Index struct used to create an index
-type Index struct {
-	Name string
-	// use an ordered map because key order matters for compound index,
-	// see https://docs.mongodb.com/manual/core/index-compound/
-	Key                     orderedmap.OrderedMap
-	Unique                  bool
-	Sparse                  bool
-	Bits                    int32
-	Min                     float64
-	Max                     float64
-	ExpireAfter             int32 `json:"expireAfterSeconds"`
-	Weights                 bson.M
-	DefaultLanguage         string
-	LanguageOverride        string
-	TextIndexVersion        int32
-	PartialFilterExpression bson.M
-	Collation               options.Collation
-	Hidden                  bool
-	StorageEngine           bson.M
-	WildcardProjection      bson.M
-	SphereIndexVersion      int32 `json:"2dsphereIndexVersion"`
-
-	// ignored from mongodb 4.2+
-	Background bool
-	DropDups   bool
-
-	// deprecated from mongodb 4.9
-	BucketSize int32
 }
 
 // ShardingConfig struct that holds information to shard the collection
