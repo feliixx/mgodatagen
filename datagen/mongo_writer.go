@@ -387,71 +387,7 @@ func (w *mongoWriter) ensureIndex(coll *Collection) error {
 
 	models := make([]mongo.IndexModel, len(coll.Indexes))
 	for i, index := range coll.Indexes {
-
-		ordered := bson.D{}
-		for _, k := range index.Key.Keys() {
-			v, _ := index.Key.Get(k)
-			ordered = append(ordered, bson.E{Key: k, Value: v})
-		}
-
-		opts := &options.IndexOptions{}
-		if index.Name != "" {
-			opts = opts.SetName(index.Name)
-		}
-		if index.ExpireAfter != 0 {
-			opts = opts.SetExpireAfterSeconds(index.ExpireAfter)
-		}
-		if index.Sparse {
-			opts = opts.SetSparse(true)
-		}
-		if index.Unique {
-			opts = opts.SetUnique(true)
-		}
-		if index.TextIndexVersion != 0 {
-			opts = opts.SetTextVersion(index.TextIndexVersion)
-		}
-		if index.DefaultLanguage != "" {
-			opts = opts.SetDefaultLanguage(index.DefaultLanguage)
-		}
-		if index.LanguageOverride != "" {
-			opts = opts.SetLanguageOverride(index.LanguageOverride)
-		}
-		if index.Weights != nil {
-			opts = opts.SetWeights(index.Weights)
-		}
-		if index.Bits != 0 {
-			opts = opts.SetBits(index.Bits)
-		}
-		if index.Max != 0 {
-			opts = opts.SetMax(index.Max)
-		}
-		if index.Min != 0 {
-			opts = opts.SetMin(index.Min)
-		}
-		if index.BucketSize != 0 {
-			opts = opts.SetBucketSize(index.BucketSize)
-		}
-		if index.PartialFilterExpression != nil {
-			opts = opts.SetPartialFilterExpression(index.PartialFilterExpression)
-		}
-		if index.Collation.Locale != "" {
-			opts = opts.SetCollation(&index.Collation)
-		}
-		if index.SphereIndexVersion != 0 {
-			opts = opts.SetSphereVersion(index.SphereIndexVersion)
-		}
-		if index.Hidden {
-			opts = opts.SetHidden(true)
-		}
-		if index.StorageEngine != nil {
-			opts = opts.SetStorageEngine(index.StorageEngine)
-		}
-		if index.WildcardProjection != nil {
-			opts = opts.SetWildcardProjection(index.WildcardProjection)
-		}
-
-		models[i].Keys = ordered
-		models[i].Options = opts
+		models[i] = index.convertToIndexModel()
 	}
 
 	_, err = c.Indexes().CreateMany(ctx, models)
