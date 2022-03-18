@@ -387,7 +387,7 @@ func (w *mongoWriter) ensureIndex(coll *Collection) error {
 
 	models := make([]mongo.IndexModel, len(coll.Indexes))
 	for i, index := range coll.Indexes {
-		models[i] = index.convertToIndexModel()
+		models[i] = index.ConvertToIndexModel()
 	}
 
 	_, err = c.Indexes().CreateMany(ctx, models)
