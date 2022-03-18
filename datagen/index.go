@@ -38,7 +38,7 @@ type Index struct {
 	BucketSize int32
 }
 
-func (idx *Index) convertToIndexModel() mongo.IndexModel {
+func (idx *Index) ConvertToIndexModel() mongo.IndexModel {
 
 	ordered := bson.D{}
 	for _, k := range idx.Key.Keys() {
