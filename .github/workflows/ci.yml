@@ -11,34 +11,35 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.go-version }}
 
       - name: Vet code
         run: go vet ./...
 
-      - name: Lint code
-        run: |
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.44.2
-          golangci-lint run ./... --timeout 2m0s
+      - name: Lint code 
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.45.2
+          args: --timeout 2m0s
 
   build:
     needs: static_check
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        mongodb-version: [4.2.18, 4.4.12, 5.0.6, 5.0.6-sharded]
+        mongodb-version: [4.2.19, 4.4.13, 5.0.8, 5.0.8-sharded]
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ env.go-version }}
 
