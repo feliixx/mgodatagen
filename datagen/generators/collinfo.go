@@ -99,10 +99,10 @@ type Config struct {
 	Method string `json:"method"`
 	// for `stringFromParts` type only. Generators used to create the string
 	Parts []Config `json:"parts"`
-	// For `ref` type only. Used to retrieve the array storing the value
+	// For `reference` type only. Used to retrieve the array storing the value
 	// for this field
 	ID int `json:"id"`
-	// For `ref` type only. generator for the field
+	// For `reference` type only. generator for the field
 	RefContent *Config `json:"refContent"`
 	// For `uuid` type only. Type of the field, must be one of [ 'string', 'binary' ]
 	UUIDFormat string `json:"format"`
@@ -445,10 +445,10 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 	}
 
 	// a field can reference another field in the same collection. As go map are unordered,
-	// we need to make sure that the initial 'ref' field is initialized before it's reference
+	// we need to make sure that the field with the 'refContent' is initialized first 
 	fields := make([]string, 0)
 	for k, v := range content {
-		if v.Type == "ref" && v.RefContent == nil {
+		if v.Type == "reference" && v.RefContent == nil {
 			fields = append(fields, k)
 		} else {
 			fields = append([]string{k}, fields...)
