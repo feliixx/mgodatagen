@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
+
 	"github.com/gosuri/uiprogress"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
@@ -43,7 +44,7 @@ type rawChunk struct {
 // use a sync.Pool to reduce memory consumption
 // also reduce the nb of items to send to the channel
 var pool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		list := make([][]byte, 1000)
 		for i := range list {
 			// use 256 bytes as default buffer size, because it's close to the

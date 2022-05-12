@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
+	
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 	"go.mongodb.org/mongo-driver/bson"

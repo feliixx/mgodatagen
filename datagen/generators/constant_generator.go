@@ -15,7 +15,7 @@ type constGenerator struct {
 	bsonVal []byte
 }
 
-func newConstantGenerator(base base, value interface{}) (Generator, error) {
+func newConstantGenerator(base base, value any) (Generator, error) {
 	raw, err := bsonValue(string(base.Key()), value)
 	if err != nil {
 		return nil, err
@@ -38,11 +38,11 @@ func (g *constGenerator) EncodeValueAsString() {
 	g.buffer.Write(g.strVal)
 }
 
-func bsonValue(key string, val interface{}) ([]byte, error) {
+func bsonValue(key string, val any) ([]byte, error) {
 
 	valToMarshal := bson.M{key: val}
 
-	doc, ok := val.(map[string]interface{})
+	doc, ok := val.(map[string]any)
 	if ok && len(doc) == 1 {
 		str, ok := doc["$oid"].(string)
 		if ok && len(str) == 24 {

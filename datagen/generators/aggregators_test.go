@@ -149,13 +149,13 @@ func TestAggregatorUpdate(t *testing.T) {
 
 	aggregatorUpdateTest := []struct {
 		name           string
-		baseDoc        []interface{}
+		baseDoc        []any
 		config         generators.Config
 		expectedUpdate [2]bson.M
 	}{
 		{
 			name: "countAggregator",
-			baseDoc: []interface{}{
+			baseDoc: []any{
 				bson.M{"_id": 1, "local": 1},
 				bson.M{"_id": 2, "local": 2},
 				bson.M{"_id": 3, "local": 1},
@@ -175,7 +175,7 @@ func TestAggregatorUpdate(t *testing.T) {
 		},
 		{
 			name: "valueAggregator",
-			baseDoc: []interface{}{
+			baseDoc: []any{
 				bson.M{"_id": 1, "local": 1},
 				bson.M{"_id": 2, "local": 1},
 				bson.M{"_id": 3, "local": 2},
@@ -191,12 +191,12 @@ func TestAggregatorUpdate(t *testing.T) {
 			},
 			expectedUpdate: [2]bson.M{
 				{"_id": 1},
-				{"$set": bson.M{"key": []interface{}{int32(1), int32(2)}}},
+				{"$set": bson.M{"key": []any{int32(1), int32(2)}}},
 			},
 		},
 		{
 			name: "boundAggregator",
-			baseDoc: []interface{}{
+			baseDoc: []any{
 				bson.M{"_id": 1, "local": 2},
 				bson.M{"_id": 2, "local": 1},
 				bson.M{"_id": 3, "local": 1},
@@ -217,7 +217,7 @@ func TestAggregatorUpdate(t *testing.T) {
 		},
 		{
 			name: "countAggregator no local field",
-			baseDoc: []interface{}{
+			baseDoc: []any{
 				bson.M{"_id": 1, "field": 1},
 				bson.M{"_id": 2, "field": 2},
 			},
@@ -281,7 +281,7 @@ func newAggregator(t *testing.T, ci *generators.CollInfo, config generators.Conf
 	return aggregators[0]
 }
 
-func createCollection(t *testing.T, session *mongo.Client, config generators.Config, baseDoc []interface{}) {
+func createCollection(t *testing.T, session *mongo.Client, config generators.Config, baseDoc []any) {
 	coll := session.Database(config.Database).Collection(config.Collection)
 	coll.DeleteMany(context.Background(), bson.M{})
 	_, err := coll.InsertMany(context.Background(), baseDoc)

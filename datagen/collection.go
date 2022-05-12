@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/feliixx/mgodatagen/datagen/generators"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/feliixx/mgodatagen/datagen/generators"
 )
 
 // Collection struct storing global collection info

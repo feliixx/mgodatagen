@@ -80,7 +80,7 @@ type Config struct {
 	ObjectContent map[string]Config `json:"objectContent"`
 	// For `enum` ( formerly `fromArray`) only. If specified, the generator
 	// pick one of the item of the array
-	Values []interface{}
+	Values []any
 	// For `fromArray` only. If set to true, items are picked from the array in random order
 	RandomOrder bool `json:"randomOrder"`
 	// For `date` only. Lower bound for the date to generate
@@ -88,7 +88,7 @@ type Config struct {
 	// For `date` only. Higher bound for the date to generate
 	EndDate time.Time `json:"endDate"`
 	// For `constant` type only. Value of the constant field
-	ConstVal interface{} `json:"constVal"`
+	ConstVal any `json:"constVal"`
 	// For `autoincrement` type only. Start value
 	StartInt int32 `json:"startInt"`
 	// For `autoincrement` type only. Start value
@@ -118,7 +118,7 @@ type Config struct {
 	// Deprecated. Use 'MinLength' and 'MaxLength' instead
 	Size int `json:"size"`
 	// Deprecated. Use 'Values' instead
-	In []interface{} `json:"in"`
+	In []any `json:"in"`
 }
 
 // available generator types, see https://github.com/feliixx/mgodatagen/blob/master/README.md#generator-types for details

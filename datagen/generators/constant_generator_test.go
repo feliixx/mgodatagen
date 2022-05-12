@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
-	
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -14,7 +14,7 @@ func TestDocumentWithValidConstantObjectID(t *testing.T) {
 	docGenerator, err := ci.NewDocumentGenerator(map[string]generators.Config{
 		"key": {
 			Type: generators.TypeConstant,
-			ConstVal: map[string]interface{}{
+			ConstVal: map[string]any{
 				"$oid": "5a934e000102030405000001",
 			},
 		},
@@ -42,7 +42,7 @@ func TestDocumentWithInvalidConstantObjectID(t *testing.T) {
 	docGenerator, err := ci.NewDocumentGenerator(map[string]generators.Config{
 		"key": {
 			Type: generators.TypeConstant,
-			ConstVal: map[string]interface{}{
+			ConstVal: map[string]any{
 				"$oid": "5a9",
 			},
 		},
