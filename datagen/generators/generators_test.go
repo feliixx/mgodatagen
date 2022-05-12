@@ -55,7 +55,7 @@ func TestIsDocumentCorrect(t *testing.T) {
 	fullDocumentTests := []struct {
 		name     string
 		content  map[string]generators.Config
-		expected interface{}
+		expected any
 	}{
 		{
 			name:     "full-bson.json",

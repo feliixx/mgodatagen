@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/feliixx/mgodatagen/datagen/generators"
+
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 	"github.com/olekukonko/tablewriter"
@@ -18,8 +20,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/feliixx/mgodatagen/datagen/generators"
 )
 
 type mongoWriter struct {
@@ -272,7 +272,7 @@ func (w *mongoWriter) insertDocumentFromChannel(ctx context.Context, cancel cont
 		default:
 		}
 
-		docs := make([]interface{}, 0, t.nbToInsert)
+		docs := make([]any, 0, t.nbToInsert)
 		for _, doc := range t.documents[:t.nbToInsert] {
 			docs = append(docs, doc)
 		}
@@ -335,7 +335,7 @@ Loop:
 
 		localVar := aggregator.LocalVar()
 		var distinct struct {
-			Values []interface{}
+			Values []any
 		}
 		result := w.session.Database(coll.DB).RunCommand(ctx, bson.D{
 			bson.E{Key: "distinct", Value: coll.Name},

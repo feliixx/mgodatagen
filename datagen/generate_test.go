@@ -15,14 +15,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/feliixx/mgodatagen/datagen"
+	"github.com/feliixx/mgodatagen/datagen/generators"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/feliixx/mgodatagen/datagen"
-	"github.com/feliixx/mgodatagen/datagen/generators"
 )
 
 var (
@@ -1228,7 +1228,7 @@ func defaultOpts(configFile string) datagen.Options {
 func nbDistinctValue(t *testing.T, dbName, collName, keyName string) int {
 
 	var distinct struct {
-		Values []interface{}
+		Values []any
 	}
 
 	result := session.Database(dbName).RunCommand(context.Background(), bson.D{

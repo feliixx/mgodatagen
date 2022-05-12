@@ -109,7 +109,7 @@ func createClientOptions(conn *Connection) *options.ClientOptions {
 	return connOpts.SetAuth(credentials)
 }
 
-func runMgoCompatCommand(ctx context.Context, session *mongo.Client, db string, cmd interface{}) error {
+func runMgoCompatCommand(ctx context.Context, session *mongo.Client, db string, cmd any) error {
 	// With the default registry, index.Collation is kept event when it's empty,
 	// and it make the command fail
 	// to fix this, marshal the command to a bson.Raw with the mgocompat registry

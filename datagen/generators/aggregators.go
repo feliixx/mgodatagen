@@ -23,7 +23,7 @@ type Aggregator interface {
 	// for example:
 	//
 	//  { "_id": 1 }, { "$set": { "newField": ["a", "c", "f"] } }
-	Update(session *mongo.Client, value interface{}) ([2]bson.M, error)
+	Update(session *mongo.Client, value any) ([2]bson.M, error)
 }
 
 type baseAggregator struct {
@@ -41,7 +41,7 @@ type countAggregator struct {
 	baseAggregator
 }
 
-func (a *countAggregator) Update(session *mongo.Client, value interface{}) ([2]bson.M, error) {
+func (a *countAggregator) Update(session *mongo.Client, value any) ([2]bson.M, error) {
 	query := bson.M{}
 	if a.query != nil {
 		query = createQuery(a.query, value)
@@ -59,11 +59,11 @@ type valueAggregator struct {
 	field string
 }
 
-func (a *valueAggregator) Update(session *mongo.Client, value interface{}) ([2]bson.M, error) {
+func (a *valueAggregator) Update(session *mongo.Client, value any) ([2]bson.M, error) {
 	query := createQuery(a.query, value)
 
 	var distinct struct {
-		Values []interface{}
+		Values []any
 	}
 	result := session.Database(a.database).RunCommand(context.Background(), bson.D{
 		bson.E{Key: "distinct", Value: a.collection},
@@ -84,7 +84,7 @@ type boundAggregator struct {
 	field string
 }
 
-func (a *boundAggregator) Update(session *mongo.Client, value interface{}) ([2]bson.M, error) {
+func (a *boundAggregator) Update(session *mongo.Client, value any) ([2]bson.M, error) {
 
 	query := createQuery(a.query, value)
 	query[a.field] = bson.M{"$ne": nil}
@@ -121,7 +121,7 @@ func (a *boundAggregator) Update(session *mongo.Client, value interface{}) ([2]b
 	return [2]bson.M{{a.localVar: value}, {"$set": bson.M{a.key: bound}}}, nil
 }
 
-func createQuery(formatQuery bson.M, value interface{}) bson.M {
+func createQuery(formatQuery bson.M, value any) bson.M {
 	q := bson.M{}
 	for k, v := range formatQuery {
 		if s := fmt.Sprintf("%v", v); strings.Contains(s, "$$") {
