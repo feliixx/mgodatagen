@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
@@ -90,7 +89,7 @@ func TestCreateEmptyFile(t *testing.T) {
 			New: filename,
 		},
 	}
-	err := datagen.Generate(opts, ioutil.Discard)
+	err := datagen.Generate(opts, io.Discard)
 	if err != nil {
 		t.Errorf("expected no error for creating empty file but got %v", err)
 	}
@@ -109,7 +108,7 @@ func TestCreateEmptyFileOverwrite(t *testing.T) {
 	}
 	defer os.Remove(filename)
 
-	fakeUsrInput, err := ioutil.TempFile("", "fake_user_input")
+	fakeUsrInput, err := os.CreateTemp("", "fake_user_input")
 	if err != nil {
 		t.Error(err)
 	}
@@ -132,7 +131,7 @@ func TestCreateEmptyFileOverwrite(t *testing.T) {
 			New: filename,
 		},
 	}
-	err = datagen.Generate(options, ioutil.Discard)
+	err = datagen.Generate(options, io.Discard)
 	if err != nil {
 		t.Errorf("expected no error for creating empty file but got %v", err)
 	}
@@ -140,7 +139,7 @@ func TestCreateEmptyFileOverwrite(t *testing.T) {
 }
 
 func testNewFileContent(t *testing.T, filename string) {
-	content, err := ioutil.ReadFile(filename)
+	content, err := os.ReadFile(filename)
 	if err != nil {
 		t.Error(err)
 	}
@@ -167,7 +166,7 @@ func TestProgressOutput(t *testing.T) {
 		t.Error(err)
 	}
 
-	b, err := ioutil.ReadFile("testdata/output/output.txt")
+	b, err := os.ReadFile("testdata/output/output.txt")
 	if err != nil {
 		t.Error(err)
 	}
@@ -354,7 +353,7 @@ func TestCollectionContent(t *testing.T) {
 	collections := parseConfig(t, configFile)
 
 	opts := defaultOpts(configFile)
-	err := datagen.Generate(&opts, ioutil.Discard)
+	err := datagen.Generate(&opts, io.Discard)
 	if err != nil {
 		t.Error(err)
 	}
@@ -547,7 +546,7 @@ func TestCollectionWithRef(t *testing.T) {
 	configFile := "generators/testdata/ref.json"
 	collections := parseConfig(t, configFile)
 	opts := defaultOpts(configFile)
-	err := datagen.Generate(&opts, ioutil.Discard)
+	err := datagen.Generate(&opts, io.Discard)
 	if err != nil {
 		t.Error(err)
 	}
@@ -593,7 +592,7 @@ func TestCollectionContentWithAggregation(t *testing.T) {
 	configFile := "generators/testdata/full-aggregation.json"
 	collections := parseConfig(t, configFile)
 	opts := defaultOpts(configFile)
-	err := datagen.Generate(&opts, ioutil.Discard)
+	err := datagen.Generate(&opts, io.Discard)
 	if err != nil {
 		t.Error(err)
 	}
@@ -682,7 +681,7 @@ func TestCollectionCompression(t *testing.T) {
 	for _, tt := range createCollectionTests {
 		t.Run(tt.name, func(t *testing.T) {
 			collections := parseConfig(t, tt.options.ConfigFile)
-			err := datagen.Generate(&tt.options, ioutil.Discard)
+			err := datagen.Generate(&tt.options, io.Discard)
 			if tt.correct {
 				if err != nil {
 					t.Errorf("expected no error for config %v: \n%v", tt.options, err)
@@ -793,7 +792,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			collections := parseConfig(t, tt.configFile)
 			opts := defaultOpts(tt.configFile)
-			err := datagen.Generate(&opts, ioutil.Discard)
+			err := datagen.Generate(&opts, io.Discard)
 			if tt.correct {
 				if err != nil {
 					t.Errorf("ensureIndex with indexes for test %v should not fail: \n%v", tt.name, err)
@@ -839,7 +838,7 @@ func TestCollectionWithIndexes(t *testing.T) {
 func TestCompoundIndexOrder(t *testing.T) {
 
 	opts := defaultOpts("testdata/index_compound.json")
-	err := datagen.Generate(&opts, ioutil.Discard)
+	err := datagen.Generate(&opts, io.Discard)
 	if err != nil {
 		t.Errorf("fail to create collection with compound index: %v", err)
 	}
@@ -1245,7 +1244,7 @@ func nbDistinctValue(t *testing.T, dbName, collName, keyName string) int {
 }
 
 func parseConfig(t *testing.T, fileName string) []datagen.Collection {
-	content, err := ioutil.ReadFile(fileName)
+	content, err := os.ReadFile(fileName)
 	if err != nil {
 		t.Error(err)
 	}
@@ -1296,7 +1295,7 @@ func BenchmarkGenerate(b *testing.B) {
 		}
 		b.StartTimer()
 
-		datagen.Generate(&opts, ioutil.Discard)
+		datagen.Generate(&opts, io.Discard)
 	}
 
 }
