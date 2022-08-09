@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"time"
 )
@@ -20,7 +19,7 @@ func Generate(options *Options, logger io.Writer) error {
 func run(options *Options, logger io.Writer) error {
 
 	if options.Quiet {
-		logger = ioutil.Discard
+		logger = io.Discard
 	}
 	if options.New != "" {
 		return createEmptyCfgFile(options.New)
@@ -49,7 +48,7 @@ Actual collection count may not match the 'count' specified in config file
 		logger = io.Discard
 	}
 
-	content, err := ioutil.ReadFile(options.ConfigFile)
+	content, err := os.ReadFile(options.ConfigFile)
 	if err != nil {
 		return fmt.Errorf("fail to read file %s\n  cause: %v", options.ConfigFile, err)
 	}

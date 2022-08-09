@@ -1,7 +1,7 @@
 package datagen_test
 
 import (
-	"io/ioutil"
+	"os"
 	"regexp"
 	"testing"
 
@@ -10,7 +10,7 @@ import (
 
 func TestParseConfig(t *testing.T) {
 
-	b, err := ioutil.ReadFile("generators/testdata/ref.json")
+	b, err := os.ReadFile("generators/testdata/ref.json")
 	if err != nil {
 		t.Error(err)
 	}

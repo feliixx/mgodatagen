@@ -3,7 +3,7 @@ package generators_test
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
@@ -695,7 +695,7 @@ func TestNewGeneratorFromMap(t *testing.T) {
 }
 
 func loadCollConfig(t *testing.T, filename string) []map[string]generators.Config {
-	bytes, err := ioutil.ReadFile("testdata/" + filename)
+	bytes, err := os.ReadFile("testdata/" + filename)
 	if err != nil {
 		t.Error(err)
 	}
