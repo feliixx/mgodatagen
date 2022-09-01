@@ -2,6 +2,7 @@ package generators
 
 import (
 	"errors"
+	"time"
 
 	"github.com/MichaelTJones/pcg"
 )
@@ -29,4 +30,10 @@ func newDateGenerator(config *Config, base base, pcg64 *pcg.PCG64) (Generator, e
 func (g *dateGenerator) EncodeValue() {
 	// dates are not evenly distributed
 	g.buffer.Write(uint64Bytes((g.pcg64.Bounded(g.delta) + g.startDate) * 1000))
+}
+
+func (g *dateGenerator) EncodeValueAsString() {
+	s := (g.pcg64.Bounded(g.delta) + g.startDate) * 1000
+	t := time.Unix(int64(s), 0)
+	g.buffer.Write([]byte(t.Format(time.RFC822)))
 }

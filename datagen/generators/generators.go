@@ -2,8 +2,7 @@
 //
 // Relevant documentation:
 //
-//     http://bsonspec.org/#/specification
-//
+//	http://bsonspec.org/#/specification
 //
 // It was created as part of mgodatagen, but may be used on its own.
 package generators
@@ -101,5 +100,3 @@ func (g *base) Exists() bool {
 	// and compare it to nullPercentage * 10
 	return g.pcg32.Random()>>22 >= g.nullPercentage
 }
-
-func (g *base) EncodeValueAsString() {}

@@ -1,6 +1,8 @@
 package generators
 
 import (
+	"strconv"
+
 	"github.com/MichaelTJones/pcg"
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -36,4 +38,16 @@ func (g *positionGenerator) EncodeValue() {
 
 	g.buffer.WriteSingleByte(byte(0))
 	g.buffer.WriteAt(current, int32Bytes(int32(g.buffer.Len()-current)))
+}
+
+func (g *positionGenerator) EncodeValueAsString() {
+
+	longitude := 180 * (2*(float64(g.pcg64.Random())/(1<<64)) - 1)
+	latitude := 90 * (2*(float64(g.pcg64.Random())/(1<<64)) - 1)
+
+	g.buffer.WriteSingleByte('[')
+	g.buffer.Write([]byte(strconv.FormatFloat(longitude, 'f', 10, 64)))
+	g.buffer.WriteSingleByte(',')
+	g.buffer.Write([]byte(strconv.FormatFloat(latitude, 'f', 10, 64)))
+	g.buffer.WriteSingleByte(']')
 }

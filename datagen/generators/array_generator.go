@@ -117,3 +117,18 @@ func (g *arrayGenerator) EncodeValue() {
 	g.buffer.WriteSingleByte(byte(0))
 	g.buffer.WriteAt(current, int32Bytes(int32(g.buffer.Len()-current)))
 }
+
+func (g *arrayGenerator) EncodeValueAsString() {
+	length := g.minLength
+	if g.minLength != g.maxLength {
+		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
+	}
+
+	g.buffer.WriteSingleByte('[')
+	for i := 0; i < int(length); i++ {
+		g.generator.EncodeValueAsString()
+		g.buffer.WriteSingleByte(',')
+	}
+	g.buffer.Truncate(g.buffer.Len() - 1)
+	g.buffer.WriteSingleByte(']')
+}

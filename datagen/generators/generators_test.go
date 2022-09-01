@@ -499,6 +499,35 @@ func TestNewGenerator(t *testing.T) {
 			correct: false,
 			version: []int{3, 6},
 		},
+		{
+			name: "string from parts with object part",
+			config: generators.Config{
+				Type: generators.TypeStringFromParts,
+				Parts: []generators.Config{
+					{
+						Type:          generators.TypeObject,
+						ObjectContent: map[string]generators.Config{},
+					},
+				},
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "string from parts with binary part",
+			config: generators.Config{
+				Type: generators.TypeStringFromParts,
+				Parts: []generators.Config{
+					{
+						Type:      generators.TypeBinary,
+						MinLength: 0,
+						MaxLength: 10,
+					},
+				},
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
 	}
 	// all possible faker methods
 	fakerVal := []string{
