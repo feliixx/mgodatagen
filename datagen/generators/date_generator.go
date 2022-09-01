@@ -35,5 +35,5 @@ func (g *dateGenerator) EncodeValue() {
 func (g *dateGenerator) EncodeValueAsString() {
 	s := (g.pcg64.Bounded(g.delta) + g.startDate) * 1000
 	t := time.Unix(int64(s), 0)
-	g.buffer.Write([]byte(t.Format(time.RFC822)))
+	g.buffer.WriteString(t.Format(time.RFC822))
 }

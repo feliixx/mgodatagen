@@ -26,5 +26,5 @@ func (g *decimal128Generator) EncodeValue() {
 }
 
 func (g *decimal128Generator) EncodeValueAsString() {
-	g.buffer.Write([]byte(strconv.Itoa(int(g.pcg64.Random()))))
+	g.buffer.WriteString(strconv.Itoa(int(g.pcg64.Random())))
 }

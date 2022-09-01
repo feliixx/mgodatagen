@@ -31,7 +31,7 @@ func (g *intGenerator) EncodeValue() {
 }
 
 func (g *intGenerator) EncodeValueAsString() {
-	g.buffer.Write([]byte(strconv.Itoa(int(g.boundedInt32()))))
+	g.buffer.WriteString(strconv.Itoa(int(g.boundedInt32())))
 }
 
 func (g *intGenerator) boundedInt32() int32 {

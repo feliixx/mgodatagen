@@ -26,5 +26,5 @@ func (g *binaryUUIDGenerator) EncodeValue() {
 }
 
 func (g *binaryUUIDGenerator) EncodeValueAsString() {
-	g.buffer.Write([]byte(uuid.NewString()))
+	g.buffer.WriteString(uuid.NewString())
 }

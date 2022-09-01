@@ -27,5 +27,5 @@ func (g *fakerGenerator) EncodeValue() {
 }
 
 func (g *fakerGenerator) EncodeValueAsString() {
-	g.buffer.Write([]byte(g.f()))
+	g.buffer.WriteString(g.f())
 }

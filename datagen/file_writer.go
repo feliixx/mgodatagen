@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
-	
+
 	"github.com/gosuri/uiprogress"
 	"github.com/gosuri/uiprogress/util/strutil"
 	"go.mongodb.org/mongo-driver/bson"
@@ -134,11 +134,11 @@ func (w *fileWriter) writeToStdout(wg *sync.WaitGroup, coll *Collection, tasks <
 
 			raw := bson.Raw(doc)
 
-			buffer.Write([]byte(prefix))
+			buffer.WriteString(prefix)
 			if w.prettyPrint {
 				bson.IndentExtJSON(buffer, []byte(raw.String()), prefix, "  ")
 			} else {
-				buffer.Write([]byte(raw.String()))
+				buffer.WriteString(raw.String())
 			}
 			buffer.WriteByte(',')
 			buffer.WriteByte('\n')

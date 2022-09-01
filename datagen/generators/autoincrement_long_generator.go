@@ -27,6 +27,6 @@ func (g *autoIncrementLongGenerator) EncodeValue() {
 
 func (g *autoIncrementLongGenerator) EncodeValueAsString() {
 	val := strconv.FormatInt(g.counter, 10)
-	g.buffer.Write([]byte(val))
+	g.buffer.WriteString(val)
 	g.counter++
 }
