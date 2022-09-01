@@ -39,3 +39,5 @@ func (g *binaryDataGenerator) EncodeValue() {
 		g.buffer.Write(b[0:end])
 	}
 }
+
+func (g *binaryDataGenerator) EncodeValueAsString() {}

@@ -41,3 +41,5 @@ func (g *embeddedObjectGenerator) EncodeValue() {
 	g.buffer.WriteSingleByte(byte(0))
 	g.buffer.WriteAt(current, int32Bytes(int32(g.buffer.Len()-current)))
 }
+
+func (g *embeddedObjectGenerator) EncodeValueAsString() {}

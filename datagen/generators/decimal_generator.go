@@ -1,6 +1,10 @@
 package generators
 
-import "github.com/MichaelTJones/pcg"
+import (
+	"strconv"
+
+	"github.com/MichaelTJones/pcg"
+)
 
 // Generator for creating random decimal128
 type decimal128Generator struct {
@@ -19,4 +23,8 @@ func (g *decimal128Generator) EncodeValue() {
 	b := uint64Bytes(g.pcg64.Random())
 	g.buffer.Write(b)
 	g.buffer.Write(b)
+}
+
+func (g *decimal128Generator) EncodeValueAsString() {
+	g.buffer.Write([]byte(strconv.Itoa(int(g.pcg64.Random()))))
 }

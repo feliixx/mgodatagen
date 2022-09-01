@@ -58,6 +58,22 @@ func (g *stringGenerator) EncodeValue() {
 	g.buffer.WriteSingleByte(byte(0))
 }
 
+func (g *stringGenerator) EncodeValueAsString() {
+	length := g.minLength
+	if g.minLength != g.maxLength {
+		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
+	}
+	cache, remain := g.pcg32.Random(), letterIdxMax
+	for i := 0; i < int(length); i++ {
+		if remain == 0 {
+			cache, remain = g.pcg32.Random(), letterIdxMax
+		}
+		g.buffer.WriteSingleByte(letterBytes[cache&letterIdxMask])
+		cache >>= letterIdxBits
+		remain--
+	}
+}
+
 type unique struct {
 	values       [][]byte
 	currentIndex int
