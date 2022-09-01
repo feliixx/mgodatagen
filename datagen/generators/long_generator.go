@@ -35,7 +35,7 @@ func (g *longGenerator) EncodeValue() {
 }
 
 func (g *longGenerator) EncodeValueAsString() {
-	g.buffer.Write([]byte(strconv.FormatInt(g.boundedInt64(), 10)))
+	g.buffer.WriteString(strconv.FormatInt(g.boundedInt64(), 10))
 }
 
 func (g *longGenerator) boundedInt64() int64 {

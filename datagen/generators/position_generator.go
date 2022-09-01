@@ -46,8 +46,8 @@ func (g *positionGenerator) EncodeValueAsString() {
 	latitude := 90 * (2*(float64(g.pcg64.Random())/(1<<64)) - 1)
 
 	g.buffer.WriteSingleByte('[')
-	g.buffer.Write([]byte(strconv.FormatFloat(longitude, 'f', 10, 64)))
+	g.buffer.WriteString(strconv.FormatFloat(longitude, 'f', 10, 64))
 	g.buffer.WriteSingleByte(',')
-	g.buffer.Write([]byte(strconv.FormatFloat(latitude, 'f', 10, 64)))
+	g.buffer.WriteString(strconv.FormatFloat(latitude, 'f', 10, 64))
 	g.buffer.WriteSingleByte(']')
 }

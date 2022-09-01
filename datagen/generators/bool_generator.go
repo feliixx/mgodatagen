@@ -15,9 +15,9 @@ func (g *boolGenerator) EncodeValue() {
 
 func (g *boolGenerator) EncodeValueAsString() {
 	if g.randomByte() == 0 {
-		g.buffer.Write([]byte("true"))
+		g.buffer.WriteString("true")
 	}
-	g.buffer.Write([]byte("false"))
+	g.buffer.WriteString("false")
 }
 
 func (g *boolGenerator) randomByte() byte {

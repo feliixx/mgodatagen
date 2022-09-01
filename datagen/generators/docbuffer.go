@@ -1,6 +1,8 @@
 package generators
 
-import "math"
+import (
+	"math"
+)
 
 // DocBuffer is a wrapper around a slice of bytes. It provides
 // method similar to bytes.Buffer, plus a specific method WriteAt() to
@@ -27,6 +29,10 @@ func (e *DocBuffer) Truncate(n int) {
 // Write appends bytes to the buffer
 func (e *DocBuffer) Write(b []byte) {
 	e.buf = append(e.buf, b...)
+}
+
+func (e *DocBuffer) WriteString(s string) {
+	e.buf = append(e.buf, s...)
 }
 
 // WriteSingleByte appends a single byte to the buffer

@@ -35,7 +35,7 @@ func (g *doubleGenerator) EncodeValue() {
 }
 
 func (g *doubleGenerator) EncodeValueAsString() {
-	g.buffer.Write([]byte(strconv.FormatFloat(g.boundedFloat64(), 'f', 10, 64)))
+	g.buffer.WriteString(strconv.FormatFloat(g.boundedFloat64(), 'f', 10, 64))
 }
 
 func (g *doubleGenerator) boundedFloat64() float64 {

@@ -109,7 +109,7 @@ func (g *arrayGenerator) EncodeValue() {
 		if i < 10 {
 			g.buffer.WriteSingleByte(indexesBytes[i])
 		} else {
-			g.buffer.Write([]byte(strconv.Itoa(i)))
+			g.buffer.WriteString(strconv.Itoa(i))
 		}
 		g.buffer.WriteSingleByte(byte(0))
 		g.generator.EncodeValue()

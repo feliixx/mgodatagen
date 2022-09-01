@@ -27,6 +27,6 @@ func (g *autoIncrementIntGenerator) EncodeValue() {
 
 func (g *autoIncrementIntGenerator) EncodeValueAsString() {
 	val := strconv.Itoa(int(g.counter))
-	g.buffer.Write([]byte(val))
+	g.buffer.WriteString(val)
 	g.counter++
 }

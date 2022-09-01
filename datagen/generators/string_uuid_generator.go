@@ -18,10 +18,10 @@ func (g *stringUUIDGenerator) EncodeValue() {
 	s := uuid.NewString()
 
 	g.buffer.Write(int32Bytes(int32(len(s) + 1)))
-	g.buffer.Write([]byte(s))
+	g.buffer.WriteString(s)
 	g.buffer.WriteSingleByte(byte(0))
 }
 
 func (g *stringUUIDGenerator) EncodeValueAsString() {
-	g.buffer.Write([]byte(uuid.NewString()))
+	g.buffer.WriteString(uuid.NewString())
 }
