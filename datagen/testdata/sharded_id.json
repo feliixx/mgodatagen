@@ -15,14 +15,14 @@
             },
             "int32": {
                 "type": "int",
-                "minInt": 10,
-                "maxInt": 20
+                "min": 10,
+                "max": 20
             },
             "int64": {
                 "type": "long",
                 "nullPercentage": 10,
-                "minLong": 100,
-                "maxLong": 200
+                "min": 100,
+                "max": 200
             }
         }
     }

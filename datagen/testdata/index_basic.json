@@ -6,13 +6,13 @@
         "content": {
             "c32": {
                 "type": "int",
-                "minInt": 0,
-                "maxInt": 10
+                "min": 0,
+                "max": 10
             },
             "c64": {
                 "type": "long",
-                "minLong": 0,
-                "maxLong": 10
+                "min": 0,
+                "max": 10
             }
         },
         "indexes": [

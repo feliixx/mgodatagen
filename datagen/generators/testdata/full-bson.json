@@ -26,29 +26,42 @@
       },
       "int32": {
         "type": "int",
-        "minInt": 10,
-        "maxInt": 20
+        "min": 10,
+        "max": 20
       },
       "int64": {
         "type": "long",
         "nullPercentage": 10,
-        "minLong": 100,
-        "maxLong": 200
+        "min": 100,
+        "max": 200
       },
       "float": {
         "type": "double",
-        "minDouble": 1.0,
-        "maxDouble": 10.0
+        "min": 1.0,
+        "max": 10.0
       },
       "constInt32": {
-        "type": "int"
+        "type": "int",
+        "min": 0,
+        "max": 0
       },
       "constInt64": {
         "type": "long",
-        "minLong": -100020,
-        "maxLong": -100020
+        "min": -100020,
+        "max": -100020
       },
       "constFloat": {
+        "type": "double",
+        "min": 0.0,
+        "max": 0.0
+      },
+      "noBoundInt32": {
+        "type": "int"
+      },
+      "noBoundInt64": {
+        "type": "long"
+      },
+      "noBoundFloat": {
         "type": "double"
       },
       "boolean": {
@@ -136,8 +149,8 @@
         "maxLength": 3,
         "arrayContent": {
           "type": "int",
-          "minInt": 0,
-          "maxInt": 10
+          "min": 0,
+          "max": 10
         }
       },
       "object": {
@@ -151,16 +164,16 @@
           },
           "k2": {
             "type": "int",
-            "minInt": -10,
-            "maxInt": -5
+            "min": -10,
+            "max": -5
           },
           "sub-ob": {
             "type": "object",
             "objectContent": {
               "s-k": {
                 "type": "int",
-                "minInt": 0,
-                "maxInt": 10
+                "min": 0,
+                "max": 10
               }
             }
           }
@@ -207,18 +220,18 @@
           },
           {
             "type": "int",
-            "minInt": 0,
-            "maxInt": 10
+            "min": 0,
+            "max": 10
           },
           {
             "type": "long",
-            "minLong": 33,
-            "maxLong": 34
+            "min": 33,
+            "max": 34
           },
           {
             "type": "double",
-            "minDouble": 0.1,
-            "maxDouble": 0.2
+            "min": 0.1,
+            "max": 0.2
           },
           {
             "type": "boolean"

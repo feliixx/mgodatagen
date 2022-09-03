@@ -258,8 +258,8 @@ Generates a random string of a certain length. String is composed of char within
 ```scala
 "fieldName": {
     "type":             "string", // required
-    "minLength":        <int>,    // required, must be >= 0
-    "maxLength":        <int>,    // required, must be >= minLength
+    "minLength":        <int>,    // optional, must be >= 0
+    "maxLength":        <int>,    // optional, must be >= minLength
     "unique":           <bool>,   // optional, see details below
     "nullPercentage":   <int>,    // optional
     "maxDistinctValue": <int>     // optional
@@ -316,8 +316,8 @@ like this:
     },
     {
       "type": "int",
-      "minInt": 100,
-      "maxInt": 999
+      "min": 100,
+      "max": 999
     },
     {
       "type": "constant",
@@ -325,8 +325,8 @@ like this:
     },
     {
       "type": "int",
-      "minInt": 1000,
-      "maxInt": 9999
+      "min": 1000,
+      "max": 9999
     },
   ]
 }
@@ -339,8 +339,8 @@ Generates a random `int` within bounds.
 ```scala
 "fieldName": {
     "type":             "int", // required
-    "minInt":           <int>, // optional
-    "maxInt":           <int>, // optional, must be >= minInt
+    "min":              <int>, // optional
+    "max":              <int>, // optional, must be >= min
     "nullPercentage":   <int>, // optional
     "maxDistinctValue": <int>  // optional
 }
@@ -353,8 +353,8 @@ Generates a random `long` within bounds.
 ```scala
 "fieldName": {
     "type":             "long", // required
-    "minLong":          <long>, // optional
-    "maxLong":          <long>, // optional, must be >= minLong
+    "min":              <long>, // optional
+    "max":              <long>, // optional, must be >= min
     "nullPercentage":   <int>,  // optional
     "maxDistinctValue": <int>   // optional
 }
@@ -367,8 +367,8 @@ Generates a random `double` within bounds.
 ```scala
 "fieldName": {
     "type":             "double", // required
-    "minDouble":        <double>, // optional
-    "maxDouble":        <double>, // optional, must be >= minDouble
+    "min":              <double>, // optional
+    "max":              <double>, // optional, must be >= min
     "nullPercentage":   <int>,    // optional
     "maxDistinctValue": <int>     // optional
 }
@@ -448,8 +448,8 @@ Generates random binary data of length within bounds.
 ```scala
 "fieldName": {
     "type":             "binary", // required
-    "minLength":        <int>,    // required, must be >= 0
-    "maxLength":        <int>,    // required, must be >= minLength
+    "minLength":        <int>,    // optional, must be >= 0
+    "maxLength":        <int>,    // optional, must be >= minLength
     "nullPercentage":   <int>,    // optional
     "maxDistinctValue": <int>     // optional
 }
@@ -560,10 +560,10 @@ Generates a random array of bson object.
 ```scala
 "fieldName": {
     "type":             "array",     // required
-    "minLength":        <int>,       // required, must be >= 0
-    "maxLength":        <int>,       // required, must be >= minLength
     "arrayContent":     <generator>, // required, generator use to create element
                                      // to fill the array. Can be of any type
+    "minLength":        <int>,       // optional, must be >= 0
+    "maxLength":        <int>,       // optional, must be >= minLength
     "nullPercentage":   <int>,       // optional
     "maxDistinctValue": <int>        // optional
 }

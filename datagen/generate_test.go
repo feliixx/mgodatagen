@@ -377,6 +377,9 @@ func TestCollectionContent(t *testing.T) {
 		ConstInt32              int32              `bson:"constInt32"`
 		ConstInt64              int64              `bson:"constInt64"`
 		ConstFloat              float64            `bson:"constFloat"`
+		NoBoundInt32            int32              `bson:"noBoundInt32"`
+		NoBoundInt64            int64              `bson:"noBoundInt64"`
+		NoBoundFloat            float64            `bson:"noBoundFloat"`
 		Boolean                 bool               `bson:"boolean"`
 		Position                []float64          `bson:"position"`
 		StringFromArray         string             `bson:"stringFromArray"`
@@ -431,6 +434,10 @@ func TestCollectionContent(t *testing.T) {
 		if r.ConstInt32 != 0 {
 			t.Errorf("ConstInt32 should always be 0, but was %d", r.ConstInt32)
 		}
+		if r.NoBoundInt32 < 0 {
+			t.Errorf("NoBoundInt32 should always be positive, but was %d", r.NoBoundInt32)
+		}
+
 		if r.Int64 == 0 {
 			count++
 		} else {
@@ -441,11 +448,17 @@ func TestCollectionContent(t *testing.T) {
 		if r.ConstInt64 != -100020 {
 			t.Errorf("ConstInt64 should always be -100020, but was %d", r.ConstInt64)
 		}
+		if r.NoBoundInt64 < 0 {
+			t.Errorf("NoBoundInt64 should always be positive, but was %d", r.NoBoundInt64)
+		}
 		if r.Float < 0 || r.Float > 10 {
 			t.Errorf("expected 0 < Float < 10, but was %f", r.Float)
 		}
 		if r.ConstFloat != 0.0 {
 			t.Errorf("ConstFloat should always be 0.0, but was %f", r.ConstFloat)
+		}
+		if r.NoBoundFloat < 0 {
+			t.Errorf("NoBoundFloat should always be positive, but was %f", r.NoBoundFloat)
 		}
 		if r.Position[0] < -180 || r.Position[0] > 180 {
 			t.Errorf("expected -180 < pos[0] < 180, but was %f", r.Position[0])

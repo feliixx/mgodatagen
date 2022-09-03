@@ -13,8 +13,8 @@ func TestBigArray(t *testing.T) {
 	docGenerator, err := ci.NewDocumentGenerator(map[string]generators.Config{
 		"key": {
 			Type:      generators.TypeArray,
-			MinLength: 15,
-			MaxLength: 18,
+			MinLength: "15",
+			MaxLength: "18",
 			ArrayContent: &generators.Config{
 				Type: generators.TypeBoolean,
 			},

@@ -18,10 +18,6 @@ func newStringFromPartsGenerator(config *Config, base base, ci *CollInfo, buffer
 	parts := make([]Generator, 0, len(config.Parts))
 	for _, part := range config.Parts {
 
-		if part.Type == TypeObject || part.Type == TypeBinary {
-			return nil, fmt.Errorf("parts generator can't be of type '%s'", part.Type)
-		}
-
 		// if thoses attributes are set, the parts becom a 'fromArray' generator
 		// with pre-computed BSON values that we can't convert back as string
 		//

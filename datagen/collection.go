@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 
@@ -48,8 +49,9 @@ func ParseConfig(content []byte, ignoreMissingDb bool) (collections []Collection
 	// Use a decoder here se we can disallow unknow fields. Decode will return an
 	// error if some fields from content can't be matched
 	// this should help detect typos / spelling errors in config files
-	decoder := json.NewDecoder(bytes.NewReader(content))
+	decoder := json.NewDecoder(bytes.NewReader(rewriteForBackwardCompatibility(content)))
 	decoder.DisallowUnknownFields()
+	decoder.UseNumber()
 
 	err = decoder.Decode(&collections)
 	if err != nil {
@@ -64,4 +66,15 @@ func ParseConfig(content []byte, ignoreMissingDb bool) (collections []Collection
 		}
 	}
 	return collections, nil
+}
+
+var (
+	regMin = regexp.MustCompile(`"(minInt|minLong|minDouble)"`)
+	regMax = regexp.MustCompile(`"(maxInt|maxLong|maxDouble)"`)
+)
+
+func rewriteForBackwardCompatibility(content []byte) []byte {
+
+	result := regMin.ReplaceAll(content, []byte(`"min"`))
+	return regMax.ReplaceAll(result, []byte(`"max"`))
 }

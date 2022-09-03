@@ -21,6 +21,21 @@
       },
       "coordinatesAliasForPosition": {
         "type": "position"
+      },
+      "intWithOldBounds": {
+        "type": "int",
+        "minInt": -10,
+        "maxInt": 0
+      },
+      "longWithOldBounds": {
+        "type": "long",
+        "minLong": 100,
+        "maxLong": 166237
+      },
+      "doubleWithOldBounds": {
+        "type": "double",
+        "minDouble": 0.0,
+        "maxDouble": 3237.8383
       }
     }
   }

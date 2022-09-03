@@ -13,8 +13,8 @@ func Example() {
 	var content = map[string]generators.Config{
 		"key": {
 			Type:      generators.TypeString,
-			MinLength: 3,
-			MaxLength: 5,
+			MinLength: "3",
+			MaxLength: "5",
 		},
 	}
 	collInfo := generators.NewCollInfo(1, nil, 1, nil, nil)
