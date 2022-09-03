@@ -2,6 +2,8 @@ package generators
 
 import (
 	"errors"
+	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/MichaelTJones/pcg"
@@ -15,17 +17,34 @@ type doubleGenerator struct {
 	pcg64  *pcg.PCG64
 }
 
-func newDoubleGenerator(config *Config, base base, pcg64 *pcg.PCG64) (Generator, error) {
-	if config.MaxDouble < config.MinDouble {
-		return nil, errors.New("make sure that 'maxDouble' >= 'minDouble'")
+func newDoubleGenerator(config *Config, base base, pcg64 *pcg.PCG64) (g Generator, err error) {
+
+	min, max := 0.0, math.MaxFloat64 -2
+
+	if config.Min != "" {
+		min, err = strconv.ParseFloat(string(config.Min), 64)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as a double:\n%w", config.Min, err)
+		}
 	}
-	if config.MinDouble == config.MaxDouble {
-		return newConstantGenerator(base, config.MaxDouble)
+
+	if config.Max != "" {
+		max, err = strconv.ParseFloat(string(config.Max), 64)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as a double:\n%w", config.Max, err)
+		}
+	}
+
+	if min > max {
+		return nil, errors.New("make sure that 'max' >= 'min'")
+	}
+	if min == max {
+		return newConstantGenerator(base, max)
 	}
 	return &doubleGenerator{
 		base:   base,
-		mean:   config.MinDouble,
-		stdDev: (config.MaxDouble - config.MinDouble) / 2,
+		mean:   min,
+		stdDev: (max - min) / 2,
 		pcg64:  pcg64,
 	}, nil
 }

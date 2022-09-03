@@ -2,6 +2,8 @@ package generators
 
 import (
 	"errors"
+	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/MichaelTJones/pcg"
@@ -15,17 +17,34 @@ type longGenerator struct {
 	pcg64 *pcg.PCG64
 }
 
-func newLongGenerator(config *Config, base base, pcg64 *pcg.PCG64) (Generator, error) {
-	if config.MaxLong < config.MinLong {
-		return nil, errors.New("make sure that 'maxLong' >= 'minLong'")
+func newLongGenerator(config *Config, base base, pcg64 *pcg.PCG64) (g Generator, err error) {
+
+	min, max := int64(0), int64(math.MaxInt64-2)
+
+	if config.Min != "" {
+		min, err = strconv.ParseInt(string(config.Min), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as a long:\n%w", config.Min, err)
+		}
 	}
-	if config.MinLong == config.MaxLong {
-		return newConstantGenerator(base, config.MaxLong)
+
+	if config.Max != "" {
+		max, err = strconv.ParseInt(string(config.Max), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as a long:\n%w", config.Max, err)
+		}
+	}
+
+	if min > max {
+		return nil, errors.New("make sure that 'max' >= 'min'")
+	}
+	if min == max {
+		return newConstantGenerator(base, max)
 	}
 	return &longGenerator{
 		base:  base,
-		min:   config.MinLong,
-		max:   config.MaxLong + 1,
+		min:   min,
+		max:   max + 1,
 		pcg64: pcg64,
 	}, nil
 }

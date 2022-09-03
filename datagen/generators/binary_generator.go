@@ -1,6 +1,10 @@
 package generators
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"strconv"
+)
 
 // Generator for creating random binary data
 type binaryDataGenerator struct {
@@ -9,14 +13,32 @@ type binaryDataGenerator struct {
 	maxLength uint32
 }
 
-func newBinaryGenerator(config *Config, base base) (Generator, error) {
-	if config.MinLength < 0 || config.MinLength > config.MaxLength {
-		return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' < 'maxLength'")
+func newBinaryGenerator(config *Config, base base) (g Generator, err error) {
+
+	min, max := uint64(0), uint64(10)
+
+	if config.MinLength != "" {
+		min, err = strconv.ParseUint(string(config.MinLength), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as an uint32:\n%w", config.MinLength, err)
+		}
 	}
+
+	if config.MaxLength != "" {
+		max, err = strconv.ParseUint(string(config.MaxLength), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as an uint32:\n%w", config.MaxLength, err)
+		}
+	}
+
+	if min > max {
+		return nil, errors.New("make sure that 'minLength' < 'maxLength'")
+	}
+
 	return &binaryDataGenerator{
 		base:      base,
-		maxLength: uint32(config.MaxLength),
-		minLength: uint32(config.MinLength),
+		minLength: uint32(min),
+		maxLength: uint32(max),
 	}, nil
 }
 

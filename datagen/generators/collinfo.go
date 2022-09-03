@@ -2,6 +2,7 @@ package generators
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -57,21 +58,13 @@ type Config struct {
 	// For `string` type only. If set to 'true', string will be unique
 	Unique bool `json:"unique"`
 	// For `string` and `binary` type only. Specify the Min length of the object to generate
-	MinLength int `json:"minLength"`
+	MinLength json.Number `json:"minLength"`
 	// For `string` and `binary` type only. Specify the Max length of the object to generate
-	MaxLength int `json:"maxLength"`
-	// For `int` type only. Lower bound for the int32 to generate
-	MinInt int32 `json:"minInt"`
-	// For `int` type only. Higher bound for the int32 to generate
-	MaxInt int32 `json:"maxInt"`
-	// For `long` type only. Lower bound for the int64 to generate
-	MinLong int64 `json:"minLong"`
-	// For `long` type only. Higher bound for the int64 to generate
-	MaxLong int64 `json:"maxLong"`
-	// For `double` type only. Lower bound for the float64 to generate
-	MinDouble float64 `json:"minDouble"`
-	// For `double` type only. Higher bound for the float64 to generate
-	MaxDouble float64 `json:"maxDouble"`
+	MaxLength json.Number `json:"maxLength"`
+	// For `int`, `long` or `double` only. Lower bound for number to generate
+	Min json.Number `json:"min"`
+	// For `int`, `long` or `double` only. Higher bound for number to generate
+	Max json.Number `json:"max"`
 	// For `array` only. Config to fill the array. Need to
 	// pass a pointer here to avoid 'invalid recursive type' error
 	ArrayContent *Config `json:"arrayContent"`
@@ -115,6 +108,18 @@ type Config struct {
 	// For `countAggregator`, `boundAggregator` and `valueAggregator` only
 	Query bson.M `json:"query"`
 
+	// Deprecated. Use 'Min' instead
+	MinInt int32 `json:"minInt"`
+	// Deprecated. Use 'Max' instead
+	MaxInt int32 `json:"maxInt"`
+	// Deprecated. Use 'Min' instead
+	MinLong int64 `json:"minLong"`
+	// Deprecated. Use 'Max' instead
+	MaxLong int64 `json:"maxLong"`
+	// Deprecated. Use 'Min' instead
+	MinDouble float64 `json:"minDouble"`
+	// Deprecated. Use 'Max' instead
+	MaxDouble float64 `json:"maxDouble"`
 	// Deprecated. Use 'MinLength' and 'MaxLength' instead
 	Size int `json:"size"`
 	// Deprecated. Use 'Values' instead
@@ -445,7 +450,7 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 	}
 
 	// a field can reference another field in the same collection. As go map are unordered,
-	// we need to make sure that the field with the 'refContent' is initialized first 
+	// we need to make sure that the field with the 'refContent' is initialized first
 	fields := make([]string, 0)
 	for k, v := range content {
 		if v.Type == "reference" && v.RefContent == nil {

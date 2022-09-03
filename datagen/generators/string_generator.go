@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 )
 
 // Generator for creating random string of a length within [`MinLength`, `MaxLength`]
@@ -13,12 +14,30 @@ type stringGenerator struct {
 	maxLength uint32
 }
 
-func newStringGenerator(config *Config, base base, nbDoc int) (Generator, error) {
-	if config.MinLength < 0 || config.MinLength > config.MaxLength {
-		return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'")
+func newStringGenerator(config *Config, base base, nbDoc int) (g Generator, err error) {
+
+	min, max := uint64(0), uint64(8)
+
+	if config.MinLength != "" {
+		min, err = strconv.ParseUint(string(config.MinLength), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as an uint32:\n%w", config.MinLength, err)
+		}
 	}
+
+	if config.MaxLength != "" {
+		max, err = strconv.ParseUint(string(config.MaxLength), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as an uint32:\n%w", config.MaxLength, err)
+		}
+	}
+
+	if min > max {
+		return nil, errors.New("make sure that 'minLength' < 'maxLength'")
+	}
+
 	if config.Unique {
-		values, err := uniqueValues(nbDoc, config.MaxLength)
+		values, err := uniqueValues(nbDoc, int(max))
 		if err != nil {
 			return nil, err
 		}
@@ -26,8 +45,8 @@ func newStringGenerator(config *Config, base base, nbDoc int) (Generator, error)
 	}
 	return &stringGenerator{
 		base:      base,
-		minLength: uint32(config.MinLength),
-		maxLength: uint32(config.MaxLength),
+		minLength: uint32(min),
+		maxLength: uint32(max),
 	}, nil
 }
 

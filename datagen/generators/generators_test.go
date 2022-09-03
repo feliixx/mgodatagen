@@ -29,6 +29,9 @@ func TestIsDocumentCorrect(t *testing.T) {
 		ConstInt32              int32              `bson:"constInt32"`
 		ConstInt64              int64              `bson:"constInt64"`
 		ConstFloat              float64            `bson:"constFloat"`
+		NoBoundInt32            int32              `bson:"noBoundInt32"`
+		NoBoundInt64            int64              `bson:"noBoundInt64"`
+		NoBoundFloat            float64            `bson:"noBoundFloat"`
 		Boolean                 bool               `bson:"boolean"`
 		Position                []float64          `bson:"position"`
 		StringFromArray         string             `bson:"stringFromArray"`
@@ -100,7 +103,7 @@ func TestNewGenerator(t *testing.T) {
 			name: "string invalid minLength",
 			config: generators.Config{
 				Type:      generators.TypeString,
-				MinLength: -1,
+				MinLength: "-1",
 			},
 			correct: false,
 			version: []int{3, 6},
@@ -109,8 +112,17 @@ func TestNewGenerator(t *testing.T) {
 			name: "string invalid maxLength",
 			config: generators.Config{
 				Type:      generators.TypeString,
-				MinLength: 5,
-				MaxLength: 2,
+				MaxLength: "-1",
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "string with minLength < maxLength",
+			config: generators.Config{
+				Type:      generators.TypeString,
+				MinLength: "5",
+				MaxLength: "2",
 			},
 			correct: false,
 			version: []int{3, 6},
@@ -119,7 +131,8 @@ func TestNewGenerator(t *testing.T) {
 			name: "unique with length == 0",
 			config: generators.Config{
 				Type:      generators.TypeString,
-				MinLength: 0,
+				MinLength: "0",
+				MaxLength: "0",
 				Unique:    true,
 			},
 			correct: false,
@@ -129,8 +142,8 @@ func TestNewGenerator(t *testing.T) {
 			name: "unique with string size to low",
 			config: generators.Config{
 				Type:      generators.TypeString,
-				MinLength: 1,
-				MaxLength: 1,
+				MinLength: "1",
+				MaxLength: "1",
 				Unique:    true,
 			},
 			correct: false,
@@ -140,14 +153,15 @@ func TestNewGenerator(t *testing.T) {
 			name: "maxDistinctValue too high",
 			config: generators.Config{
 				Type:             generators.TypeString,
-				MinLength:        0,
+				MinLength:        "0",
+				MaxLength:        "0",
 				MaxDistinctValue: 10,
 			},
 			correct: false,
 			version: []int{3, 6},
 		},
 		{
-			name: "int with missing MinInt and MaxInt",
+			name: "int with missing Min and Max",
 			config: generators.Config{
 				Type: generators.TypeInt,
 			},
@@ -155,17 +169,37 @@ func TestNewGenerator(t *testing.T) {
 			version: []int{3, 6},
 		},
 		{
-			name: "int with MaxInt < MinInt",
+			name: "int with Max < Min",
 			config: generators.Config{
-				Type:   generators.TypeInt,
-				MinInt: 10,
-				MaxInt: 4,
+				Type: generators.TypeInt,
+				Min:  "10",
+				Max:  "4",
 			},
 			correct: false,
 			version: []int{3, 6},
 		},
 		{
-			name: "long with missing MinLong and MaxLong",
+			name: "int with invalid Max",
+			config: generators.Config{
+				Type: generators.TypeInt,
+				Min:  "0",
+				Max:  "/",
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "int with invalid Min",
+			config: generators.Config{
+				Type: generators.TypeInt,
+				Min:  "aa",
+				Max:  "9",
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "long with missing Min and Max",
 			config: generators.Config{
 				Type: generators.TypeLong,
 			},
@@ -173,17 +207,37 @@ func TestNewGenerator(t *testing.T) {
 			version: []int{3, 6},
 		},
 		{
-			name: "long with MaxLong < MinLong",
+			name: "long with Max < Min",
 			config: generators.Config{
-				Type:    generators.TypeLong,
-				MinLong: 10,
-				MaxLong: 4,
+				Type: generators.TypeLong,
+				Min:  "10",
+				Max:  "4",
 			},
 			correct: false,
 			version: []int{3, 6},
 		},
 		{
-			name: "double with missing MinDouble and MaxDouble",
+			name: "long with invalid Max",
+			config: generators.Config{
+				Type: generators.TypeLong,
+				Min:  "0",
+				Max:  "a",
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "long with invalid Min",
+			config: generators.Config{
+				Type: generators.TypeLong,
+				Min:  "fjdg",
+				Max:  "1",
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "double with missing Min and Max",
 			config: generators.Config{
 				Type: generators.TypeDouble,
 			},
@@ -191,23 +245,31 @@ func TestNewGenerator(t *testing.T) {
 			version: []int{3, 6},
 		},
 		{
-			name: "double with MaxFloat < MinFloat",
+			name: "double with Max < Min",
 			config: generators.Config{
-				Type:      generators.TypeDouble,
-				MinDouble: 10,
-				MaxDouble: 4,
+				Type: generators.TypeDouble,
+				Min:  "10",
+				Max:  "4",
 			},
 			correct: false,
 			version: []int{3, 6},
 		},
 		{
-			name: "array with size < 0 ",
+			name: "double with invalid Max",
 			config: generators.Config{
-				Type: generators.TypeArray,
-				Size: -1,
-				ArrayContent: &generators.Config{
-					Type: generators.TypeObjectID,
-				},
+				Type: generators.TypeDouble,
+				Min:  "0",
+				Max:  "-",
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "double with invalid Min",
+			config: generators.Config{
+				Type: generators.TypeDouble,
+				Min:  "++",
+				Max:  "2",
 			},
 			correct: false,
 			version: []int{3, 6},
@@ -219,7 +281,7 @@ func TestNewGenerator(t *testing.T) {
 				Size: 3,
 				ArrayContent: &generators.Config{
 					Type:      generators.TypeString,
-					MinLength: -1,
+					MinLength: "-1",
 				},
 			},
 			correct: false,
@@ -237,17 +299,26 @@ func TestNewGenerator(t *testing.T) {
 			name: "binary with invalid minLength",
 			config: generators.Config{
 				Type:      generators.TypeBinary,
-				MinLength: -1,
+				MinLength: "-1",
 			},
 			correct: false,
 			version: []int{3, 6},
 		},
 		{
-			name: "binary with incorrect MaxLength",
+			name: "binary with invalid maxLength",
 			config: generators.Config{
 				Type:      generators.TypeBinary,
-				MinLength: 5,
-				MaxLength: 2,
+				MaxLength: "-1",
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "binary with minLength > MaxLength",
+			config: generators.Config{
+				Type:      generators.TypeBinary,
+				MinLength: "5",
+				MaxLength: "2",
 			},
 			correct: false,
 			version: []int{3, 6},
@@ -277,7 +348,7 @@ func TestNewGenerator(t *testing.T) {
 				Type: generators.TypeReference,
 				RefContent: &generators.Config{
 					Type:      generators.TypeString,
-					MinLength: -1,
+					MinLength: "-1",
 				},
 			},
 			correct: false,
@@ -298,7 +369,7 @@ func TestNewGenerator(t *testing.T) {
 				ObjectContent: map[string]generators.Config{
 					"key": {
 						Type:      generators.TypeString,
-						MinLength: -1,
+						MinLength: "-1",
 					},
 				},
 			},
@@ -404,7 +475,7 @@ func TestNewGenerator(t *testing.T) {
 				Parts: []generators.Config{
 					{
 						Type:      generators.TypeString,
-						MinLength: -1,
+						MinLength: "-1",
 					},
 				},
 			},
@@ -427,7 +498,19 @@ func TestNewGenerator(t *testing.T) {
 			name: "array with minLength < 0 ",
 			config: generators.Config{
 				Type:      generators.TypeArray,
-				MinLength: -1,
+				MinLength: "-1",
+				ArrayContent: &generators.Config{
+					Type: generators.TypeObjectID,
+				},
+			},
+			correct: false,
+			version: []int{3, 6},
+		},
+		{
+			name: "array with maxLength < 0 ",
+			config: generators.Config{
+				Type:      generators.TypeArray,
+				MaxLength: "-1",
 				ArrayContent: &generators.Config{
 					Type: generators.TypeObjectID,
 				},
@@ -439,8 +522,8 @@ func TestNewGenerator(t *testing.T) {
 			name: "array with minLength > maxLength ",
 			config: generators.Config{
 				Type:      generators.TypeArray,
-				MinLength: 3,
-				MaxLength: 1,
+				MinLength: "3",
+				MaxLength: "1",
 				ArrayContent: &generators.Config{
 					Type: generators.TypeObjectID,
 				},
@@ -452,8 +535,8 @@ func TestNewGenerator(t *testing.T) {
 			name: "array without array content ",
 			config: generators.Config{
 				Type:      generators.TypeArray,
-				MinLength: 1,
-				MaxLength: 1,
+				MinLength: "1",
+				MaxLength: "1",
 			},
 			correct: false,
 			version: []int{3, 6},
@@ -474,8 +557,8 @@ func TestNewGenerator(t *testing.T) {
 				Parts: []generators.Config{
 					{
 						Type:      generators.TypeString,
-						MinLength: 0,
-						MaxLength: 2,
+						MinLength: "0",
+						MaxLength: "2",
 						Unique:    true,
 					},
 				},
@@ -490,38 +573,9 @@ func TestNewGenerator(t *testing.T) {
 				Parts: []generators.Config{
 					{
 						Type:             generators.TypeDouble,
-						MinDouble:        -20.565,
-						MaxDouble:        2,
+						Min:              "-20.565",
+						Max:              "2",
 						MaxDistinctValue: 10,
-					},
-				},
-			},
-			correct: false,
-			version: []int{3, 6},
-		},
-		{
-			name: "string from parts with object part",
-			config: generators.Config{
-				Type: generators.TypeStringFromParts,
-				Parts: []generators.Config{
-					{
-						Type:          generators.TypeObject,
-						ObjectContent: map[string]generators.Config{},
-					},
-				},
-			},
-			correct: false,
-			version: []int{3, 6},
-		},
-		{
-			name: "string from parts with binary part",
-			config: generators.Config{
-				Type: generators.TypeStringFromParts,
-				Parts: []generators.Config{
-					{
-						Type:      generators.TypeBinary,
-						MinLength: 0,
-						MaxLength: 10,
 					},
 				},
 			},
@@ -689,7 +743,7 @@ func TestNewGeneratorFromMap(t *testing.T) {
 			config: map[string]generators.Config{
 				"key": {
 					Type:      generators.TypeString,
-					MinLength: -1,
+					MinLength: "-1",
 				},
 			},
 			correct:      false,
@@ -742,9 +796,138 @@ func loadCollConfig(t *testing.T, filename string) []map[string]generators.Confi
 	return list
 }
 
+func TestEncodeToString(t *testing.T) {
+
+	encodeToStringTests := []struct {
+		name   string
+		config generators.Config
+		empty  bool
+	}{
+		{
+			name:   "int",
+			config: generators.Config{Type: generators.TypeInt},
+			empty:  false,
+		},
+		{
+			name:   "long",
+			config: generators.Config{Type: generators.TypeLong},
+			empty:  false,
+		},
+		{
+			name:   "double",
+			config: generators.Config{Type: generators.TypeDouble},
+			empty:  false,
+		},
+		{
+			name:   "decimal",
+			config: generators.Config{Type: generators.TypeDecimal},
+			empty:  false,
+		},
+		{
+			name:   "autoincrement",
+			config: generators.Config{Type: generators.TypeAutoincrement, AutoType: "long"},
+			empty:  false,
+		},
+		{
+			name:   "boolean",
+			config: generators.Config{Type: generators.TypeBoolean},
+			empty:  false,
+		},
+		{
+			name:   "objectId",
+			config: generators.Config{Type: generators.TypeObjectID},
+			empty:  false,
+		},
+		{
+			name:   "UUID",
+			config: generators.Config{Type: generators.TypeUUID},
+			empty:  false,
+		},
+		{
+			name:   "date",
+			config: generators.Config{Type: generators.TypeDate, StartDate: time.Unix(0, 0), EndDate: time.Now()},
+			empty:  false,
+		},
+		{
+			name:   "string",
+			config: generators.Config{Type: generators.TypeString, MinLength: "1"},
+			empty:  false,
+		},
+		{
+			name:   "string from parts",
+			config: generators.Config{Type: generators.TypeStringFromParts, Parts: []generators.Config{{Type: generators.TypeInt}}},
+			empty:  false,
+		},
+		{
+			name:   "coordinates",
+			config: generators.Config{Type: generators.TypeCoordinates},
+			empty:  false,
+		},
+		{
+			name:   "contant",
+			config: generators.Config{Type: generators.TypeConstant, ConstVal: "hello"},
+			empty:  false,
+		},
+		{
+			name:   "enum",
+			config: generators.Config{Type: generators.TypeEnum, Values: []any{true, false}},
+			empty:  false,
+		},
+		{
+			name:   "faker",
+			config: generators.Config{Type: generators.TypeFaker, Method: generators.MethodAnimal},
+			empty:  false,
+		},
+		{
+			name:   "array",
+			config: generators.Config{Type: generators.TypeArray, ArrayContent: &generators.Config{Type: generators.TypePosition}},
+			empty:  false,
+		},
+		{
+			name:   "binary",
+			config: generators.Config{Type: generators.TypeBinary, MinLength: "2"},
+			empty:  true,
+		},
+		{
+			name:   "object",
+			config: generators.Config{Type: generators.TypeObject, ObjectContent: map[string]generators.Config{}},
+			empty:  true,
+		},
+	}
+
+	ci := generators.NewCollInfo(1000, []int{3, 6}, defaultSeed, map[int][][]byte{}, map[int]bsontype.Type{})
+
+	for _, tt := range encodeToStringTests {
+		t.Run(tt.name, func(t *testing.T) {
+			var content = map[string]generators.Config{
+				"str_from_parts": {
+					Type: generators.TypeStringFromParts,
+					Parts: []generators.Config{
+						tt.config,
+					},
+				},
+			}
+
+			g, err := ci.NewDocumentGenerator(content)
+			if err != nil {
+				t.Errorf("expected no error for config %v \n%v", tt.config, err)
+			}
+
+			doc := bson.Raw(g.Generate())
+			v := doc.Lookup("str_from_parts").StringValue()
+			if !tt.empty && v == "" {
+				t.Error("encode to string should generate a non empty string")
+			}
+			if tt.empty && v != "" {
+				t.Error("encode to string should generate an empty string")
+			}
+		})
+	}
+}
+
 func BenchmarkGeneratorAll(b *testing.B) {
 
-	contentList := loadCollConfig(nil, "part.json")
+	contentList := loadCollConfig(nil, "full-bson.json")
 
 	ci := generators.NewCollInfo(1000, []int{3, 2}, defaultSeed, map[int][][]byte{}, map[int]bsontype.Type{})
 	docGenerator, err := ci.NewDocumentGenerator(contentList[0])

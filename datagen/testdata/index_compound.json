@@ -6,13 +6,13 @@
         "content": {
             "suID": {
                 "type": "int",
-                "minInt": 0,
-                "maxInt": 10
+                "min": 0,
+                "max": 10
             },
             "dvID": {
                 "type": "long",
-                "minLong": 0,
-                "maxLong": 10
+                "min": 0,
+                "max": 10
             },
             "tm": {
                 "type": "string",

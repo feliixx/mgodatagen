@@ -2,6 +2,7 @@ package generators
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 
 	"go.mongodb.org/mongo-driver/bson/bsontype"
@@ -15,22 +16,33 @@ type arrayGenerator struct {
 	generator Generator
 }
 
-func newArrayGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuffer) (Generator, error) {
+func newArrayGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuffer) (h Generator, err error) {
 
-	if config.MinLength == 0 && config.MaxLength == 0 {
+	min, max := uint64(0), uint64(3)
 
-		// config.Size is the old attribute for array length,
-		// use it if MinLength/MaxLength aren't specified
-		if config.Size == 0 {
-			return newConstantGenerator(base, []int{})
-		} else {
-			config.MinLength = config.Size
-			config.MaxLength = config.Size
+	if config.MinLength != "" {
+		min, err = strconv.ParseUint(string(config.MinLength), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as an uint32:\n%w", config.MinLength, err)
 		}
 	}
 
-	if config.MinLength < 0 || config.MinLength > config.MaxLength {
-		return nil, errors.New("make sure that 'minLength' >= 0 and 'minLength' <= 'maxLength'")
+	if config.MaxLength != "" {
+		max, err = strconv.ParseUint(string(config.MaxLength), 10, 32)
+		if err != nil {
+			return nil, fmt.Errorf("can't parse number '%s' as an uint32:\n%w", config.MaxLength, err)
+		}
+	}
+
+	// config.Size is the old attribute for array length,
+	// if MinLength/MaxLength aren't specified, use it for backward compatibility
+	if config.MinLength == "" && config.MaxLength == "" && config.Size > 0 {
+		min = uint64(config.Size)
+		max = uint64(config.Size)
+	}
+
+	if min > max {
+		return nil, errors.New("make sure that 'minLength' < 'maxLength'")
 	}
 
 	if config.ArrayContent == nil {
@@ -68,8 +80,8 @@ func newArrayGenerator(config *Config, base base, ci *CollInfo, buffer *DocBuffe
 
 	return &arrayGenerator{
 		base:      base,
-		minLength: uint32(config.MinLength),
-		maxLength: uint32(config.MaxLength),
+		minLength: uint32(min),
+		maxLength: uint32(max),
 		generator: g,
 	}, nil
 }

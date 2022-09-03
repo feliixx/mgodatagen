@@ -6,8 +6,8 @@
         "content": {
             "link": {
                 "type": "int",
-                "minInt": 0,
-                "maxInt": 5
+                "min": 0,
+                "max": 5
             },
             "field": {
                 "type": "enum",
@@ -27,8 +27,8 @@
             "field1": {
                 "type": "int",
                 "nullPercentage": 10,
-                "minInt": 0,
-                "maxInt": 10000
+                "min": 0,
+                "max": 10000
             }
         }
     },

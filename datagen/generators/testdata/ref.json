@@ -38,19 +38,19 @@
       },
       "c32": {
         "type": "int",
-        "minInt": 11,
-        "maxInt": 20
+        "min": 11,
+        "max": 20
       },
       "c64": {
         "type": "long",
         "nullPercentage": 10,
-        "minLong": 1000,
-        "maxLong": 20000
+        "min": 1000,
+        "max": 20000
       },
       "float": {
         "type": "double",
-        "minDouble": 0.0,
-        "maxDouble": 10.0
+        "min": 0.0,
+        "max": 10.0
       },
       "verified": {
         "type": "boolean"
@@ -91,8 +91,8 @@
           },
           "k2": {
             "type": "int",
-            "minInt": -10,
-            "maxInt": -5
+            "min": -10,
+            "max": -5
           }
         }
       }
