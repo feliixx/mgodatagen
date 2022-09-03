@@ -66,7 +66,7 @@ func (w *fileWriter) write(collections []Collection, seed uint64) (err error) {
 
 		aggs, err := ci.NewAggregatorSlice(collections[i].Content)
 		if len(aggs) > 0 || err != nil {
-			return errors.New("Aggregators are not supported for stdout or file output")
+			return errors.New("aggregators are not supported for stdout or file output")
 		}
 	}
 

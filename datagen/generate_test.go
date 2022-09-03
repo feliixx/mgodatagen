@@ -1130,7 +1130,7 @@ func TestGenerate(t *testing.T) {
 				General: defaultGeneralOpts,
 			},
 			correct:     false,
-			errMsgRegex: regexp.MustCompile("^Aggregators are not supported for stdout or file output.*"),
+			errMsgRegex: regexp.MustCompile("^aggregators are not supported for stdout or file output.*"),
 		},
 	}
 

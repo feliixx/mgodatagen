@@ -70,11 +70,12 @@ type baseWriter struct {
 func (b *baseWriter) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
 
 	count := 0
+Loop:
 	for count < nbDoc {
 
 		select {
 		case <-ctx.Done(): // if an error occurred in one of the 'inserting' goroutines, close the channel
-			break
+			break Loop
 		default:
 		}
 

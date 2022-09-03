@@ -451,7 +451,7 @@ func (ci *CollInfo) NewDocumentGenerator(content map[string]Config) (*DocumentGe
 
 	// a field can reference another field in the same collection. As go map are unordered,
 	// we need to make sure that the field with the 'refContent' is initialized first
-	fields := make([]string, 0)
+	fields := make([]string, 0, len(content))
 	for k, v := range content {
 		if v.Type == "reference" && v.RefContent == nil {
 			fields = append(fields, k)
