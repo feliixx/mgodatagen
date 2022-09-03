@@ -41,21 +41,31 @@ type rawChunk struct {
 	nbToInsert int
 }
 
-// use a sync.Pool to reduce memory consumption
-// also reduce the nb of items to send to the channel
-var pool = sync.Pool{
-	New: func() any {
-		list := make([][]byte, 1000)
-		for i := range list {
-			// use 256 bytes as default buffer size, because it's close to the
-			// average bson document size out there (mongodb-go-driver use the
-			// same value internally)
-			list[i] = make([]byte, 256)
-		}
-		return &rawChunk{
-			documents: list,
-		}
-	},
+var (
+	// initial length of the slices allocated by the pool to hold
+	// collections documents. This value is updated for every collection
+	size int
+	// use a sync.Pool to reduce memory consumption
+	// also reduce the nb of items to send to the channel
+	pool = sync.Pool{
+		New: func() any {
+			list := make([][]byte, 1000)
+			for i := range list {
+				list[i] = make([]byte, size)
+			}
+			return &rawChunk{
+				documents: list,
+			}
+		},
+	}
+)
+
+func setPoolSliceSize(docLen int) {
+	margin := docLen * 10 / 100
+	size = docLen + margin
+	if size%2 != 0 {
+		size++
+	}
 }
 
 type baseWriter struct {
@@ -68,6 +78,11 @@ type baseWriter struct {
 }
 
 func (b *baseWriter) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
+
+	// generate a document, and use it's length to adjust the initial
+	// size of the slices in the pool 
+	docBytes := docGenerator.Generate()
+	setPoolSliceSize(len(docBytes))
 
 	count := 0
 Loop:
@@ -87,7 +102,6 @@ Loop:
 		}
 
 		for i := 0; i < rc.nbToInsert; i++ {
-			docBytes := docGenerator.Generate()
 
 			// if doc is not large enough, allocate a new one.
 			// Otherwise, reslice it.
@@ -99,6 +113,8 @@ Loop:
 				rc.documents[i] = rc.documents[i][:len(docBytes)]
 			}
 			copy(rc.documents[i], docBytes)
+
+			docBytes = docGenerator.Generate()
 		}
 
 		count += rc.nbToInsert
