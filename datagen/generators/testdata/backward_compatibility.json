@@ -36,6 +36,16 @@
         "type": "double",
         "minDouble": 0.0,
         "maxDouble": 3237.8383
+      },
+      "autoincrementWithOldStartLong": {
+        "type": "autoincrement",
+        "autoType": "long",
+        "startLong": 3
+      },
+      "autoincrementWithOldStartInt": {
+        "type": "autoincrement",
+        "autoType": "int",
+        "startInt": -2
       }
     }
   }
