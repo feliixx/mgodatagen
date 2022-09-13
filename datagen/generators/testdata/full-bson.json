@@ -126,12 +126,12 @@
       "autoIncrementInt32": {
         "type": "autoincrement",
         "autoType": "int",
-        "startInt": 0
+        "start": 0
       },
       "autoIncrementInt64": {
         "type": "autoincrement",
         "autoType": "long",
-        "startLong": 18
+        "start": 18
       },
       "date": {
         "type": "date",
@@ -185,7 +185,7 @@
           {
             "type": "autoincrement",
             "autoType": "int",
-            "startInt": 1
+            "start": 1
           },
           {
             "type": "constant",
@@ -205,7 +205,7 @@
           {
             "type": "autoincrement",
             "autoType": "long",
-            "startLong": 1
+            "start": 1
           },
           {
             "type": "faker",

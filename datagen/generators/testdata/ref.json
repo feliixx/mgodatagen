@@ -68,7 +68,7 @@
       "nb": {
         "type": "autoincrement",
         "autoType": "long",
-        "startLong": 0
+        "start": 0
       },
       "pos": {
         "type": "coordinates"

@@ -83,9 +83,7 @@ type Config struct {
 	// For `constant` type only. Value of the constant field
 	ConstVal any `json:"constVal"`
 	// For `autoincrement` type only. Start value
-	StartInt int32 `json:"startInt"`
-	// For `autoincrement` type only. Start value
-	StartLong int64 `json:"startLong"`
+	Start json.Number `json:"start"`
 	// For `autoincrement` type only. Type of the field, must be one of [ 'int', 'long' ]
 	AutoType string `json:"autoType"`
 	// For `faker` type only. Method to use
@@ -120,6 +118,10 @@ type Config struct {
 	MinDouble float64 `json:"minDouble"`
 	// Deprecated. Use 'Max' instead
 	MaxDouble float64 `json:"maxDouble"`
+	// Deprecated. Use 'start' instead
+	StartInt int32 `json:"startInt"`
+	// Deprecated. Use 'start' instead
+	StartLong int64 `json:"startLong"`
 	// Deprecated. Use 'MinLength' and 'MaxLength' instead
 	Size int `json:"size"`
 	// Deprecated. Use 'Values' instead

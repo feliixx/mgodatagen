@@ -394,8 +394,7 @@ Generates an autoincremented value (type `<long>` or `<int>`).
 "fieldName": {
     "type":           "autoincrement", // required
     "autoType":       <string>,        // required, either "int" or "long"
-    "startLong":      <long>,          // optional, start value if autoType = "long"
-    "startInt":       <int>,           // optional, start value if autoType = "int"
+    "start":          <int|long>,      // optional, start value
     "nullPercentage": <int>            // optional
 }
 ```
@@ -625,7 +624,7 @@ and that the generator for collection `second` is:
     "_id": {
       "type": "autoincrement",
       "autoType": "int"
-      "startInt": 0
+      "start": 0
     },
     "count": {
       "type": "countAggregator",
@@ -686,7 +685,7 @@ and that the generator for collection `second` is:
     "_id": {
       "type": "autoincrement",
       "autoType": "int"
-      "startInt": 0
+      "start": 0
     },
     "count": {
       "type": "valueAggregator",
@@ -751,7 +750,7 @@ and that the generator for collection `second` is:
     "_id": {
       "type": "autoincrement",
       "autoType": "int"
-      "startInt": 0
+      "start": 0
     },
     "count": {
       "type": "valueAggregator",
