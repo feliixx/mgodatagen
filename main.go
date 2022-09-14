@@ -14,7 +14,7 @@ import (
 // Use this to set version to last known tag:
 //
 //  go build -ldflags "-X main.Version=$(git describe --tags $(git rev-list --tags --max-count=1))"
-var Version string = "v0.11.1"
+var Version string = "v0.11.2"
 
 func main() {
 	var options datagen.Options
