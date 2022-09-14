@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"regexp"
+	"text/scanner"
 
 	"github.com/feliixx/mgodatagen/datagen/generators"
 
@@ -68,13 +68,29 @@ func ParseConfig(content []byte, ignoreMissingDb bool) (collections []Collection
 	return collections, nil
 }
 
-var (
-	regMin = regexp.MustCompile(`"(minInt|minLong|minDouble)"`)
-	regMax = regexp.MustCompile(`"(maxInt|maxLong|maxDouble)"`)
-)
-
 func rewriteForBackwardCompatibility(content []byte) []byte {
 
-	result := regMin.ReplaceAll(content, []byte(`"min"`))
-	return regMax.ReplaceAll(result, []byte(`"max"`))
+	var buf bytes.Buffer
+
+	var s scanner.Scanner
+	s.Init(bytes.NewReader(content))
+
+	for tok := s.Scan(); tok != scanner.EOF; tok = s.Scan() {
+
+		txt := s.TokenText()
+		if len(txt) >= 6 {
+			switch txt {
+			case `"minInt"`, `"minLong"`, `"minDouble"`:
+				txt = `"min"`
+			case `"maxInt"`, `"maxLong"`, `"maxDouble"`:
+				txt = `"max"`
+			case `"startInt"`, `"startLong"`:
+				txt = `"start"`
+			default:
+			}
+		}
+		buf.WriteString(txt)
+	}
+
+	return buf.Bytes()
 }
