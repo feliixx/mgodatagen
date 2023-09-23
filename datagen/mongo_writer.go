@@ -193,7 +193,11 @@ func (w *mongoWriter) createCollection(coll *Collection) error {
 		// as the collection is empty, no need to create the indexes on the sharded key before creating the collection,
 		// because it will be created automatically by mongodb. See https://docs.mongodb.com/manual/core/sharding-shard-key/#shard-key-indexes
 		// for details
-		err = runMgoCompatCommand(context.Background(), w.session, "admin", coll.ShardConfig)
+		cmdBytes, err := bson.Marshal(coll.ShardConfig)
+		if err != nil {
+			return fmt.Errorf("fait to marshal sharding cmd\n  cause: %v", err)
+		}
+		err = w.session.Database("admin").RunCommand(context.Background(), cmdBytes).Err()
 		if err != nil {
 			return fmt.Errorf("fail to shard collection '%s' in db '%s'\n  cause: %v", coll.Name, coll.DB, err)
 		}

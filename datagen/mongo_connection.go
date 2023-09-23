@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/mgocompat"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -107,17 +106,4 @@ func createClientOptions(conn *Connection) *options.ClientOptions {
 	}
 
 	return connOpts.SetAuth(credentials)
-}
-
-func runMgoCompatCommand(ctx context.Context, session *mongo.Client, db string, cmd any) error {
-	// With the default registry, index.Collation is kept event when it's empty,
-	// and it make the command fail
-	// to fix this, marshal the command to a bson.Raw with the mgocompat registry
-	// providing the same behavior that the old mgo driver
-	mgoRegistry := mgocompat.NewRespectNilValuesRegistryBuilder().Build()
-	_, cmdBytes, err := bson.MarshalValueWithRegistry(mgoRegistry, cmd)
-	if err != nil {
-		return fmt.Errorf("fait to generate mgocompat command\n  cause: %v", err)
-	}
-	return session.Database(db).RunCommand(ctx, cmdBytes).Err()
 }
