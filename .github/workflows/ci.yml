@@ -63,7 +63,7 @@ jobs:
 
       - name: Setup a standalone db
         if: contains(matrix.mongodb-version, 'sharded') == false
-        run: mongod --dbpath $PWD/db --logpath /dev/null --nojournal --fork
+        run: mongod --dbpath $PWD/db --logpath /dev/null --fork
 
       - name: Run go tests
         run: ./test.sh
