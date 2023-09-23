@@ -4,10 +4,11 @@ on: [ push, pull_request ]
 
 env:
   go-version: 1.21
+  UBUNTU_VERSION: linux-x86_64-ubuntu2004
 
 jobs:
   static_check:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Check out code
@@ -29,7 +30,7 @@ jobs:
 
   build:
     needs: static_check
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         mongodb-version: [5.0.21, 6.0.9, 7.0.1, 7.0.1-sharded]
@@ -43,10 +44,8 @@ jobs:
         with:
           go-version: ${{ env.go-version }}
 
-      - name: Export env variables
-        run: |
-          echo "UBUNTU_VERSION=linux-x86_64-ubuntu$(lsb_release -r | tr -d '[:alpha:][:blank:][:punct:]')" >> $GITHUB_ENV
-          echo "MONGO_VERSION=$( echo ${{ matrix.mongodb-version }} | tr -d '[:alpha:][=-=]')" >> $GITHUB_ENV
+      - name: Export MongoDB version
+        run: echo "MONGO_VERSION=$( echo ${{ matrix.mongodb-version }} | tr -d '[:alpha:][=-=]')" >> $GITHUB_ENV
 
       - name: Download MongoDB
         run: |
