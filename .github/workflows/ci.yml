@@ -3,7 +3,7 @@ name: Run tests
 on: [ push, pull_request ]
 
 env:
-  go-version: 1.21
+  go-version: 1.22
   UBUNTU_VERSION: linux-x86_64-ubuntu2004
 
 jobs:
