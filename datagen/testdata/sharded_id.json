@@ -7,6 +7,9 @@
             "shardCollection": "mgodatagen_test.test_bson",
             "key": {
                 "_id": "hashed"
+            },
+            "collation": {
+                "locale": "simple"
             }
         },
         "content": {
