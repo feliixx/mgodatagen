@@ -9,7 +9,7 @@ env:
 
 jobs:
   static_check:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Check out code
@@ -31,7 +31,7 @@ jobs:
 
   build:
     needs: static_check
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         mongodb-version: [6.0.19, 7.0.15, 8.0.3, 8.0.3-sharded]
