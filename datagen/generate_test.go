@@ -41,11 +41,13 @@ shard list: [
   {
     "_id": "shardRs1",
     "host": "shardRs1/localhost:27021,localhost:27022",
+    "replSetConfigVersion": -1,
     "state": 1
   },
   {
     "_id": "shardRs2",
     "host": "shardRs2/localhost:27023,localhost:27024",
+    "replSetConfigVersion": -1,
     "state": 1
   }
 ]`

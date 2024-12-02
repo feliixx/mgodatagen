@@ -5,6 +5,7 @@ on: [ push, pull_request ]
 env:
   go-version: 1.23
   UBUNTU_VERSION: linux-x86_64-ubuntu2004
+  MONGOSH_VERSION: 2.3.4
 
 jobs:
   static_check:
@@ -33,7 +34,7 @@ jobs:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
-        mongodb-version: [5.0.26, 6.0.14, 7.0.8, 7.0.8-sharded]
+        mongodb-version: [6.0.19, 7.0.15, 8.0.3, 8.0.3-sharded]
 
     steps:
       - name: Check out code
@@ -53,6 +54,13 @@ jobs:
           tar xzvf mongodb-$UBUNTU_VERSION-$MONGO_VERSION.tgz
           echo "$PWD/mongodb-$UBUNTU_VERSION-$MONGO_VERSION/bin" >> $GITHUB_PATH
           mkdir $PWD/db
+
+      - name: Install mongosh
+        if: contains(matrix.mongodb-version, 'sharded')
+        run: |
+          wget -q https://downloads.mongodb.com/compass/mongosh-$MONGOSH_VERSION-linux-x64.tgz
+          tar xvzf mongosh-$MONGOSH_VERSION-linux-x64.tgz
+          echo "$PWD/mongosh-$MONGOSH_VERSION-linux-x64/bin" >> $GITHUB_PATH
 
       - name: Setup a sharded cluster
         if: contains(matrix.mongodb-version, 'sharded')
