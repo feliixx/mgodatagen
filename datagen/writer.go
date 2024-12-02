@@ -80,7 +80,7 @@ type baseWriter struct {
 func (b *baseWriter) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
 
 	// generate a document, and use it's length to adjust the initial
-	// size of the slices in the pool 
+	// size of the slices in the pool
 	docBytes := docGenerator.Generate()
 	setPoolSliceSize(len(docBytes))
 

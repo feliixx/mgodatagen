@@ -345,9 +345,9 @@ func TestNewGenerator(t *testing.T) {
 		{
 			name: "autoincrement int with invalid start",
 			config: generators.Config{
-				Type: generators.TypeAutoincrement,
-				AutoType:  "int",
-				Start:  "°",
+				Type:     generators.TypeAutoincrement,
+				AutoType: "int",
+				Start:    "°",
 			},
 			correct: false,
 			version: []int{3, 6},
@@ -355,9 +355,9 @@ func TestNewGenerator(t *testing.T) {
 		{
 			name: "autoincrement long with invalid start",
 			config: generators.Config{
-				Type: generators.TypeAutoincrement,
-				AutoType:  "long",
-				Start:  "°",
+				Type:     generators.TypeAutoincrement,
+				AutoType: "long",
+				Start:    "°",
 			},
 			correct: false,
 			version: []int{3, 6},
