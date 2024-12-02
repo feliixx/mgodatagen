@@ -108,7 +108,7 @@ func (g *arrayGenerator) EncodeValue() {
 
 	length := g.minLength
 	if g.minLength != g.maxLength {
-		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
+		length = g.rand.Uint32N(g.maxLength-g.minLength+1) + g.minLength
 	}
 
 	current := g.buffer.Len()
@@ -133,7 +133,7 @@ func (g *arrayGenerator) EncodeValue() {
 func (g *arrayGenerator) EncodeValueAsString() {
 	length := g.minLength
 	if g.minLength != g.maxLength {
-		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
+		length = g.rand.Uint32N(g.maxLength-g.minLength+1) + g.minLength
 	}
 
 	g.buffer.WriteSingleByte('[')

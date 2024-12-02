@@ -21,5 +21,5 @@ func (g *boolGenerator) EncodeValueAsString() {
 }
 
 func (g *boolGenerator) randomByte() byte {
-	return byte(g.pcg32.Random() & 0x01)
+	return byte(g.rand.Uint32() & 0x01)
 }

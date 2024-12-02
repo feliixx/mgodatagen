@@ -4,20 +4,19 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand/v2"
 	"strconv"
-
-	"github.com/MichaelTJones/pcg"
 )
 
 // Generator for creating random int64 between `Min` and `Max`
 type longGenerator struct {
 	base
-	min   int64
-	max   int64
-	pcg64 *pcg.PCG64
+	min  int64
+	max  int64
+	rand *rand.Rand
 }
 
-func newLongGenerator(config *Config, base base, pcg64 *pcg.PCG64) (g Generator, err error) {
+func newLongGenerator(config *Config, base base, rand *rand.Rand) (g Generator, err error) {
 
 	min, max := int64(0), int64(math.MaxInt64-2)
 
@@ -42,10 +41,10 @@ func newLongGenerator(config *Config, base base, pcg64 *pcg.PCG64) (g Generator,
 		return newConstantGenerator(base, max)
 	}
 	return &longGenerator{
-		base:  base,
-		min:   min,
-		max:   max + 1,
-		pcg64: pcg64,
+		base: base,
+		min:  min,
+		max:  max + 1,
+		rand: rand,
 	}, nil
 }
 
@@ -58,5 +57,5 @@ func (g *longGenerator) EncodeValueAsString() {
 }
 
 func (g *longGenerator) boundedInt64() int64 {
-	return int64(g.pcg64.Bounded(uint64(g.max-g.min))) + g.min
+	return g.rand.Int64N(g.max-g.min) + g.min
 }

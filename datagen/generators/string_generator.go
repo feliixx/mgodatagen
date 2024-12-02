@@ -62,13 +62,13 @@ const (
 func (g *stringGenerator) EncodeValue() {
 	length := g.minLength
 	if g.minLength != g.maxLength {
-		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
+		length = g.rand.Uint32N(g.maxLength-g.minLength+1) + g.minLength
 	}
 	g.buffer.Write(uint32Bytes(length + 1))
-	cache, remain := g.pcg32.Random(), letterIdxMax
+	cache, remain := g.rand.Uint32(), letterIdxMax
 	for i := 0; i < int(length); i++ {
 		if remain == 0 {
-			cache, remain = g.pcg32.Random(), letterIdxMax
+			cache, remain = g.rand.Uint32(), letterIdxMax
 		}
 		g.buffer.WriteSingleByte(letterBytes[cache&letterIdxMask])
 		cache >>= letterIdxBits
@@ -80,12 +80,12 @@ func (g *stringGenerator) EncodeValue() {
 func (g *stringGenerator) EncodeValueAsString() {
 	length := g.minLength
 	if g.minLength != g.maxLength {
-		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
+		length = g.rand.Uint32N(g.maxLength-g.minLength+1) + g.minLength
 	}
-	cache, remain := g.pcg32.Random(), letterIdxMax
+	cache, remain := g.rand.Uint32(), letterIdxMax
 	for i := 0; i < int(length); i++ {
 		if remain == 0 {
-			cache, remain = g.pcg32.Random(), letterIdxMax
+			cache, remain = g.rand.Uint32(), letterIdxMax
 		}
 		g.buffer.WriteSingleByte(letterBytes[cache&letterIdxMask])
 		cache >>= letterIdxBits

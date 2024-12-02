@@ -1,30 +1,31 @@
 package generators
 
 import (
+	"math/rand/v2"
 	"strconv"
-
-	"github.com/MichaelTJones/pcg"
 )
 
 // Generator for creating random decimal128
 type decimal128Generator struct {
 	base
-	pcg64 *pcg.PCG64
+	rand *rand.Rand
 }
 
-func newDecimalGenerator(base base, pcg64 *pcg.PCG64) (Generator, error) {
+func newDecimalGenerator(base base, rand *rand.Rand) (Generator, error) {
 	return &decimal128Generator{
-			base:  base,
-			pcg64: pcg64},
-		nil
+		base: base,
+		rand: rand,
+	}, nil
 }
 
 func (g *decimal128Generator) EncodeValue() {
-	b := uint64Bytes(g.pcg64.Random())
+	b := uint64Bytes(g.rand.Uint64())
 	g.buffer.Write(b)
 	g.buffer.Write(b)
 }
 
 func (g *decimal128Generator) EncodeValueAsString() {
-	g.buffer.WriteString(strconv.Itoa(int(g.pcg64.Random())))
+	s := strconv.Itoa(g.rand.Int())
+	g.buffer.WriteString(s)
+	g.buffer.WriteString(s)
 }

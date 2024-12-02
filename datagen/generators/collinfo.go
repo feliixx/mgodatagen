@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand/v2"
 	"time"
 
-	"github.com/MichaelTJones/pcg"
 	"github.com/brianvoe/gofakeit/v6"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
@@ -25,8 +25,7 @@ type CollInfo struct {
 	mapRef map[int][][]byte
 	// map holding references types when using a reference generator
 	mapRefType map[int]bsontype.Type
-	pcg32      *pcg.PCG32
-	pcg64      *pcg.PCG64
+	rand       *rand.Rand
 }
 
 // NewCollInfo returns a new CollInfo.
@@ -42,8 +41,7 @@ func NewCollInfo(count int, version []int, seed uint64, mapRef map[int][][]byte,
 		Seed:       seed,
 		mapRef:     mapRef,
 		mapRefType: mapRefType,
-		pcg32:      pcg.NewPCG32().Seed(seed, seed),
-		pcg64:      pcg.NewPCG64().Seed(seed, seed, seed, seed),
+		rand:       rand.New(rand.NewPCG(seed, seed)),
 	}
 }
 
@@ -489,8 +487,8 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 	if !ok {
 		return nil, fmt.Errorf("invalid type '%s'", config.Type)
 	}
-	nullPercentage := uint32(config.NullPercentage) * 10
-	base := newBase(key, nullPercentage, bsonType, buffer, ci.pcg32)
+	nullPercentage := uint32(config.NullPercentage)
+	base := newBase(key, nullPercentage, bsonType, buffer, ci.rand)
 
 	if config.MaxDistinctValue != 0 {
 		// there is no point in having a maxDistinctValue
@@ -521,16 +519,16 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		return newIntGenerator(config, base)
 
 	case TypeLong:
-		return newLongGenerator(config, base, ci.pcg64)
+		return newLongGenerator(config, base, ci.rand)
 
 	case TypeDouble:
-		return newDoubleGenerator(config, base, ci.pcg64)
+		return newDoubleGenerator(config, base, ci.rand)
 
 	case TypeDecimal:
 		if !ci.versionAtLeast(3, 4) {
 			return nil, errors.New("decimal type (bson decimal128) requires mongodb 3.4 at least")
 		}
-		return newDecimalGenerator(base, ci.pcg64)
+		return newDecimalGenerator(base, ci.rand)
 
 	case TypeBoolean:
 		return newBoolGenerator(base)
@@ -551,10 +549,10 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		return newBinaryGenerator(config, base)
 
 	case TypeDate:
-		return newDateGenerator(config, base, ci.pcg64)
+		return newDateGenerator(config, base, ci.rand)
 
 	case TypePosition, TypeCoordinates:
-		return newPositionGenerator(base, ci.pcg64)
+		return newPositionGenerator(base, ci.rand)
 
 	case TypeConstant:
 		return newConstantGenerator(base, config.ConstVal)

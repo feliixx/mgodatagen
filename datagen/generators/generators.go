@@ -8,7 +8,8 @@
 package generators
 
 import (
-	"github.com/MichaelTJones/pcg"
+	"math/rand/v2"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
@@ -72,17 +73,17 @@ type base struct {
 	nullPercentage uint32
 	bsonType       bsontype.Type
 	buffer         *DocBuffer
-	pcg32          *pcg.PCG32
+	rand           *rand.Rand
 }
 
 // newBase returns a new base
-func newBase(key string, nullPercentage uint32, bsonType bsontype.Type, out *DocBuffer, pcg32 *pcg.PCG32) base {
+func newBase(key string, nullPercentage uint32, bsonType bsontype.Type, out *DocBuffer, rand *rand.Rand) base {
 	return base{
 		key:            []byte(key),
 		nullPercentage: nullPercentage,
 		bsonType:       bsonType,
 		buffer:         out,
-		pcg32:          pcg32,
+		rand:           rand,
 	}
 }
 
@@ -96,7 +97,5 @@ func (g *base) Exists() bool {
 	if g.nullPercentage == 0 {
 		return true
 	}
-	// get the last 10 bits of a random int32 to get a number between 0 and 1023,
-	// and compare it to nullPercentage * 10
-	return g.pcg32.Random()>>22 >= g.nullPercentage
+	return g.rand.Uint32N(100) >= g.nullPercentage
 }

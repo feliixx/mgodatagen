@@ -4,9 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/rand/v2"
 	"strconv"
-
-	"github.com/MichaelTJones/pcg"
 )
 
 // Generator for creating random float64 between `Min` and `Max`
@@ -14,12 +13,12 @@ type doubleGenerator struct {
 	base
 	mean   float64
 	stdDev float64
-	pcg64  *pcg.PCG64
+	rand   *rand.Rand
 }
 
-func newDoubleGenerator(config *Config, base base, pcg64 *pcg.PCG64) (g Generator, err error) {
+func newDoubleGenerator(config *Config, base base, rand *rand.Rand) (g Generator, err error) {
 
-	min, max := 0.0, math.MaxFloat64 -2
+	min, max := 0.0, math.MaxFloat64-2
 
 	if config.Min != "" {
 		min, err = strconv.ParseFloat(string(config.Min), 64)
@@ -45,7 +44,7 @@ func newDoubleGenerator(config *Config, base base, pcg64 *pcg.PCG64) (g Generato
 		base:   base,
 		mean:   min,
 		stdDev: (max - min) / 2,
-		pcg64:  pcg64,
+		rand:   rand,
 	}, nil
 }
 
@@ -58,5 +57,5 @@ func (g *doubleGenerator) EncodeValueAsString() {
 }
 
 func (g *doubleGenerator) boundedFloat64() float64 {
-	return float64(g.pcg64.Random())/(1<<64)*g.stdDev + g.mean
+	return float64(g.rand.Uint64())/(1<<64)*g.stdDev + g.mean
 }

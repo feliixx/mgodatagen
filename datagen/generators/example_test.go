@@ -31,6 +31,6 @@ func Example() {
 		log.Fatal(err)
 	}
 	fmt.Printf("%+v", doc)
-	// Output: {Key:1jUK}
+	// Output: {Key:G6rpA}
 
 }

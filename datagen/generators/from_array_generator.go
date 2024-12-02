@@ -74,7 +74,7 @@ func (g *fromArrayGenerator) EncodeValueAsString() {
 func (g *fromArrayGenerator) randomIndex() int {
 
 	if g.randomOrder {
-		return int(g.base.pcg32.Bounded(uint32(g.size)))
+		return g.base.rand.IntN(g.size)
 	}
 
 	if g.index == g.size {

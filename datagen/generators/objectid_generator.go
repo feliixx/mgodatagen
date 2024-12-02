@@ -3,11 +3,10 @@ package generators
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"math/rand/v2"
 	"os"
 	"sync/atomic"
 	"time"
-
-	"github.com/MichaelTJones/pcg"
 )
 
 // Generator for creating bson.ObjectId
@@ -75,6 +74,5 @@ func readMachineID() []byte {
 
 func getRandomUint32() uint32 {
 	seed := uint64(time.Now().Unix())
-	pcg32 := pcg.NewPCG32().Seed(seed, seed)
-	return pcg32.Random()
+	return rand.New(rand.NewPCG(seed, seed)).Uint32()
 }

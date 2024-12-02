@@ -55,5 +55,5 @@ func (g *intGenerator) EncodeValueAsString() {
 }
 
 func (g *intGenerator) boundedInt32() int32 {
-	return int32(g.pcg32.Bounded(uint32(g.max-g.min))) + g.min
+	return g.rand.Int32N(g.max-g.min) + g.min
 }

@@ -48,13 +48,13 @@ const genericBinaryType = 0x00
 func (g *binaryDataGenerator) EncodeValue() {
 	length := g.minLength
 	if g.minLength != g.maxLength {
-		length = g.pcg32.Bounded(g.maxLength-g.minLength+1) + g.minLength
+		length = g.rand.Uint32N(g.maxLength-g.minLength+1) + g.minLength
 	}
 	g.buffer.Write(uint32Bytes(length))
 	g.buffer.WriteSingleByte(genericBinaryType)
 	end := 4
 	for count := 0; count < int(length); count += 4 {
-		b := uint32Bytes(g.pcg32.Random())
+		b := uint32Bytes(g.rand.Uint32())
 		if int(length)-count < 4 {
 			end = int(length) - count
 		}
