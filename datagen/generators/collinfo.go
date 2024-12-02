@@ -675,7 +675,7 @@ func (ci *CollInfo) newAggregatorFromMap(content map[string]Config) ([]Aggregato
 
 func (ci *CollInfo) newAggregator(key string, config *Config) (Aggregator, error) {
 
-	if config.Query == nil || len(config.Query) == 0 {
+	if len(config.Query) == 0 {
 		return nil, errors.New("'query' can't be null or empty")
 	}
 	if config.Database == "" {
