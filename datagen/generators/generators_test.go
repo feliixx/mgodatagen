@@ -839,6 +839,11 @@ func TestEncodeToString(t *testing.T) {
 			empty:  false,
 		},
 		{
+			name:   "currency",
+			config: generators.Config{Type: generators.TypeCurrency},
+			empty:  false,
+		},
+		{
 			name:   "decimal",
 			config: generators.Config{Type: generators.TypeDecimal},
 			empty:  false,

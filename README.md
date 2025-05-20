@@ -70,6 +70,7 @@ configuration:
   -o, --output=<output>                        where documents should be written. Options are:
                                                - mongodb (default)
                                                - stdout
+                                               - export (filename `[db].[name].json` - format like `mongoexport`)
                                                - filename
       --prettyprint                            if present, indent the output. Only for stdout or file
                                                output
@@ -225,6 +226,8 @@ Generators have a common structure:
 }
 ```
 
+## List
+
 List of `<generator>` types:
 
 - [string](#string)
@@ -232,6 +235,7 @@ List of `<generator>` types:
 - [int](#int)
 - [long](#long)
 - [double](#double)
+- [currency](#currency)
 - [decimal](#decimal)
 - [autoincrement](#autoincrement)
 - [boolean](#boolean)
@@ -265,6 +269,7 @@ Generates a random string of a certain length. String is composed of char within
     "maxDistinctValue": <int>     // optional
 }
 ```
+[Back To List][toList]
 
 #### Unique String
 
@@ -284,6 +289,7 @@ They will look like
 "aad",
 ...
 ```
+[Back To List][toList]
 
 ### StringFromParts
 
@@ -332,6 +338,8 @@ like this:
 }
 ```
 
+[Back To List][toList]
+
 ### Int
 
 Generates a random `int` within bounds.
@@ -345,6 +353,8 @@ Generates a random `int` within bounds.
     "maxDistinctValue": <int>  // optional
 }
 ```
+
+[Back To List][toList]
 
 ### Long
 
@@ -360,6 +370,8 @@ Generates a random `long` within bounds.
 }
 ```
 
+[Back To List][toList]
+
 ### Double
 
 Generates a random `double` within bounds.
@@ -374,6 +386,28 @@ Generates a random `double` within bounds.
 }
 ```
 
+[Back To List][toList]
+
+### Currency
+
+Generates a random `decimal128`. It's modified version of decimal with some limitations and extensions.
+
+Supports `min` and `max`, but those values are of type long (signed 64b) and mean number of cents. 
+
+Generated value is in range of signed 64b int / 100.
+
+```scala
+"fieldName": {
+    "type":             "currency", // required
+    "min":              <long>,     // optional
+    "max":              <long>,     // optional, must be >= min
+    "nullPercentage":   <int>,      // optional
+    "maxDistinctValue": <int>,      // optional
+}
+```
+
+[Back To List][toList]
+
 ### Decimal
 
 Generates a random `decimal128`.
@@ -385,6 +419,8 @@ Generates a random `decimal128`.
     "maxDistinctValue": <int>,     // optional
 }
 ```
+
+[Back To List][toList]
 
 ### Autoincrement
 
@@ -399,6 +435,8 @@ Generates an autoincremented value (type `<long>` or `<int>`).
 }
 ```
 
+[Back To List][toList]
+
 ### Boolean
 
 Generates a random `boolean`.
@@ -411,6 +449,8 @@ Generates a random `boolean`.
 }
 ```
 
+[Back To List][toList]
+
 ### ObjectId
 
 Generates a random `objectId`.
@@ -422,6 +462,8 @@ Generates a random `objectId`.
     "maxDistinctValue": <int>       // optional
 }
 ```
+
+[Back To List][toList]
 
 ### UUID
 
@@ -440,6 +482,8 @@ If `format` is `"string"`, the field will be a simple string like `"f1b9b567-9b3
 
  If `format` is `"binary"`, the field will be stored as a [bson UUID](https://docs.mongodb.com/manual/reference/method/UUID/) like `UUID("f1b9b567-9b34-45af-9d9c-35f565d57716")`
  
+[Back To List][toList]
+
 ### Binary
 
 Generates random binary data of length within bounds.
@@ -453,6 +497,8 @@ Generates random binary data of length within bounds.
     "maxDistinctValue": <int>     // optional
 }
 ```
+
+[Back To List][toList]
 
 ### Date
 
@@ -472,6 +518,8 @@ Generates a random date (stored as [`ISODate`](https://docs.mongodb.com/manual/r
 }
 ```
 
+[Back To List][toList]
+
 ### Coordinates
 
 Generates random [GeoJSON](https://docs.mongodb.com/manual/geospatial-queries/#std-label-geospatial-geojson) coordinates (a GPS position in WGS84 Decimal Degrees with folowing format: `[ longitude, latitude ]` )
@@ -486,6 +534,8 @@ eg : [40.741895, -73.989308]
 }
 ```
 
+[Back To List][toList]
+
 ### Constant
 
 Adds the same value to each document.
@@ -499,6 +549,8 @@ Adds the same value to each document.
     "nullPercentage": <int>       // optional
 }
 ```
+
+[Back To List][toList]
 
 ### Enum
 
@@ -520,6 +572,8 @@ in the order where they appear.
 
 }
 ```
+
+[Back To List][toList]
 
 ### Reference
 
@@ -552,6 +606,8 @@ It can also be used to duplicate a field in a single collection ( see [reference
 
 
 
+[Back To List][toList]
+
 ### Array
 
 Generates a random array of bson object.
@@ -567,6 +623,8 @@ Generates a random array of bson object.
     "maxDistinctValue": <int>        // optional
 }
 ```
+
+[Back To List][toList]
 
 ### Object
 
@@ -585,6 +643,8 @@ Generates random nested object.
 }
 ```
 
+
+[Back To List][toList]
 
 ### CountAggregator
 
@@ -644,6 +704,8 @@ The collection `second` will contain:
 {"_id": 1, "count": 2}
 {"_id": 2, "count": 1}
 ```
+
+[Back To List][toList]
 
 ### ValueAggregator
 
@@ -706,6 +768,8 @@ The collection `second` will contain:
 {"_id": 1, "values": ["a", "b"]}
 {"_id": 2, "values": ["c"]}
 ```
+
+[Back To List][toList]
 
 ### BoundAggregator
 
@@ -773,6 +837,8 @@ The collection `second` will contain:
 ```
 
 where `m` is the min value, and `M` the max value.
+
+[Back To List][toList]
 
 ### Faker
 
@@ -900,3 +966,6 @@ List of faker methods:
 
 If you're building large datasets (10M+ documents) you should avoid faker generators
 and use main or custom generators instead, as faker may be way slower.
+
+
+[toList]: #list

@@ -61,9 +61,9 @@ type Config struct {
 	MinLength json.Number `json:"minLength"`
 	// For `string` and `binary` type only. Specify the Max length of the object to generate
 	MaxLength json.Number `json:"maxLength"`
-	// For `int`, `long` or `double` only. Lower bound for number to generate
+	// For `int`, `long`, `double` or `currency` only. Lower bound for number to generate
 	Min json.Number `json:"min"`
-	// For `int`, `long` or `double` only. Higher bound for number to generate
+	// For `int`, `long`, `double` or `currency` only. Higher bound for number to generate
 	Max json.Number `json:"max"`
 	// For `array` only. Config to fill the array. Need to
 	// pass a pointer here to avoid 'invalid recursive type' error
@@ -135,6 +135,7 @@ const (
 	TypeLong            = "long"
 	TypeDouble          = "double"
 	TypeDecimal         = "decimal"
+	TypeCurrency        = "currency"
 	TypeBoolean         = "boolean"
 	TypeObjectID        = "objectId"
 	TypeArray           = "array"
@@ -270,6 +271,7 @@ var mapTypes = map[string]bsontype.Type{
 	TypeLong:            bson.TypeInt64,
 	TypeDouble:          bson.TypeDouble,
 	TypeDecimal:         bson.TypeDecimal128,
+	TypeCurrency:        bson.TypeDecimal128,
 	TypeBoolean:         bson.TypeBoolean,
 	TypeObjectID:        bson.TypeObjectID,
 	TypeArray:           bson.TypeArray,
@@ -532,6 +534,12 @@ func (ci *CollInfo) newGenerator(buffer *DocBuffer, key string, config *Config) 
 		}
 		return newDecimalGenerator(base, ci.pcg64)
 
+	case TypeCurrency:
+		if !ci.versionAtLeast(3, 4) {
+			return nil, errors.New("decimal type (bson decimal128) requires mongodb 3.4 at least")
+		}
+		return newCurrencyGenerator(config, base, ci.pcg64)
+
 	case TypeBoolean:
 		return newBoolGenerator(base)
 
@@ -675,7 +683,7 @@ func (ci *CollInfo) newAggregatorFromMap(content map[string]Config) ([]Aggregato
 
 func (ci *CollInfo) newAggregator(key string, config *Config) (Aggregator, error) {
 
-	if config.Query == nil || len(config.Query) == 0 {
+	if /*config.Query == nil ||*/ len(config.Query) == 0 {
 		return nil, errors.New("'query' can't be null or empty")
 	}
 	if config.Database == "" {

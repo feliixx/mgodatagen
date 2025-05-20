@@ -15,6 +15,7 @@ import (
 const (
 	mongodbOutput = "mongodb"
 	stdoutOutput  = "stdout"
+	exportOutput  = "export"
 )
 
 type writer interface {
@@ -27,6 +28,8 @@ func newWriter(options *Options, logger io.Writer) (writer, error) {
 		return newMongoWriter(options, logger)
 	case stdoutOutput:
 		return newFileWriter(options, logger, os.Stdout), nil
+	case exportOutput:
+		return newMongoExporterWriter(options, logger), nil
 	default:
 		f, err := tryToCreateFile(options.Output)
 		if err != nil {
@@ -80,7 +83,7 @@ type baseWriter struct {
 func (b *baseWriter) generateDocument(ctx context.Context, tasks chan<- *rawChunk, nbDoc int, docGenerator *generators.DocumentGenerator) {
 
 	// generate a document, and use it's length to adjust the initial
-	// size of the slices in the pool 
+	// size of the slices in the pool
 	docBytes := docGenerator.Generate()
 	setPoolSliceSize(len(docBytes))
 
